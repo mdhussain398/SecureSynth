@@ -11,9 +11,9 @@ const home = (role: Role) => (role === 'admin' ? '/soc' : '/bank');
 
 function AuthCard({ title, lede, children }: { title: string; lede?: string; children: React.ReactNode }) {
   return (
-    <section className="w-full max-w-[420px] bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-l)] p-6 sm:p-9">
-      <h1 className="serif text-[1.875rem] font-semibold leading-tight">{title}</h1>
-      {lede && <p className="text-[var(--ink-2)] mt-2">{lede}</p>}
+    <section className="rn-glass w-full max-w-[440px] rounded-[var(--radius-l)] p-7 sm:p-10">
+      <h1 className="rn-display text-[clamp(2.5rem,6vw,3.25rem)]">{title}</h1>
+      {lede && <p className="text-[color:var(--ink-2)] mt-3">{lede}</p>}
       <div className="mt-7">{children}</div>
     </section>
   );

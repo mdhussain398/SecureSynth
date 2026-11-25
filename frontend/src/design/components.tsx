@@ -9,13 +9,13 @@ const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean)
 // ---------- Button ----------
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 const BTN_VARIANT: Record<Variant, string> = {
-  primary: 'bg-[var(--accent)] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)] border border-transparent',
-  secondary: 'bg-[var(--surface)] text-[var(--ink)] border border-[var(--hairline-strong)] hover:bg-[var(--surface-2)]',
-  ghost: 'bg-transparent text-[var(--ink-2)] border border-transparent hover:bg-[var(--surface-2)] hover:text-[var(--ink)]',
-  danger: 'bg-[var(--surface)] text-[var(--block)] border border-[var(--block-line)] hover:bg-[var(--block-tint)]',
+  primary: 'bg-[var(--graphite)] text-[color:var(--crystal)] hover:bg-[#0B1220] border border-transparent shadow-[0_10px_26px_-12px_rgba(16,24,40,0.55)] hover:shadow-[0_14px_30px_-12px_rgba(0,61,170,0.5)]',
+  secondary: 'bg-[var(--surface)] text-[color:var(--ink)] border border-[color:var(--hairline)] shadow-[0_1px_2px_rgba(16,24,40,0.06)] hover:border-[color:var(--hairline-strong)]',
+  ghost: 'bg-transparent text-[color:var(--ink-2)] border border-transparent hover:bg-[rgba(16,24,40,0.05)] hover:text-[color:var(--ink)]',
+  danger: 'bg-[var(--surface)] text-[color:var(--block)] border border-[color:var(--block-line)] hover:bg-[var(--block-tint)]',
 };
-const BTN_SIZE = { sm: 'h-8 px-3 text-[0.8125rem]', md: 'h-10 px-4 text-[0.9375rem]', lg: 'h-12 px-5 text-base' };
-const BTN_BASE = 'inline-flex items-center justify-center gap-2 rounded-[var(--radius-s)] font-medium transition-colors no-underline whitespace-nowrap';
+const BTN_SIZE = { sm: 'h-9 px-3.5 text-[0.875rem]', md: 'h-11 px-5 text-[0.9375rem]', lg: 'min-h-[52px] px-6 text-[1.0625rem]' };
+const BTN_BASE = 'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-[background-color,box-shadow,border-color,transform] duration-200 active:scale-[0.98] no-underline whitespace-nowrap';
 /** A router link that looks like a button (never nest a <button> inside a link). */
 export function ButtonLink({ to, variant = 'primary', size = 'md', className, children, ...rest }:
   LinkProps & { variant?: Variant; size?: 'sm' | 'md' | 'lg' }) {
@@ -23,19 +23,12 @@ export function ButtonLink({ to, variant = 'primary', size = 'md', className, ch
 }
 export function Button({ variant = 'primary', size = 'md', className, loading, children, disabled, ...rest }:
   ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: 'sm' | 'md' | 'lg'; loading?: boolean }) {
-  const styles: Record<Variant, string> = {
-    primary: 'bg-[var(--accent)] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)] border border-transparent',
-    secondary: 'bg-[var(--surface)] text-[var(--ink)] border border-[var(--hairline-strong)] hover:bg-[var(--surface-2)]',
-    ghost: 'bg-transparent text-[var(--ink-2)] border border-transparent hover:bg-[var(--surface-2)] hover:text-[var(--ink)]',
-    danger: 'bg-[var(--surface)] text-[var(--block)] border border-[var(--block-line)] hover:bg-[var(--block-tint)]',
-  };
-  const sizes = { sm: 'h-8 px-3 text-[0.8125rem]', md: 'h-10 px-4 text-[0.9375rem]', lg: 'h-12 px-5 text-base' };
   return (
     <button
       {...rest}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={cx('inline-flex items-center justify-center gap-2 rounded-[var(--radius-s)] font-medium transition-colors disabled:opacity-55 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap', styles[variant], sizes[size], className)}
+      className={cx(BTN_BASE, 'disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer', BTN_VARIANT[variant], BTN_SIZE[size], className)}
     >
       {children}
     </button>
@@ -46,17 +39,17 @@ export function Button({ variant = 'primary', size = 'md', className, loading, c
 export function Card({ title, actions, children, className, padded = true, as: Tag = 'section', description }:
   { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; padded?: boolean; as?: 'section' | 'div' | 'article'; description?: ReactNode }) {
   return (
-    <Tag className={cx('min-w-0 bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-m)]', className)}>
+    <Tag className={cx('min-w-0 bg-[var(--surface)] border border-[color:var(--hairline)] rounded-[var(--radius-m)] shadow-[var(--shadow-panel)]', className)}>
       {(title || actions) && (
-        <header className="flex flex-wrap items-start justify-between gap-3 px-4 pt-3.5 pb-2.5 border-b border-[var(--hairline)]">
+        <header className="flex flex-wrap items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-[color:var(--hairline)]">
           <div className="min-w-0 flex-1 basis-[220px]">
-            {title && <h2 className="text-[0.9375rem] font-semibold leading-tight">{title}</h2>}
-            {description && <p className="text-[0.8125rem] text-[var(--ink-3)] mt-0.5">{description}</p>}
+            {title && <h2 className="text-[1.0625rem] font-semibold leading-tight tracking-[-0.01em]">{title}</h2>}
+            {description && <p className="text-[0.875rem] text-[color:var(--ink-3)] mt-1">{description}</p>}
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">{actions}</div>}
         </header>
       )}
-      <div className={padded ? 'p-4' : undefined}>{children}</div>
+      <div className={padded ? 'p-5' : undefined}>{children}</div>
     </Tag>
   );
 }
@@ -71,7 +64,7 @@ export function Badge({ tone = 'neutral', children, className }: { tone?: Tone; 
     block: 'bg-[var(--block-tint)] text-[var(--block)] border-[var(--block-line)]',
     info: 'bg-[var(--info-tint)] text-[var(--info)] border-[var(--info-line)]',
   };
-  return <span className={cx('inline-flex items-center gap-1 whitespace-nowrap rounded-[var(--radius-s)] border px-1.5 py-px text-[0.75rem] font-medium leading-5', t[tone], className)}>{children}</span>;
+  return <span className={cx('inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-px text-[0.8125rem] font-medium leading-5', t[tone], className)}>{children}</span>;
 }
 
 // ---------- DecisionPill: colour + icon + text, never colour alone ----------
@@ -145,8 +138,8 @@ export function RiskGauge({ value, thresholds, size = 'md' }: { value: number | 
 export function Stat({ label, value, hint, className }: { label: ReactNode; value: ReactNode; hint?: ReactNode; className?: string }) {
   return (
     <div className={cx('min-w-0', className)}>
-      <div className="text-[0.8125rem] text-[var(--ink-3)]">{label}</div>
-      <div className="tnum text-[1.375rem] font-semibold leading-tight mt-0.5">{value}</div>
+      <div className="text-[0.875rem] text-[color:var(--ink-3)]">{label}</div>
+      <div className="serif tnum text-[1.875rem] leading-tight mt-0.5">{value}</div>
       {hint && <div className="text-[0.75rem] text-[var(--ink-3)] mt-0.5">{hint}</div>}
     </div>
   );
@@ -163,7 +156,7 @@ export function DataTable<T>({ columns, rows, rowKey, caption, onRowClick, dense
         <thead>
           <tr className="border-b border-[var(--hairline)]">
             {columns.map((c) => (
-              <th key={c.key} scope="col" className={cx('px-3 py-2 text-[0.75rem] font-medium text-[var(--ink-3)] whitespace-nowrap bg-[var(--surface-2)]', c.align === 'right' && 'text-right', c.className)}>{c.header}</th>
+              <th key={c.key} scope="col" className={cx('px-3 py-2.5 text-[0.8125rem] font-medium text-[color:var(--ink-3)] whitespace-nowrap bg-[var(--surface-2)]', c.align === 'right' && 'text-right', c.className)}>{c.header}</th>
             ))}
           </tr>
         </thead>
@@ -232,11 +225,11 @@ export function Banner({ tone = 'info', title, children, action }: { tone?: 'inf
     block: 'bg-[var(--block-tint)] border-[var(--block-line)] [--b-ink:var(--block)]',
   }[tone];
   return (
-    <div role={tone === 'block' ? 'alert' : 'status'} className={cx('flex gap-3 items-start border rounded-[var(--radius-m)] px-4 py-3', t)}>
+    <div role={tone === 'block' ? 'alert' : 'status'} className={cx('flex gap-3 items-start border rounded-[var(--radius-m)] px-4 py-3.5', t)}>
       <Icon size={18} className="shrink-0 mt-0.5 text-[var(--b-ink)]" aria-hidden />
       <div className="min-w-0 flex-1">
         {title && <p className="font-semibold text-[var(--ink)]">{title}</p>}
-        {children && <div className="text-[0.9rem] text-[var(--ink-2)] mt-0.5">{children}</div>}
+        {children && <div className="text-[0.9375rem] text-[color:var(--ink-2)] mt-0.5">{children}</div>}
       </div>
       {action}
     </div>

@@ -1,41 +1,11 @@
-/* SecureSynth "Renaissance" design system — scoped to .rn so existing screens are untouched until approved. */
-@import "@fontsource-variable/archivo/wdth.css";
-@import "@fontsource-variable/geist";
+/* SecureSynth "Renaissance" design system: base styles and glass/lens/state classes. Tokens: design/tokens.css. */
+/* fonts are imported once in index.css */
 
 /* In Tailwind's components layer so utility classes can always override these defaults. */
 @layer components {
 
 .rn {
-  /* brand */
-  --porcelain: #F5F7FA;
-  --crystal: #FFFFFF;
-  --silver: #C0C7D1;
-  --electric: #005BFF;
-  --graphite: #101828;
-  /* supporting (contrast-checked on porcelain/crystal) */
-  --graphite-2: #344054;   /* body secondary  · 10.3:1 */
-  --graphite-3: #4A5466;   /* tertiary        ·  7.4:1 */
-  --silver-2: #E3E7ED;     /* hairlines */
-  --electric-ink: #0047CC; /* blue text on white · 7.0:1 */
-  --electric-wash: rgba(0, 91, 255, 0.08);
-  /* security states only */
-  --allow: #005BFF;
-  --stepup: #B54708;       /* amber, 5.6:1 */
-  --stepup-wash: rgba(247, 144, 9, 0.12);
-  --block: #C01048;        /* red, 6.0:1 */
-  --block-wash: rgba(240, 68, 56, 0.10);
-
-  --display: "Archivo Variable", "Archivo", system-ui, sans-serif;
-  --ui: "Geist Variable", "Geist", system-ui, -apple-system, sans-serif;
-
-  /* type scale (≈1.25 modular, display steps jump) */
-  /* secondary sizes raised for distance reading on a projector */
-  --t-xs: 0.8125rem; --t-sm: 0.9375rem; --t-base: 1.0625rem; --t-md: 1.1875rem; --t-lg: 1.5rem;
-  --t-xl: 2rem; --t-2xl: clamp(2.5rem, 5vw, 4rem); --t-hero: clamp(3.4rem, 10.5vw, 10.5rem);
-
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --shadow-float: 0 1px 1px rgba(16, 24, 40, 0.04), 0 12px 32px -12px rgba(16, 24, 40, 0.18), 0 40px 80px -40px rgba(0, 61, 170, 0.18);
-
+  /* tokens live on :root in design/tokens.css (shared by every screen) */
   /* depth: a cool top light falling to a deeper porcelain floor */
   background:
     radial-gradient(120% 70% at 50% -12%, #FFFFFF 0%, rgba(255,255,255,0) 62%),

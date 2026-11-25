@@ -1,6 +1,6 @@
 # Frontend Renaissance — handoff (Master Prompt #04)
 
-**Status: WIP. Creative direction approved; visual refinement pass in progress (see the refinement section). Refinement verified; awaiting approval of the execution.** Do not extend the redesign to other pages until it is approved.
+**Status: WIP. Execution approved 2026-11-25; the redesign now covers every page (see "Full redesign"). Customer-portal screens still need a sign-in check in the browser.** Do not extend the redesign to other pages until it is approved.
 **Branch:** `feat/frontend-renaissance` (from the stable MVP `313db81` on `feat/mvp-checkpoint`).
 - Push only to this branch.
 - Never merge into `feat/mvp-checkpoint` or `main` without explicit approval.
@@ -194,7 +194,44 @@ Screenshots: `docs/screenshots/renaissance/refine-*.jpg`: landing desktop and mo
   - Edge inclusions smeared by refraction → moved inward.
 - **Still not verified:** reduced motion in a real browser with the OS setting on.
 
-## Next steps after approval (not started)
+## Full redesign (after approval, 2026-11-25)
+**One design system everywhere.**
+- `design/tokens.css` now holds the Renaissance tokens on `:root`, and the legacy names (`--ink`, `--surface`, `--accent`…) resolve to them. Every legacy screen inherits the palette, Geist and Archivo, and the radius hierarchy (10/18/28) without a rewrite.
+- `.serif` headings render in condensed Archivo.
+- IBM Plex Sans and Source Serif 4 are uninstalled; fonts are imported once in `index.css`.
+- **Dark mode:** light is the default; dark is an explicit toggle in the console, with explicit dark tokens and smoked glass. Old `auto` preferences fall back to light.
+
+| Area | What changed |
+|---|---|
+| Components (`design/components.tsx`) | Graphite pill primary buttons, crystal panels with a soft shadow, pill badges, larger type. |
+| Shells (`layout/layouts.tsx`) | Floating `GlassNav` in the portal and the console, bottom glass nav on phones, `BrandMark`. Sign-in screens sit on the behavioural topography. Console nav adds Intelligence and Judge mode (`consoleNav` is shared with the Intelligence page). |
+| Bank overview | The balance is the composition: large Archivo figure, account context, two actions. Activity sits in a crystal panel. |
+| Step-up focus experience (`ApprovalWaiting`) | Full-screen frosted overlay. The number to match is the subject, with a slow waiting halo that is static under reduced motion. No countdown, because challenge expiry is backend time. |
+| Sign-in, restricted and outcome screens | Glass focus panels with display headings. |
+| Trusted device (`/device`) | Graphite device frame and large number-match buttons. |
+| Scenario Lab | Results are an event sequence (`renaissance/RunSequence.tsx`): a stage rail (Authentication → Behavioural assessment → Risk evaluation → Decision → Outcome), steps with actor, request, risk index and decision, simulated-time markers on the spine, and an outcome panel with real before and after balances. |
+| Evaluation | Editorial lead (recall and genuine-session interruption vs static rules, straight from the frozen report), display section headings. Chart comparators are graphite and silver; amber and red stay reserved for security states. |
+| **Judge Mode (`/judge`)** | Full screen, admin only. Pick a scenario; **Run live** calls the real Lab API, and the recorded steps are revealed one at a time (all at once under reduced motion). The orb shows the session assessment whose backend score matches the latest revealed checkpoint. Keys: R runs, Esc exits; there is a full-screen toggle. |
+| `renaissance/signals.ts` | Shared signal mapping, also used by Intelligence. |
+
+**Verified (actual):**
+- `tsc -b` is clean and the build passes (JudgeMode chunk 2.9 KB gzip; OrbScene unchanged).
+- `make test`: 89 passed.
+- Browser at 1440 px: Sessions, Evaluation, Lab, trusted device, Sign in and Judge Mode. In Judge Mode the takeover run played through to Blocked 99.1; the protected balance was unchanged; the orb showed the matched assessment's signals.
+- 375 px: no horizontal scroll on `/login`, `/device`, `/soc`, `/soc/evaluation`, `/lab`, `/judge`, `/soc/users`.
+
+**Not verified:**
+- Customer portal pages (`/bank`, transfer, payees) and the step-up overlay in the browser. They need a customer sign-in, which the assistant cannot perform. They type-check and use the shared components.
+- Reduced motion on a real OS setting.
+
+Screenshots: `docs/screenshots/renaissance/` (`judge-mode-takeover`, `evaluation-desktop`, `sessions-desktop`, plus the earlier `refine-*`).
+
+## Remaining work
+1. Verify the customer portal and the step-up overlay with a real customer sign-in.
+2. Rehearse Judge Mode on the presentation machine (full screen, projector contrast).
+3. Optional: give the session investigation page (`/soc/sessions/:id`) and Baselines bespoke layouts; they currently inherit the system.
+
+## Next steps after approval (superseded by the section above)
 1. Apply the system to the customer portal: floating glass nav, balance typography, step-up focus experience.
 2. Trusted-device page.
 3. Scenario Lab as an event-sequence visualisation.

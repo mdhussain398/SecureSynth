@@ -4,34 +4,19 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useBaseline, useLogout, useMe, useSessionDetail, useSessions } from '../api/queries';
-import type { Decision, RiskAssessment } from '../api/types';
+import type { Decision } from '../api/types';
 import './rn.css';
+import { consoleNav } from '../layout/layouts';
 import { IdentityOrb } from './orb/IdentityOrb';
-import { LEVEL_COLOR, STATE_COLOR, type OrbSignal, type SignalLevel } from './orb/types';
+import { LEVEL_COLOR, STATE_COLOR, type OrbSignal } from './orb/types';
+import { signalsOf } from './signals';
 import { AnimatedNumber, Contours, GlassNav, spring } from './primitives';
 
-const SIGNAL_LABEL: Record<string, string> = {
-  device_recognised: 'Browser', hour_rarity: 'Time of day', city_known: 'Location', log_km_from_home: 'Distance from home',
-  travel_speed_kmh: 'Travel speed', amount_robust_z: 'Amount', txn_velocity_ratio: 'Transfer frequency',
-  beneficiary_new: 'New payee', beneficiary_fresh: 'Payee just added', log_secs_login_to_sensitive: 'Speed to act',
-  sensitive_seq: 'Add-then-pay', failed_auth_24h: 'Failed sign-ins', travel_window_active: 'Travel window',
-};
-const SEV: Record<string, SignalLevel> = { low: 1, medium: 2, high: 3 };
 const CHECKPOINT: Record<string, string> = { login: 'Sign-in', beneficiary_add: 'Payee add', transfer: 'Transfer', profile_change: 'Profile change' };
-const NAV = [
-  { to: '/soc/intelligence', label: 'Intelligence' }, { to: '/soc', label: 'Sessions', end: true },
-  { to: '/soc/evaluation', label: 'Evaluation' }, { to: '/lab', label: 'Lab' },
-];
+const NAV = consoleNav;
 /* Screen angles (0° = right, −90° = top) for ring callouts: diagonals first, so labels stay inside the centre column. */
 const RING_SLOTS = [-58, -122, 58, 122, -32, -148, 32, 148];
 const WORD: Record<Decision, string> = { ALLOW: 'Allowed', STEP_UP: 'Step-up', BLOCK: 'Blocked' };
-
-function signalsOf(a: RiskAssessment | undefined): OrbSignal[] {
-  if (!a) return [];
-  const dev = new Map(a.deviations.map((d) => [d.feature, SEV[d.severity] ?? 1]));
-  return Object.keys(SIGNAL_LABEL).filter((k) => k in a.features)
-    .map((k) => ({ id: k, label: SIGNAL_LABEL[k], level: (dev.get(k) ?? 0) as SignalLevel }));
-}
 
 function fmtTime(ts: string) {
   const d = new Date(/[zZ]|[+-]\d\d:\d\d$/.test(ts) ? ts : `${ts}Z`);

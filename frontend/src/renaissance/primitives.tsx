@@ -1,7 +1,7 @@
 /* Motion + layout primitives for the Renaissance design system. One animation library: `motion`. */
 import { animate, motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'motion/react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 export const spring = { type: 'spring', stiffness: 320, damping: 32, mass: 0.9 } as const;
 
@@ -66,18 +66,19 @@ export function CursorLight() {
 }
 
 /** Floating glass navigation with a fluid active indicator. */
-export function GlassNav({ items, label }: { items: { to: string; label: string; end?: boolean }[]; label: string }) {
+export function GlassNav({ items, label, className }: { items: { to: string; label: string; end?: boolean; match?: string }[]; label: string; className?: string }) {
+  const { pathname } = useLocation();
   return (
-    <nav aria-label={label} className="rn-glass flex items-center gap-0.5 rounded-full p-1.5">
+    <nav aria-label={label} className={`rn-glass flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full p-1.5 [scrollbar-width:none] ${className ?? ''}`}>
       {items.map((it) => (
         <NavLink key={it.to} to={it.to} end={it.end}
-          className="relative flex min-h-10 items-center rounded-full px-4 text-[length:var(--t-sm)] font-medium text-[color:var(--graphite-2)] transition-colors hover:text-[color:var(--graphite)] aria-[current=page]:text-[color:var(--graphite)]">
-          {({ isActive }) => (
+          className="relative flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full px-4 text-[length:var(--t-sm)] font-medium text-[color:var(--graphite-2)] transition-colors hover:text-[color:var(--graphite)] aria-[current=page]:text-[color:var(--graphite)]">
+          {({ isActive: exact }) => { const isActive = exact || (!!it.match && pathname.startsWith(it.match)); return (
             <>
               {isActive && <motion.span layoutId={`${label}-pill`} transition={spring} className="rn-lens absolute inset-0 rounded-full" />}
               <span className={`relative ${isActive ? 'font-semibold' : ''}`}>{it.label}</span>
             </>
-          )}
+          ); }}
         </NavLink>
       ))}
     </nav>

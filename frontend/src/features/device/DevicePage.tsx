@@ -11,15 +11,15 @@ function ChallengeCard({ c }: { c: DeviceChallenge }) {
   const respond = useDeviceRespond();
   const [picked, setPicked] = useState<number | null>(null);
   return (
-    <article className="border border-[var(--hairline)] rounded-[var(--radius-m)] bg-[var(--surface)] p-4">
-      <p className="text-[0.8125rem] text-[var(--ink-3)]">{OP_LABEL[c.operation]} · {fmtTime(c.created_at)}</p>
+    <article className="border border-[color:var(--hairline)] rounded-[var(--radius-l)] bg-[var(--surface)] p-5 shadow-[var(--shadow-panel)]">
+      <p className="text-[0.875rem] text-[color:var(--ink-3)]">{OP_LABEL[c.operation]}, {fmtTime(c.created_at)}</p>
       <p className="font-medium mt-1 leading-snug">{c.context_summary}</p>
       <fieldset className="mt-4">
         <legend className="text-[0.875rem] text-[var(--ink-2)]">Pick the number shown on the banking screen</legend>
         <div className="grid grid-cols-3 gap-2 mt-2" role="radiogroup">
           {c.options.map((n) => (
             <button key={n} type="button" role="radio" aria-checked={picked === n} onClick={() => setPicked(n)}
-              className={`serif tnum h-16 text-[1.75rem] font-semibold rounded-[var(--radius-m)] border cursor-pointer ${picked === n ? 'border-[var(--accent)] bg-[var(--accent-tint)] ring-2 ring-[var(--accent)]' : 'border-[var(--hairline-strong)] bg-[var(--surface)] hover:bg-[var(--surface-2)]'}`}>
+              className={`rn-display tnum h-20 text-[2.5rem] rounded-[var(--radius-m)] border cursor-pointer transition-[box-shadow,border-color] ${picked === n ? 'border-[color:var(--electric)] bg-[var(--accent-tint)] shadow-[0_0_0_3px_rgba(0,91,255,0.25)]' : 'border-[color:var(--hairline)] bg-[var(--surface)] hover:border-[color:var(--hairline-strong)]'}`}>
               {n}
             </button>
           ))}
@@ -45,13 +45,14 @@ export function DevicePage() {
   const unpair = () => { setDeviceKey(null); setKey(null); };
 
   return (
-    <div className="min-h-screen bg-[#d9dcd6] flex flex-col items-center px-4 py-8">
-      <p className="text-[0.875rem] text-[#3d4541] mb-3 flex items-center gap-2"><Smartphone size={15} aria-hidden />Trusted device (simulated)</p>
-      <div className="w-full max-w-[380px] rounded-[34px] bg-[#1d2320] p-2.5 shadow-[0_20px_40px_-20px_rgba(20,30,25,.45)]">
-        <div className="rounded-[26px] bg-[var(--canvas)] min-h-[640px] overflow-hidden flex flex-col">
-          <header className="px-5 pt-6 pb-4 border-b border-[var(--hairline)] bg-[var(--surface)]">
-            <h1 className="serif text-[1.5rem] font-semibold">Approvals</h1>
-            <p className="text-[0.8125rem] text-[var(--ink-3)] mt-0.5">{key ? 'Paired · checks every 2 seconds' : 'Not paired'}</p>
+    <div className="relative isolate min-h-screen flex flex-col items-center px-4 py-8">
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-[52%] -z-10 h-[80vmin] w-[80vmin] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.16), rgba(0,91,255,0.04) 60%, transparent)' }} />
+      <p className="text-[0.9375rem] text-[color:var(--ink-2)] mb-4 flex items-center gap-2"><Smartphone size={16} aria-hidden />Trusted device (simulated)</p>
+      <div className="w-full max-w-[390px] rounded-[44px] bg-[linear-gradient(160deg,#2A3344,#101828_45%,#0B1220)] p-2.5 shadow-[0_2px_0_rgba(255,255,255,0.25)_inset,0_40px_80px_-30px_rgba(16,24,40,0.55),0_60px_120px_-60px_rgba(0,61,170,0.45)]">
+        <div className="rounded-[36px] bg-[var(--canvas)] min-h-[680px] overflow-hidden flex flex-col">
+          <header className="px-6 pt-8 pb-4">
+            <h1 className="rn-display text-[2.75rem]">Approvals</h1>
+            <p className="text-[0.875rem] text-[color:var(--ink-3)] mt-1">{key ? 'Paired · checks every 2 seconds' : 'Not paired'}</p>
           </header>
           <div className="flex-1 p-4 space-y-3">
             {!key ? (
@@ -69,7 +70,7 @@ export function DevicePage() {
               <div className="text-center py-16 px-4"><p className="font-medium">No requests waiting</p><p className="text-[0.875rem] text-[var(--ink-3)] mt-1">When a sign-in or payment needs your approval, it appears here.</p></div>
             ) : pending.data.map((c) => <ChallengeCard key={c.id} c={c} />)}
           </div>
-          <footer className="px-4 py-3 min-h-[52px] border-t border-[var(--hairline)] flex justify-between items-center"><SyntheticMarker />{key && <Button variant="ghost" size="sm" onClick={unpair}><Unlink size={14} aria-hidden />Unpair</Button>}</footer>
+          <footer className="px-5 py-4 min-h-[56px] flex justify-between items-center"><SyntheticMarker />{key && <Button variant="ghost" size="sm" onClick={unpair}><Unlink size={14} aria-hidden />Unpair</Button>}</footer>
         </div>
       </div>
     </div>

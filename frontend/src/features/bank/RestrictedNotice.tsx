@@ -4,9 +4,9 @@ import { Button } from '../../design/components';
 /** Calm, protective notice for restricted sessions. Never shows scores, thresholds or reasons beyond category level. */
 export function RestrictedNotice({ name, onSignOut }: { name: string; onSignOut: () => void }) {
   return (
-    <section className="max-w-xl mx-auto bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-l)] p-6 sm:p-10">
+    <section className="rn-glass max-w-xl mx-auto rounded-[var(--radius-l)] p-7 sm:p-11">
       <ShieldCheck size={30} className="text-[var(--accent)]" aria-hidden />
-      <h1 className="serif text-[1.75rem] sm:text-[2rem] font-semibold leading-tight mt-4">Your account is protected</h1>
+      <h1 className="rn-display text-[clamp(2.5rem,6vw,3.5rem)] mt-4">Your account is protected</h1>
       <p className="text-[1.0625rem] text-[var(--ink-2)] mt-3 leading-relaxed">
         {name.split(' ')[0]}, we noticed activity that did not look like you, so we paused payments and payee changes on this
         sign-in. Your balance and saved payees are safe.

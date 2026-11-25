@@ -22,7 +22,7 @@ function initials(name: string): string {
   return ((words[0]?.[0] ?? '?') + (words[1]?.[0] ?? '')).toUpperCase();
 }
 /** Stable, muted avatar tint per name (identity only; never a status colour). */
-const AVATAR = ['#dfe9e5', '#e4e6f1', '#efe6dc', '#e2ecf0', '#ece3ea', '#e6ecdc'];
+const AVATAR = ['#E3EAF7', '#E7E9F0', '#E9EEF5', '#DFE7F2', '#ECEEF3', '#E2E8EF'];
 function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   let h = 0;
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
@@ -55,7 +55,7 @@ function TxnRow({ t }: { t: Transaction }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="font-medium truncate">{name}</p>
-        <p className="text-[0.8125rem] text-[var(--ink-3)] truncate">
+        <p className="text-[0.875rem] text-[var(--ink-3)] truncate">
           <span className="sr-only">{t.direction === 'credit' ? 'Received. ' : 'Sent. '}</span>
           {t.description} · {parseTs(t.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}
         </p>
@@ -113,35 +113,31 @@ export function OverviewPage() {
   const me = useMe();
   const first = me.data?.display_name.split(' ')[0];
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {me.data?.mode === 'step_up' && <Banner tone="stepup" title="Approval pending">Payments and payee changes are paused until you approve the request on your registered device.</Banner>}
-      <div>
-        <h1 className="serif text-[1.625rem] sm:text-[1.875rem] font-semibold leading-tight">{first ? `Good to see you, ${first}` : 'Your account'}</h1>
-        <div className="mt-2"><SecurityStatus /></div>
-      </div>
-      <section aria-label="Savings account" className="relative overflow-hidden rounded-[var(--radius-l)] bg-[var(--accent)] text-[var(--accent-ink)] px-5 sm:px-7 py-6 sm:py-7">
-        <div className="relative flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <p className="text-[0.875rem] text-white/75">Savings account</p>
-            <p className="tnum text-[0.875rem] text-white/75 mt-0.5">{q.data ? q.data.account.account_ref : '\u00a0'}</p>
-          </div>
-          <span className="rounded-full bg-white/12 px-2.5 py-0.5 text-[0.75rem] text-white/85">Synthetic account</span>
+      {/* The balance is the composition: one large figure, quiet context, two clear actions. */}
+      <section aria-label="Savings account" className="relative pt-4 sm:pt-8">
+        <div aria-hidden className="pointer-events-none absolute -right-[10%] -top-[30%] -z-10 h-[520px] w-[520px] max-w-[90vw] rounded-full"
+          style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.16), rgba(0,91,255,0.04) 60%, transparent)' }} />
+        <p className="text-[1.0625rem] text-[color:var(--ink-2)]">{first ? `Good to see you, ${first}.` : 'Your account'}</p>
+        <div className="mt-6 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[0.9375rem] text-[color:var(--ink-3)]">
+          <span>Available balance</span>
+          <span className="rn-num">Savings {q.data ? q.data.account.account_ref : ''}</span>
+          <span className="rounded-full border border-[color:var(--hairline)] bg-[var(--surface)] px-2.5 py-0.5 text-[0.8125rem]">Synthetic account</span>
         </div>
-        <div className="relative mt-6">
-          <p className="text-[0.8125rem] text-white/75">Available balance</p>
-          {q.isPending ? <div className="h-12 w-56 mt-1 rounded bg-white/15 animate-pulse" aria-label="Loading balance" /> : q.error ? <p className="mt-1 text-white/90">Balance unavailable right now.</p> : (
-            <p className="serif text-[2.5rem] sm:text-[3.25rem] font-semibold leading-none tracking-tight mt-1"><Money paise={q.data.account.balance_paise} /></p>
-          )}
+        {q.isPending ? <div className="skeleton mt-3 h-24 w-[min(520px,90%)]" aria-label="Loading balance" /> : q.error ? <p className="mt-3 text-[color:var(--ink-2)]">Balance unavailable right now.</p> : (
+          <p className="rn-display rn-num mt-2 text-[clamp(3.75rem,11vw,8.5rem)] leading-[0.9]"><Money paise={q.data.account.balance_paise} /></p>
+        )}
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <ButtonLink to="/bank/transfer" size="lg">Send money</ButtonLink>
+          <ButtonLink to="/bank/beneficiaries" size="lg" variant="secondary">Manage payees</ButtonLink>
         </div>
-        <div className="relative flex flex-wrap gap-2.5 mt-6">
-          <ButtonLink to="/bank/transfer" size="lg" className="!bg-white !text-[var(--accent)] hover:!bg-white/90">Send money</ButtonLink>
-          <ButtonLink to="/bank/beneficiaries" size="lg" variant="ghost" className="!text-white border !border-white/35 hover:!bg-white/10">Manage payees</ButtonLink>
-        </div>
+        <div className="mt-8 border-t border-[color:var(--hairline)] pt-4"><SecurityStatus /></div>
       </section>
       {q.error && <ErrorState error={q.error} onRetry={() => q.refetch()} />}
-      <section className="bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-m)] px-4 sm:px-6 py-4">
+      <section className="bg-[var(--surface)] border border-[color:var(--hairline)] rounded-[var(--radius-l)] shadow-[var(--shadow-panel)] px-5 sm:px-7 py-5">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-[1.0625rem] font-semibold">Recent activity</h2>
+          <h2 className="rn-display text-[2rem]">Recent activity</h2>
           <Link to="/bank/transactions" className="text-[0.875rem] text-[var(--accent)] font-medium">All transactions</Link>
         </div>
         <div className="mt-1">{q.isPending ? <div className="py-4"><Skeleton lines={4} /></div> : q.data ? <TxnList txns={q.data.recent} /> : null}</div>
@@ -154,9 +150,9 @@ export function TransactionsPage() {
   const q = useTransactions(50);
   return (
     <section>
-      <h1 className="serif text-[1.875rem] font-semibold">Transactions</h1>
+      <h1 className="rn-display text-[clamp(2.75rem,6vw,4rem)]">Transactions</h1>
       <p className="text-[var(--ink-2)] mt-1">Your last 50 payments in and out.</p>
-      <div className="bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-m)] px-4 sm:px-6 py-2 mt-6">
+      <div className="bg-[var(--surface)] border border-[color:var(--hairline)] rounded-[var(--radius-l)] shadow-[var(--shadow-panel)] px-4 sm:px-6 py-2 mt-6">
         {q.isPending ? <div className="py-4"><Skeleton lines={6} /></div> : q.error ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> : <TxnList txns={q.data} />}
       </div>
     </section>
@@ -196,9 +192,9 @@ export function BeneficiariesPage() {
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       <section>
-        <h1 className="serif text-[1.875rem] font-semibold">Payees</h1>
+        <h1 className="rn-display text-[clamp(2.75rem,6vw,4rem)]">Payees</h1>
         <p className="text-[var(--ink-2)] mt-1">People and accounts you can send money to.</p>
-        <div className="bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-m)] px-4 sm:px-6 py-2 mt-6">
+        <div className="bg-[var(--surface)] border border-[color:var(--hairline)] rounded-[var(--radius-l)] shadow-[var(--shadow-panel)] px-4 sm:px-6 py-2 mt-6">
           {q.isPending ? <div className="py-4"><Skeleton lines={3} /></div> : q.error ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> :
             q.data.length === 0 ? <EmptyState title="No payees yet">Add a payee to start sending money.</EmptyState> : (
               <ul className="divide-y divide-[var(--hairline)]">
@@ -215,7 +211,7 @@ export function BeneficiariesPage() {
             )}
         </div>
       </section>
-      <section className="bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-m)] p-5 sm:p-6 self-start">
+      <section className="bg-[var(--surface)] border border-[color:var(--hairline)] rounded-[var(--radius-l)] shadow-[var(--shadow-panel)] p-5 sm:p-6 self-start">
         <h2 className="text-[1.0625rem] font-semibold flex items-center gap-2"><Plus size={17} aria-hidden />Add a payee</h2>
         <form onSubmit={submit} className="space-y-4 mt-4" noValidate>
           {notice && <Banner tone={notice.tone} title={notice.title}>{notice.body}</Banner>}
@@ -271,7 +267,7 @@ export function TransferPage() {
     }[outcome.kind];
     return (
       <section className="max-w-lg mx-auto bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-l)] p-6 sm:p-10">
-        <h1 className="serif text-[1.75rem] font-semibold leading-tight">{content.title}</h1>
+        <h1 className="rn-display text-[clamp(2.5rem,6vw,3.5rem)]">{content.title}</h1>
         <p className="text-[var(--ink-2)] mt-3 text-[1.0625rem] leading-relaxed">{content.body}</p>
         <div className="flex flex-wrap gap-3 mt-8">
           {outcome.kind === 'stopped' ? <Button onClick={() => nav('/bank')}>Go to overview</Button> : <><Button onClick={reset}>Make another transfer</Button><Button variant="secondary" onClick={() => nav('/bank')}>Back to overview</Button></>}
@@ -283,9 +279,9 @@ export function TransferPage() {
   const fieldErr = transfer.error && !['RISK_BLOCKED', 'SESSION_RESTRICTED'].includes(transfer.error.code) ? transfer.error : null;
   return (
     <section className="max-w-lg">
-      <h1 className="serif text-[1.875rem] font-semibold">Send money</h1>
+      <h1 className="rn-display text-[clamp(2.75rem,6vw,4rem)]">Send money</h1>
       <p className="text-[var(--ink-2)] mt-1">Transfers to saved payees. Larger or unusual payments may ask you to approve on your registered device.</p>
-      <form onSubmit={submit} className="space-y-5 mt-7 bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-m)] p-5 sm:p-6" noValidate>
+      <form onSubmit={submit} className="space-y-5 mt-7 bg-[var(--surface)] border border-[color:var(--hairline)] rounded-[var(--radius-l)] shadow-[var(--shadow-panel)] p-5 sm:p-6" noValidate>
         {fieldErr && <Banner tone="block" title={fieldErr.code === 'INSUFFICIENT_FUNDS' ? 'Not enough balance' : fieldErr.code === 'STEP_UP_REQUIRED' ? 'Approval needed first' : 'Transfer not sent'}>{fieldErr.message}</Banner>}
         <div>
           <label className="field-label" htmlFor="payee">Payee</label>

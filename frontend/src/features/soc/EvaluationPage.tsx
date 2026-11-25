@@ -119,10 +119,10 @@ function Provenance({ r }: { r: EvaluationReport }) {
 function Finding({ icon, tone, title, children }: { icon: ReactNode; tone: 'info' | 'stepup' | 'block' | 'neutral'; title: string; children: ReactNode }) {
   const bar = { info: 'var(--info)', stepup: 'var(--stepup)', block: 'var(--block)', neutral: 'var(--ink-3)' }[tone];
   return (
-    <article className="relative bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-m)] pl-5 pr-4 py-3.5 min-w-0">
+    <article className="relative bg-[var(--surface)] border border-[color:var(--hairline)] rounded-[var(--radius-m)] shadow-[var(--shadow-panel)] pl-6 pr-5 py-4 min-w-0">
       <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r" style={{ background: bar }} aria-hidden />
       <h3 className="flex items-start gap-2 font-semibold leading-snug"><span className="mt-0.5 shrink-0" style={{ color: bar }}>{icon}</span>{title}</h3>
-      <div className="text-[0.875rem] text-[var(--ink-2)] mt-1.5 leading-relaxed space-y-1.5">{children}</div>
+      <div className="text-[0.9375rem] text-[var(--ink-2)] mt-2 leading-relaxed space-y-1.5">{children}</div>
     </article>
   );
 }
@@ -141,7 +141,7 @@ function HonestReading({ r }: { r: EvaluationReport }) {
 
   return (
     <section aria-labelledby="hr-title">
-      <h2 id="hr-title" className="text-[1rem] font-semibold mb-2">Honest reading</h2>
+      <h2 id="hr-title" className="rn-display text-[2.5rem] mb-4">Honest reading</h2>
       <div className="grid gap-3 md:grid-cols-2">
         <Finding icon={<TrendingDown size={17} />} tone="info" title={higherRecall ? 'The gain is much lower friction at higher recall' : 'The gain is lower friction, not a higher catch rate'}>
           <p>
@@ -190,6 +190,30 @@ function HonestReading({ r }: { r: EvaluationReport }) {
           </Finding>
         )}
       </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------- 0. editorial lead */
+
+/** The story in two numbers, each shown next to static rules (values straight from the frozen report). */
+function Lead({ r }: { r: EvaluationReport }) {
+  const ss = r.approaches.find((a) => a.name === 'securesynth');
+  const sr = r.approaches.find((a) => a.name === 'static_rules');
+  if (!ss || !sr) return null;
+  const Fig = ({ value, label, compare }: { value: string; label: string; compare: string }) => (
+    <div className="min-w-0">
+      <p className="rn-display tnum text-[clamp(4rem,9vw,7.5rem)] leading-[0.85] text-[color:var(--electric-ink)]">{value}</p>
+      <p className="mt-3 max-w-[30ch] text-[1.125rem] leading-snug text-[color:var(--ink)]">{label}</p>
+      <p className="mt-1 text-[0.9375rem] text-[color:var(--ink-3)]">{compare}</p>
+    </div>
+  );
+  return (
+    <section aria-label="Key results" className="grid gap-8 border-y border-[color:var(--hairline)] py-8 sm:grid-cols-2">
+      <Fig value={pct(ss.intervention.recall, 0)} label="of account takeovers flagged for step-up or block"
+        compare={`Static rules: ${pct(sr.intervention.recall, 0)}. Password and TOTP alone: ${pct(r.approaches.find((a) => a.name === 'password_totp')?.intervention.recall ?? 0, 0)}.`} />
+      <Fig value={pct(ss.intervention.fpr)} label="of genuine sessions interrupted"
+        compare={`Static rules: ${pct(sr.intervention.fpr)}. Lower is better for customers.`} />
     </section>
   );
 }
@@ -512,7 +536,8 @@ export function EvaluationPage() {
     <>
       <PageTitle title="Evaluation" sub="Three approaches scored on the identical synthetic test population."
         actions={<span className="text-[0.8125rem] text-[var(--ink-3)] tnum">Report generated {fmtTime(r.generated_at, true)}</span>} />
-      <div className="space-y-5">
+      <div className="space-y-8">
+        <Lead r={r} />
         <Provenance r={r} />
         <HonestReading r={r} />
 

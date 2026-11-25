@@ -1,95 +1,102 @@
-/* SecureSynth design tokens. Two surfaces share one token set:
-   - portal (customer): calm, institutional, sage-stone canvas, deep pine accent
-   - console (SOC / Lab): dense analyst console, light + dark
-   Decision colours are reserved for ALLOW / STEP_UP / BLOCK and always ship with a text label. */
+/* SecureSynth design tokens (Renaissance). One token set for the portal, the console and the Lab.
+   Light porcelain canvas, graphite ink, electric blue for identity and ALLOW. Amber and red are reserved for
+   security states and always ship with a text label and a shape. The Renaissance names (--porcelain, --graphite…)
+   and the original component names (--ink, --surface…) both resolve here, so every screen shares one system. */
 :root {
   color-scheme: light;
+  /* Renaissance palette */
+  --porcelain: #F5F7FA; --crystal: #FFFFFF; --silver: #C0C7D1; --electric: #005BFF; --graphite: #101828;
+  --graphite-2: #344054; --graphite-3: #4A5466; --silver-2: #E3E7ED; --electric-ink: #0047CC;
+  --electric-wash: rgba(0, 91, 255, 0.08);
+  --stepup-wash: rgba(247, 144, 9, 0.12); --block-wash: rgba(240, 68, 56, 0.10);
+  --display: "Archivo Variable", "Archivo", system-ui, sans-serif;
+  --ui: "Geist Variable", "Geist", system-ui, -apple-system, sans-serif;
+  --t-xs: 0.8125rem; --t-sm: 0.9375rem; --t-base: 1.0625rem; --t-md: 1.1875rem; --t-lg: 1.5rem;
+  --t-xl: 2rem; --t-2xl: clamp(2.5rem, 5vw, 4rem); --t-hero: clamp(3.4rem, 10.5vw, 10.5rem);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --shadow-float: 0 1px 1px rgba(16, 24, 40, 0.04), 0 12px 32px -12px rgba(16, 24, 40, 0.18), 0 40px 80px -40px rgba(0, 61, 170, 0.18);
+  --shadow-panel: 0 1px 2px rgba(16, 24, 40, 0.05), 0 18px 40px -28px rgba(16, 24, 40, 0.28);
+
   /* space (4px base) */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px;
   --space-6: 32px; --space-7: 48px; --space-8: 64px;
-  /* radius: small for controls, medium for panels — hierarchy, not one radius everywhere */
-  --radius-s: 4px; --radius-m: 8px; --radius-l: 14px; --radius-pill: 999px;
-  /* type scale (≈1.2 minor third), 16px body */
-  --text-xs: 0.75rem; --text-sm: 0.8125rem; --text-base: 1rem; --text-md: 1.125rem;
-  --text-lg: 1.375rem; --text-xl: 1.75rem; --text-2xl: 2.25rem; --text-3xl: 3rem; --text-4xl: 4.5rem;
-  --font-sans: "IBM Plex Sans Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-serif: "Source Serif 4 Variable", Georgia, "Times New Roman", serif;
+  /* radius hierarchy: controls < panels < focus surfaces */
+  --radius-s: 10px; --radius-m: 18px; --radius-l: 28px; --radius-pill: 999px;
+  --text-xs: 0.8125rem; --text-sm: 0.9375rem; --text-base: 1.0625rem; --text-md: 1.1875rem;
+  --text-lg: 1.5rem; --text-xl: 2rem; --text-2xl: 2.5rem; --text-3xl: 3.25rem; --text-4xl: 4.75rem;
+  --font-sans: var(--ui);
+  --font-serif: var(--display); /* legacy name: headings now use the condensed display face */
 
-  /* neutrals (portal) */
-  --canvas: #eceee9;
-  --surface: #fbfbf9;
-  --surface-2: #f4f5f1;
-  --ink: #17201d;
-  --ink-2: #4b5551;
-  --ink-3: #6b746f;
-  --hairline: #d6dad3;
-  --hairline-strong: #b9bfb7;
-  --accent: #1d4a43;
-  --accent-hover: #163a35;
+  --canvas: var(--porcelain);
+  --surface: var(--crystal);
+  --surface-2: #F0F3F7;
+  --ink: var(--graphite);
+  --ink-2: var(--graphite-2);
+  --ink-3: var(--graphite-3);
+  --hairline: var(--silver-2);
+  --hairline-strong: var(--silver);
+  --accent: var(--electric-ink);
+  --accent-hover: #003BA8;
   --accent-ink: #ffffff;
-  --accent-tint: #dfe9e5;
-  --focus: #2b6cb0;
+  --accent-tint: #E8F0FF;
+  --focus: var(--electric);
 
   /* decision colours (text, tint background, border) */
-  --allow: #116a3a; --allow-tint: #e1f1e7; --allow-line: #9fd0b2;
-  --stepup: #7f5300; --stepup-tint: #fbefd2; --stepup-line: #e7c57b;
-  --block: #a61f27; --block-tint: #fbe3e3; --block-line: #eba5a8;
-  --info: #1f4f86; --info-tint: #e2ecf7; --info-line: #a9c4e4;
+  --allow: var(--electric-ink); --allow-tint: #E8F0FF; --allow-line: #A9C4FF;
+  --stepup: #B54708; --stepup-tint: #FFF4E0; --stepup-line: #F5C786;
+  --block: #C01048; --block-tint: #FFEAF0; --block-line: #F4A3B8;
+  --info: var(--graphite-2); --info-tint: #EEF2F7; --info-line: var(--silver);
 
-  /* chart chrome (dataviz reference palette, validated) */
-  --chart-surface: #fcfcfb;
-  --chart-grid: #e1e0d9;
-  --chart-axis: #c3c2b7;
-  --chart-muted: #898781;
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --series-3: #1baf7a;
-  --seq-light: #86b6ef; /* blue 250: lighter step of series-1, same hue */
-  --series-line: #17201d;
+  /* chart chrome: SecureSynth is electric; comparators are graphite and silver (never amber/red) */
+  --chart-surface: #FFFFFF;
+  --chart-grid: #E3E7ED;
+  --chart-axis: #C0C7D1;
+  --chart-muted: #9AA4B4;
+  --series-1: #005BFF;
+  --series-2: #344054;
+  --series-3: #6E9BFF;
+  --seq-light: #A9C4FF;
+  --series-line: #101828;
 }
 
-/* Console surfaces (SOC + Lab) — cooler, denser */
-.console {
-  --canvas: #f1f2f4;
-  --surface: #ffffff;
-  --surface-2: #f6f7f8;
-  --ink: #14181d;
-  --ink-2: #48505a;
-  --ink-3: #69717b;
-  --hairline: #dde0e4;
-  --hairline-strong: #c4c9cf;
-  --accent: #24507f;
-  --accent-hover: #1b3e63;
-  --accent-tint: #e3ebf4;
-}
+/* Console surfaces share the light system; denser type only. */
+.console { --surface-2: #F2F5F9; }
 
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme="light"])) .console {
     color-scheme: dark;
-    --canvas: #111418; --surface: #181c21; --surface-2: #1f242a;
-    --ink: #e7e9ec; --ink-2: #b6bcc4; --ink-3: #8d949d;
-    --hairline: #2b3138; --hairline-strong: #3c444d;
-    --accent: #7fa8d6; --accent-hover: #9bbce1; --accent-ink: #0d1117; --accent-tint: #1d2a38;
-    --focus: #8fb8ea;
-    --allow: #5cc98a; --allow-tint: #15291e; --allow-line: #2c5a3f;
-    --stepup: #e8b65a; --stepup-tint: #2d2412; --stepup-line: #6b5223;
-    --block: #f08a8f; --block-tint: #321a1c; --block-line: #6e2f33;
-    --info: #8fb8ea; --info-tint: #17222f; --info-line: #2f4b6b;
-    --chart-surface: #1a1a19; --chart-grid: #2c2c2a; --chart-axis: #383835; --chart-muted: #898781;
-    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --seq-light: #9ec5f4; --series-line: #e7e9ec;
+    --porcelain: #0E1218; --crystal: #161B23; --graphite: #E8ECF2; --graphite-2: #BAC2CE; --graphite-3: #949DAB;
+    --silver-2: #262D38; --silver: #3A4350; --electric-ink: #7FA8FF;
+    --canvas: #0E1218; --surface: #161B23; --surface-2: #1C222C; --ink: #E8ECF2; --ink-2: #BAC2CE; --ink-3: #949DAB; --hairline: #262D38; --hairline-strong: #3A4350;
+    --accent: #7FA8FF; --accent-hover: #9BBCFF; --accent-ink: #0B1020; --accent-tint: #18243A; --focus: #7FA8FF;
+    --allow: #7FA8FF; --allow-tint: #17223A; --allow-line: #2E4470;
+    --stepup: #F0B357; --stepup-tint: #2D2412; --stepup-line: #6B5223;
+    --block: #F48AA6; --block-tint: #33161F; --block-line: #6E2F40;
+    --info: #BAC2CE; --info-tint: #1C222C; --info-line: #3A4350;
+    --chart-surface: #161B23; --chart-grid: #262D38; --chart-axis: #3A4350; --chart-muted: #7C8696;
+    --series-1: #4D8BFF; --series-2: #BAC2CE; --series-3: #8FB2FF; --seq-light: #2E4470; --series-line: #E8ECF2;
   }
 }
 :root[data-theme="dark"] .console {
   color-scheme: dark;
-  --canvas: #111418; --surface: #181c21; --surface-2: #1f242a;
-  --ink: #e7e9ec; --ink-2: #b6bcc4; --ink-3: #8d949d;
-  --hairline: #2b3138; --hairline-strong: #3c444d;
-  --accent: #7fa8d6; --accent-hover: #9bbce1; --accent-ink: #0d1117; --accent-tint: #1d2a38;
-  --focus: #8fb8ea;
-  --allow: #5cc98a; --allow-tint: #15291e; --allow-line: #2c5a3f;
-  --stepup: #e8b65a; --stepup-tint: #2d2412; --stepup-line: #6b5223;
-  --block: #f08a8f; --block-tint: #321a1c; --block-line: #6e2f33;
-  --info: #8fb8ea; --info-tint: #17222f; --info-line: #2f4b6b;
-  --chart-surface: #1a1a19; --chart-grid: #2c2c2a; --chart-axis: #383835; --chart-muted: #898781;
-  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --seq-light: #9ec5f4; --series-line: #e7e9ec;
+  --porcelain: #0E1218; --crystal: #161B23; --graphite: #E8ECF2; --graphite-2: #BAC2CE; --graphite-3: #949DAB;
+  --silver-2: #262D38; --silver: #3A4350; --electric-ink: #7FA8FF;
+  --canvas: #0E1218; --surface: #161B23; --surface-2: #1C222C; --ink: #E8ECF2; --ink-2: #BAC2CE; --ink-3: #949DAB; --hairline: #262D38; --hairline-strong: #3A4350;
+  --accent: #7FA8FF; --accent-hover: #9BBCFF; --accent-ink: #0B1020; --accent-tint: #18243A; --focus: #7FA8FF;
+  --allow: #7FA8FF; --allow-tint: #17223A; --allow-line: #2E4470;
+  --stepup: #F0B357; --stepup-tint: #2D2412; --stepup-line: #6B5223;
+  --block: #F48AA6; --block-tint: #33161F; --block-line: #6E2F40;
+  --info: #BAC2CE; --info-tint: #1C222C; --info-line: #3A4350;
+  --chart-surface: #161B23; --chart-grid: #262D38; --chart-axis: #3A4350; --chart-muted: #7C8696;
+  --series-1: #4D8BFF; --series-2: #BAC2CE; --series-3: #8FB2FF; --seq-light: #2E4470; --series-line: #E8ECF2;
 }
+
+/* Dark console: smoked glass instead of frosted white. */
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .console .rn-glass { background: linear-gradient(180deg, rgba(30, 37, 48, 0.78), rgba(22, 27, 35, 0.62)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 18px 40px -18px rgba(0,0,0,0.6); }
+  :root:where(:not([data-theme="light"])) .console .rn-glass::before { opacity: 0.25; }
+  :root:where(:not([data-theme="light"])) .console .rn-lens { background: linear-gradient(180deg, #2A3342, #222A37); box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 6px 16px -8px rgba(0,0,0,0.6); }
+}
+:root[data-theme="dark"] .console .rn-glass { background: linear-gradient(180deg, rgba(30, 37, 48, 0.78), rgba(22, 27, 35, 0.62)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 18px 40px -18px rgba(0,0,0,0.6); }
+:root[data-theme="dark"] .console .rn-glass::before { opacity: 0.25; }
+:root[data-theme="dark"] .console .rn-lens { background: linear-gradient(180deg, #2A3342, #222A37); box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 6px 16px -8px rgba(0,0,0,0.6); }
