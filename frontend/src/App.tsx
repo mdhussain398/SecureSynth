@@ -13,6 +13,9 @@ const BaselineIndex = lazy(() => import('./features/soc/BaselinePage').then((m) 
 const BaselinePage = lazy(() => import('./features/soc/BaselinePage').then((m) => ({ default: m.BaselinePage })));
 const EvaluationPage = lazy(() => import('./features/soc/EvaluationPage').then((m) => ({ default: m.EvaluationPage })));
 const GhostPage = lazy(() => import('./features/soc/GhostPage').then((m) => ({ default: m.GhostPage })));
+// Renaissance prototype (pending visual approval): code-split so three.js loads only where the orb is shown.
+const Landing = lazy(() => import('./renaissance/Landing').then((m) => ({ default: m.Landing })));
+const Intelligence = lazy(() => import('./renaissance/Intelligence').then((m) => ({ default: m.Intelligence })));
 const LabPage = lazy(() => import('./features/lab/LabPage').then((m) => ({ default: m.LabPage })));
 
 const fallback = <div className="space-y-3" aria-busy="true" aria-label="Loading"><Skeleton className="h-7 w-64" /><Skeleton className="h-48" /></div>;
@@ -43,7 +46,8 @@ export default function App() {
         <Route path="/soc/ghost/:sessionId" element={L(<GhostPage />)} />
         <Route path="/lab" element={L(<LabPage />)} />
       </Route>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/soc/intelligence" element={<Suspense fallback={null}><Intelligence /></Suspense>} />
+      <Route path="/" element={<Suspense fallback={null}><Landing /></Suspense>} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

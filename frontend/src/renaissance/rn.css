@@ -1,0 +1,104 @@
+/* SecureSynth "Renaissance" design system — scoped to .rn so existing screens are untouched until approved. */
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource-variable/geist";
+
+/* In Tailwind's components layer so utility classes can always override these defaults. */
+@layer components {
+
+.rn {
+  /* brand */
+  --porcelain: #F5F7FA;
+  --crystal: #FFFFFF;
+  --silver: #C0C7D1;
+  --electric: #005BFF;
+  --graphite: #101828;
+  /* supporting (contrast-checked on porcelain/crystal) */
+  --graphite-2: #344054;   /* body secondary  · 10.3:1 */
+  --graphite-3: #5B6474;   /* tertiary        ·  5.9:1 */
+  --silver-2: #E3E7ED;     /* hairlines */
+  --electric-ink: #0047CC; /* blue text on white · 7.0:1 */
+  --electric-wash: rgba(0, 91, 255, 0.08);
+  /* security states only */
+  --allow: #005BFF;
+  --stepup: #B54708;       /* amber, 5.6:1 */
+  --stepup-wash: rgba(247, 144, 9, 0.12);
+  --block: #C01048;        /* red, 6.0:1 */
+  --block-wash: rgba(240, 68, 56, 0.10);
+
+  --display: "Archivo Variable", "Archivo", system-ui, sans-serif;
+  --ui: "Geist Variable", "Geist", system-ui, -apple-system, sans-serif;
+
+  /* type scale (≈1.25 modular, display steps jump) */
+  --t-xs: 0.75rem; --t-sm: 0.8125rem; --t-base: 0.9375rem; --t-md: 1.0625rem; --t-lg: 1.375rem;
+  --t-xl: 2rem; --t-2xl: clamp(2.5rem, 5vw, 4rem); --t-hero: clamp(3.4rem, 10.5vw, 10.5rem);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --shadow-float: 0 1px 1px rgba(16, 24, 40, 0.04), 0 12px 32px -12px rgba(16, 24, 40, 0.18), 0 40px 80px -40px rgba(0, 61, 170, 0.18);
+
+  background: var(--porcelain);
+  color: var(--graphite);
+  font-family: var(--ui);
+  font-size: var(--t-base);
+  line-height: 1.5;
+  font-feature-settings: "ss01", "tnum" 0;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+.rn *, .rn *::before, .rn *::after { box-sizing: border-box; }
+.rn :focus-visible { outline: 2px solid var(--electric); outline-offset: 3px; border-radius: 6px; }
+.rn a:where(:not(.rn-btn)) { color: inherit; text-decoration: none; }
+.rn a.rn-btn { text-decoration: none; }
+
+/* Display type: condensed, heavy, tight — the type is the composition. */
+.rn-display {
+  font-family: var(--display);
+  font-variation-settings: "wdth" 66;
+  font-weight: 760;
+  letter-spacing: -0.022em;
+  word-spacing: 0.04em;
+  line-height: 0.88;
+  margin: 0;
+}
+.rn-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* Liquid glass — used only for floating navigation and focused overlays, never as a generic card. */
+.rn-glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.52));
+  backdrop-filter: blur(18px) saturate(1.6);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(192, 199, 209, 0.35), var(--shadow-float);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rn-glass { background: rgba(255, 255, 255, 0.94); }
+}
+
+.rn-btn {
+  display: inline-flex; align-items: center; gap: 0.6rem; min-height: 48px; padding: 0 1.35rem;
+  border-radius: 999px; border: 0; cursor: pointer; font: 600 var(--t-md)/1 var(--ui);
+  transition: transform 180ms var(--ease-out), background-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
+}
+.rn-btn:active { transform: scale(0.98); }
+.rn-btn-primary { background: var(--graphite); color: var(--crystal); box-shadow: 0 10px 30px -12px rgba(16, 24, 40, 0.55); }
+.rn-btn-primary:hover { background: #0B1220; box-shadow: 0 14px 34px -12px rgba(0, 61, 170, 0.55); }
+.rn-btn-ghost { background: transparent; color: var(--graphite); padding: 0 0.9rem; }
+.rn-btn-ghost:hover { background: rgba(16, 24, 40, 0.05); }
+
+.rn-muted { color: var(--graphite-3); }
+.rn-hair { border-color: var(--silver-2); }
+
+/* Decision words carry text + colour + shape; never colour alone. */
+.rn-state { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; }
+.rn-state::before { content: ""; width: 0.6rem; height: 0.6rem; flex: none; }
+.rn-state[data-d="ALLOW"] { color: var(--electric-ink); }
+.rn-state[data-d="ALLOW"]::before { background: var(--allow); border-radius: 50%; }
+.rn-state[data-d="STEP_UP"] { color: var(--stepup); }
+.rn-state[data-d="STEP_UP"]::before { background: var(--stepup); transform: rotate(45deg); border-radius: 2px; }
+.rn-state[data-d="BLOCK"] { color: var(--block); }
+.rn-state[data-d="BLOCK"]::before { background: var(--block); border-radius: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rn *, .rn *::before, .rn *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}
+
+}

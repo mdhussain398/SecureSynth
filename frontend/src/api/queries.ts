@@ -106,7 +106,7 @@ export const useSessions = (decision: Decision | '' = '') =>
     refetchInterval: 3000,
   });
 export const useSessionDetail = (id: string) =>
-  useQuery({ queryKey: qk.session(id), queryFn: () => api.get<SessionDetail>(`/admin/sessions/${encodeURIComponent(id)}`), refetchInterval: 5000 });
+  useQuery({ queryKey: qk.session(id), queryFn: () => api.get<SessionDetail>(`/admin/sessions/${encodeURIComponent(id)}`), refetchInterval: 5000, enabled: !!id });
 
 export const useRevoke = (id: string) => {
   const qc = useQueryClient();
@@ -123,7 +123,7 @@ export const useCounterfactual = (assessmentId: number) =>
 
 export const useUsers = () => useQuery({ queryKey: qk.users, queryFn: () => api.get<UserRow[]>('/admin/users') });
 export const useBaseline = (id: string) =>
-  useQuery({ queryKey: qk.baseline(id), queryFn: () => api.get<BaselineView>(`/admin/users/${encodeURIComponent(id)}/baseline`) });
+  useQuery({ queryKey: qk.baseline(id), queryFn: () => api.get<BaselineView>(`/admin/users/${encodeURIComponent(id)}/baseline`), enabled: !!id });
 export const useRollback = (id: string) => {
   const qc = useQueryClient();
   return useMutation<BaselineView, ApiError, number>({
