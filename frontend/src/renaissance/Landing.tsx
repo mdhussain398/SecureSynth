@@ -58,7 +58,7 @@ export function Landing() {
 
       {/* The one focal subject. */}
       <motion.div aria-hidden
-        className="absolute left-1/2 top-[8%] z-0 w-[min(118vw,560px)] -translate-x-1/2 md:left-auto md:right-[-2vw] md:top-[44%] md:w-[min(54vw,84vh)] md:-translate-x-0 md:-translate-y-1/2"
+        className="absolute right-[-14vw] top-[7%] z-0 w-[min(80vw,420px)] md:left-auto md:right-[-2vw] md:top-[44%] md:w-[min(54vw,84vh)] md:-translate-x-0 md:-translate-y-1/2"
         initial={reduce ? false : { opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}>
         <IdentityOrb hero signals={WATCHED} state="idle" />

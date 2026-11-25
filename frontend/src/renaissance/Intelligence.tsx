@@ -18,6 +18,10 @@ const SIGNAL_LABEL: Record<string, string> = {
 };
 const SEV: Record<string, SignalLevel> = { low: 1, medium: 2, high: 3 };
 const CHECKPOINT: Record<string, string> = { login: 'Sign-in', beneficiary_add: 'Payee add', transfer: 'Transfer', profile_change: 'Profile change' };
+const NAV = [
+  { to: '/soc/intelligence', label: 'Intelligence' }, { to: '/soc', label: 'Sessions', end: true },
+  { to: '/soc/evaluation', label: 'Evaluation' }, { to: '/lab', label: 'Lab' },
+];
 const WORD: Record<Decision, string> = { ALLOW: 'Allowed', STEP_UP: 'Step-up', BLOCK: 'Blocked' };
 
 function signalsOf(a: RiskAssessment | undefined): OrbSignal[] {
@@ -66,12 +70,11 @@ export function Intelligence() {
           <svg width="26" height="26" viewBox="0 0 30 30" aria-hidden><circle cx="15" cy="15" r="13.5" fill="none" stroke="#101828" strokeWidth="1.5" /><circle cx="15" cy="15" r="4.5" fill="#005BFF" /></svg>
           <span className="hidden font-semibold sm:inline">Command Centre</span>
         </Link>
-        <div className="overflow-x-auto"><GlassNav label="Console" items={[
-          { to: '/soc/intelligence', label: 'Intelligence' }, { to: '/soc', label: 'Sessions', end: true },
-          { to: '/soc/evaluation', label: 'Evaluation' }, { to: '/lab', label: 'Lab' },
-        ]} /></div>
-        <button type="button" className="rn-btn rn-btn-ghost min-h-10 text-[length:var(--t-sm)]" onClick={() => logout.mutate()}>Sign out</button>
+        <div className="hidden md:block"><GlassNav label="Console" items={NAV} /></div>
+        <button type="button" className="rn-btn rn-btn-ghost min-h-10 whitespace-nowrap text-[length:var(--t-sm)]" onClick={() => logout.mutate()}>Sign out</button>
       </header>
+      {/* Phones: the same navigation floats at the bottom, within thumb reach. */}
+      <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-3 md:hidden"><GlassNav label="Console (mobile)" items={NAV} /></div>
 
       {sessions.isPending || me.isPending ? (
         <p className="px-8 pt-24 text-[color:var(--graphite-3)]" aria-busy="true">Loading live sessions</p>
@@ -82,7 +85,7 @@ export function Intelligence() {
           <Link to="/lab" className="rn-btn rn-btn-primary mt-8">Open the Scenario Lab</Link>
         </section>
       ) : (
-        <div className="grid gap-8 px-5 pb-12 sm:px-8 lg:grid-cols-[minmax(260px,0.9fr)_minmax(0,1.5fr)_minmax(240px,0.8fr)] lg:gap-6">
+        <div className="grid gap-8 px-5 pb-28 sm:px-8 md:pb-12 lg:grid-cols-[minmax(260px,0.9fr)_minmax(0,1.5fr)_minmax(240px,0.8fr)] lg:gap-6">
           {/* Left: the reading. */}
           <section aria-labelledby="who" className="order-2 lg:order-1 lg:pt-10">
             <p className="text-[length:var(--t-sm)] text-[color:var(--graphite-3)]">{detail.data ? `${detail.data.session.city} (simulated), ${detail.data.session.device_recognised ? 'recognised browser' : 'unrecognised browser'}${detail.data.session.is_lab ? ', lab session' : ''}` : ' '}</p>

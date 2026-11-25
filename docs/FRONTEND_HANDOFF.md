@@ -112,14 +112,30 @@ make dev-frontend
   - Over-strong rim → toned down.
 - **Environment note:** the browser pane throttles `requestAnimationFrame` to about 2 fps when unfocused (measured). First screenshots can predate the WebGL frame. This is not a product bug.
 
-## Pending before the approval checkpoint
-- [ ] Mobile 375 px for both pages.
-- [ ] `prefers-reduced-motion` check.
-- [ ] `?gl=0` fallback check.
-- [ ] Production build: chunk sizes and the three.js chunk lazy-loaded only on `/` and `/soc/intelligence`.
-- [ ] `make test` (89) and the frozen-manifest check.
-- [ ] Offline check: no external requests.
-- [ ] Screenshots into `docs/screenshots/renaissance/`.
+## Prototype checkpoint verification (actual results, 2026-11-25)
+| Check | Result |
+|---|---|
+| `npx tsc -b` | clean |
+| `npm run build` | OK, no warnings. Three.js + scene isolated in the lazy `OrbScene` chunk (**245 KB gzip**), loaded only where an orb renders. Main `index` 78 KB gzip; `primitives` (motion) 57 KB gzip. |
+| `make test` (backend) | **89 passed** |
+| Frozen manifest | verified, `iforest-v1-956f432a` (no ML or backend files touched) |
+| Mobile 375 px | landing and Command Centre: no horizontal scroll. Console nav moves to a floating bottom glass bar on phones; the hero orb moves to the upper right so the type stays legible. |
+| Desktop 1440 px and 800 px | landing and Command Centre render as designed |
+| WebGL fallback (`?gl=0`) | CSS orb shown; **0 canvases; three.js never downloaded**; real signals and state still shown |
+| Fallback → WebGL crossfade | CSS orb shown until the first WebGL frame (`data-ready`), then crossfades; error boundary keeps the fallback on GL failure |
+| Offline | every request goes to `localhost:5173` only; fonts load locally (`geist-latin-wght`, `archivo-latin-wdth`) |
+| Real data | Ravi BLOCK 99.5 (red; Browser high; Location medium); Meera ALLOW 61.3 (blue; Sign-in 88 Step-up → Transfer 61) |
+| Auth | expired session → `/login`; a customer is redirected to `/bank` (route guard is UX only; backend enforces) |
+| Console | no JS errors (only HTTP status lines from earlier sessions; a three `Clock` deprecation warning from inside r3f) |
+| Reduced motion | **code-level only**; the browser pane cannot emulate `prefers-reduced-motion`. Paths: `useReducedMotion` disables entrances, the cursor light and number tweening; the orb uses `frameloop="demand"` with no idle rotation, pulse or dash animation; the CSS rule cuts transitions to 1 ms. **Re-check on a real browser with OS reduced motion enabled.** |
+
+Screenshots: `docs/screenshots/renaissance/` (landing desktop and mobile; intelligence BLOCK, ALLOW, mobile and no-WebGL).
+
+Known issues:
+- The three `Clock` deprecation warning comes from r3f internals.
+- In the browser pane, unfocused frames are throttled to 2 fps (measured), so first screenshots can predate the WebGL frame.
+- Legacy pages (`/login`, `/bank`, old `/soc/*`, `/lab`) still use the old design.
+- The landing "Scenario Lab" entry goes to the legacy Lab.
 
 ## Next steps after approval (not started)
 1. Apply the system to the customer portal: floating glass nav, balance typography, step-up focus experience.
