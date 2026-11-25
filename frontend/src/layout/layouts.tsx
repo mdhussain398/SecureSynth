@@ -6,16 +6,11 @@ import { ApiError, USE_MOCKS } from '../api/client';
 import { Button, ErrorState, Skeleton, SyntheticMarker } from '../design/components';
 import { RestrictedNotice } from '../features/bank/RestrictedNotice';
 import { Contours, GlassNav } from '../renaissance/primitives';
+import { SynthMark } from '../brand/SynthMark';
 
-/** The SecureSynth mark: an identity ring with an electric core. */
+/** The SecureSynth mark (Synth Core, flat SVG). Kept as a named export for existing imports. */
 export function BrandMark({ size = 28 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 30 30" aria-hidden>
-      <circle cx="15" cy="15" r="13.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <ellipse cx="15" cy="15" rx="13.5" ry="5" fill="none" stroke="#C0C7D1" strokeWidth="1" transform="rotate(-24 15 15)" />
-      <circle cx="15" cy="15" r="4.5" fill="#005BFF" />
-    </svg>
-  );
+  return <SynthMark size={size} />;
 }
 function Brand({ sub }: { sub: string }) {
   return (

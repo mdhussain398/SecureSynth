@@ -12,8 +12,8 @@ import { LEVEL_COLOR, STATE_COLOR, spherePoints, type OrbProps } from './types';
 const R = 1.5; // glass radius
 
 /* Studio: a mid-grey room lit by softbox strips and an electric-blue fill from behind. */
-function StudioEnvironment() {
-  const { gl, scene } = useThree();
+export function StudioEnvironment() {
+  const { gl, scene, invalidate } = useThree();
   useEffect(() => {
     const env = new THREE.Scene();
     env.background = new THREE.Color('#c3cbd8');
@@ -32,8 +32,9 @@ function StudioEnvironment() {
     const pmrem = new THREE.PMREMGenerator(gl);
     const tex = pmrem.fromScene(env, 0.015).texture;
     scene.environment = tex;
+    invalidate(); // on-demand (reduced motion) scenes must redraw once the reflections exist
     return () => { tex.dispose(); pmrem.dispose(); owned.forEach((o) => o.dispose()); scene.environment = null; };
-  }, [gl, scene]);
+  }, [gl, scene, invalidate]);
   return null;
 }
 

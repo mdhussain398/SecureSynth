@@ -210,3 +210,9 @@ After Claude's limit was hit, the user tried edits with Codex and then reverted 
   - Real-browser quick demo run end to end: customer payment ALLOW → analyst sign-in → takeover BLOCK 99.5 (₹0 moved) → investigation panels → traveller STEP_UP → approve → ALLOW → evaluation dashboard.
 - **Handoff:** `docs/team-handoff.md` rewritten as the authoritative post-compaction reference. It covers state, invariants, the frozen-ML rules, open issues and remaining deliverables.
 - **Next phase:** frontend redesign. Must respect handoff §4 (invariants) and §5 (no retraining or re-tuning).
+
+## 2026-11-25 ~20:30 IST — Mac 2, Master Prompt #05 Phase 1 (Synth Core logo)
+- **Environment:** Mac 2 set up without retraining. Frozen artifacts copied from Mac 1; manifest 6/6 OK.
+- **Logo:** Synth Core logo shipped: SVG nav mark, R3F glass hero, `/brand` sheet, PNG, favicon and stills.
+- **FPS (measured, Chrome, M1):** 60 at 1440×900@2x, 390×844@3x and 1920×1080@2x after the adaptive pixel-ratio cap. Before the cap: 37–40.
+- **Checks:** `make test` 89 passed; build OK; `?gl=0` path verified. Details in `docs/MAC2_HANDOFF.md` §12.

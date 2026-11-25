@@ -17,6 +17,7 @@ const GhostPage = lazy(() => import('./features/soc/GhostPage').then((m) => ({ d
 const Landing = lazy(() => import('./renaissance/Landing').then((m) => ({ default: m.Landing })));
 const Intelligence = lazy(() => import('./renaissance/Intelligence').then((m) => ({ default: m.Intelligence })));
 const JudgeMode = lazy(() => import('./renaissance/JudgeMode').then((m) => ({ default: m.JudgeMode })));
+const BrandPage = lazy(() => import('./brand/BrandPage').then((m) => ({ default: m.BrandPage })));
 const LabPage = lazy(() => import('./features/lab/LabPage').then((m) => ({ default: m.LabPage })));
 
 const fallback = <div className="space-y-3" aria-busy="true" aria-label="Loading"><Skeleton className="h-7 w-64" /><Skeleton className="h-48" /></div>;
@@ -49,6 +50,7 @@ export default function App() {
       </Route>
       <Route path="/judge" element={<Suspense fallback={null}><JudgeMode /></Suspense>} />
       <Route path="/soc/intelligence" element={<Suspense fallback={null}><Intelligence /></Suspense>} />
+      <Route path="/brand" element={<Suspense fallback={null}><BrandPage /></Suspense>} />
       <Route path="/" element={<Suspense fallback={null}><Landing /></Suspense>} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

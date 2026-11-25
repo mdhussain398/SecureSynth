@@ -263,3 +263,11 @@ All of this sits within the `team-handoff.md` §4 invariants: frontend only, con
 ## Later fixes and continuation (2026-11-25)
 - `c5f312d`: the landing headline size is now capped by viewport height (`min(10.5vw,15vh)`), so it no longer overlaps the header in short or narrow Safari windows.
 - Cross-machine continuation and the rest of Master Prompt #05 (Synth Core logo, documentation, presentation, freeze): see `docs/MAC2_HANDOFF.md`.
+
+## Synth Core logo (Master Prompt #05, Phase 1, 2026-11-25)
+The new brand system lives in `frontend/src/brand/`:
+- SVG nav mark;
+- lazy R3F glass hero at `/brand`;
+- static SVG and PNG exports and favicons in `frontend/public/`.
+
+It replaces `BrandMark` and the inline landing and Intelligence marks; the behavioural orb is unchanged. Measured FPS, fixes and details: `docs/MAC2_HANDOFF.md` §12.

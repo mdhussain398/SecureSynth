@@ -5,6 +5,7 @@ import './rn.css';
 import { IdentityOrb } from './orb/IdentityOrb';
 import type { OrbSignal } from './orb/types';
 import { Contours, CursorLight, GlassNav } from './primitives';
+import { SynthMark } from '../brand/SynthMark';
 
 /* Illustrative only: the categories the engine watches. The hero orb shows no customer data. */
 const WATCHED: OrbSignal[] = [
@@ -44,11 +45,7 @@ export function Landing() {
 
       <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-4 px-5 pt-5 sm:px-8 sm:pt-7">
         <Link to="/" className="flex items-center gap-2.5" aria-label="SecureSynth home">
-          <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden>
-            <circle cx="15" cy="15" r="13.5" fill="none" stroke="#101828" strokeWidth="1.5" />
-            <circle cx="15" cy="15" r="4.5" fill="#005BFF" />
-            <ellipse cx="15" cy="15" rx="13.5" ry="5" fill="none" stroke="#C0C7D1" strokeWidth="1" transform="rotate(-24 15 15)" />
-          </svg>
+          <SynthMark size={30} />
           <span className="font-semibold tracking-[-0.01em]">SecureSynth</span>
         </Link>
         <div className="hidden md:block">

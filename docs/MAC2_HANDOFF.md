@@ -28,7 +28,7 @@ Read this first on a fresh machine or in a fresh Claude session. It is self-cont
 - **Ghost Banking:** disabled and unimplemented (needs mentor approval).
 - **Detailed history:** `docs/FRONTEND_HANDOFF.md` (frontend), `docs/team-handoff.md` (MVP invariants, frozen ML), `docs/progress-log.md`.
 
-**Not done** (Master Prompt #05, phases 1–4): see §9.
+**Master Prompt #05:** Phase 1 (Synth Core logo) is done on Mac 2; see §12. Phases 2–4 remain (§9).
 
 ## 3. Requirements
 - **Python 3.12** (verified 3.12.16). The Makefile calls `python3.12`.
@@ -177,3 +177,85 @@ Work in small phases. After each one: update this file, commit, and push to `fea
 > - Never commit `.env`, databases, `backend/artifacts/`, credentials or official competition files.
 > - After each phase, update this handoff, commit and push.
 > - Report measured results only.
+
+## 12. Mac 2 session log (2026-11-25)
+
+### Environment on Mac 2 (verified)
+- Branch `feat/frontend-renaissance`, clean, matching `origin` at `4cf178b` before this work.
+- Frozen artifacts were copied from Mac 1 by hand: `model.joblib`, `frozen_manifest.json`, `eval_report.json`. The manifest check reports 6/6 OK, and `model_version` is `iforest-v1-956f432a`.
+- **`make setup` was not run, because it calls `make train` and would overwrite the frozen model.** Run these instead:
+  1. `python3.12 -m venv .venv`, then `pip install -r backend/requirements.txt`;
+  2. `npm ci`;
+  3. `make env`;
+  4. `make seed`.
+- Toolchain: Python 3.12.7 (Anaconda; Mac 1 used 3.12.16) and Node 22.23 (Mac 1 used 24). With these, `make test` passes 89 tests and the build passes.
+- macOS **Reduce motion is ON** on this Mac (`com.apple.universalaccess reduceMotion = 1`). Pages run in their reduced-motion paths here.
+- **Dev servers:** the desktop app's preview runner cannot read `~/Desktop` (macOS privacy), so `preview_start` fails with `getcwd: Operation not permitted`. Run `make dev-backend` and `make dev-frontend` from a terminal, then attach the browser pane with the `frontend-attach` launch configuration.
+
+### Phase 1: Synth Core logo (done)
+
+| Part | What it is |
+|---|---|
+| **Geometry** (`frontend/src/brand/geometry.ts`) | One source for every variant: two 250° ribbon arcs (r 13 in a 64-unit box) forming an S, plus a heater shield at the centre. |
+| **Nav mark** (`brand/SynthMark.tsx`) | SVG, no WebGL. Light and dark tones. Glass ribbons (dark lensing edge, bright caustic) are masked out around a blue-white shield. Fine detail drops out below 24 px. |
+| **Hero** (`brand/SynthCore.tsx` + lazy `brand/SynthCoreScene.tsx`, 2.35 KB gzip) | R3F optical-glass ribbons (transmission, IOR 1.5, dispersion) dip behind an extruded, luminous shield. Reuses the orb's procedural studio environment. |
+| **Brand sheet** (`/brand`, public) | The hero, light and dark statics, and nav sizes. Query parameters: `?still=1`, `&metal=1`, `&hq=1`, `?gl=0`. |
+| **Exports** (`frontend/public/brand/`) | `synth-core-{light,dark}.svg`, `synth-core-{light,dark}-1024.png` and `synth-core-light-256.png` (transparent), `synth-core-hero-2048.png` and `synth-core-hero-silver-2048.png` (high-res stills). In `frontend/public/`: `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`. |
+| **Replaced** | `BrandMark` (`layouts.tsx`, now a wrapper around `SynthMark`) and the inline SVG marks in `Landing.tsx` and `Intelligence.tsx`. The behavioural orb (landing hero, Intelligence, Judge Mode) is unchanged. |
+
+**Hero behaviour:**
+- The shield turns once every 10 s with a restrained float.
+- Damped pointer tilt.
+- Hover or keyboard focus moves the ribbons from glass to polished silver: transmission falls from 1 to 0.03, metalness rises from 0 to 1 (damped, λ 3.2).
+- Adaptive pixel ratio: at most 1.75 and at most 1100 device pixels across.
+- Pauses when offscreen (IntersectionObserver) or when the tab is hidden.
+- Reduced motion: no motion, renders on demand, hover change is instant.
+- The SVG fallback stays until the first WebGL frame, then crossfades.
+
+**FPS (measured, not estimated):**
+- Measured in headless Google Chrome on Apple M1 (ANGLE Metal) via CDP, reading `data-fps` in one-second windows.
+- Reduced motion was emulated off for the measurement.
+
+| Viewport | Canvas | FPS |
+|---|---|---|
+| 1440×900 @2x | 980² | 60 |
+| 1440×900 @2x, silver state | 980² | 59–60 |
+| 390×844 @3x | 612² | 60 |
+| 1920×1080 @2x, full-screen still | 1100² | 60 |
+
+- Before the pixel-ratio cap, the full-screen 1920×1080 case rendered a 1890² canvas at 37–40 FPS. That is why the cap exists.
+- First-second windows (shader compile) read 57–58.
+- Not measured: projectors, Intel or other GPUs, and Safari.
+
+**Other checks:**
+- `?gl=0`: 0 canvases, three.js and the scene never fetched, no off-host requests.
+- The landing orb is still WebGL and the landing page does not fetch the logo scene.
+- 375 px brand sheet renders cleanly.
+- `tsc -b` and the build pass; `make test` 89 passed; manifest OK.
+
+**Two rendering fixes found along the way:**
+- **Tone mapping.** R3F's `onCreated` tone-mapping assignment was unreliable for this scene, so the logo now sets `toneMapping` in the `gl` props. Shield colours were tuned toward cyan so the blue-white does not read as lavender under Neutral tone mapping.
+- **Reduced-motion redraw.** `StudioEnvironment` (shared with the orb) now calls `invalidate()` once its environment map exists. Without this, on-demand (reduced-motion) scenes could keep a first frame drawn without reflections. This is a render-only change; the orb's behaviour is otherwise untouched.
+
+**Screenshots:** `docs/screenshots/brand/` (brand sheet at desktop and mobile; landing with the new mark).
+
+### Phase 3 input received
+- The user supplied the official reference deck: `~/Downloads/Avishkar26_Design_F_Subtle_Domain.pptx`. Its SHA-256 at receipt was `5a357159…5db43a`.
+- **Keep the original unchanged. Never commit it.** Save the populated deck separately.
+- **Requirements:** keep all 7 slides and their order, the institutional branding, AVISHKAR logo, header and footer, the black-and-red theme, slide numbering, section headings and slide dimensions.
+- **Slide content:**
+  1. Project and team.
+  2. Problem.
+  3. Approach and innovation.
+  4. Architecture and stack, with an editable diagram.
+  5. Implementation, with real screenshots.
+  6. Results, with exact frozen metrics.
+  7. Impact and next steps.
+- **Also deliver:** a PDF backup, speaker notes for four members, a timed demo walkthrough, and judge Q&A.
+
+### Ghost Banking status (read-only audit)
+- **Not implemented.** The flag defaults to off (`config.py`) and `.env` sets it false.
+- `GET /admin/ghost/{id}` returns 404: `FEATURE_DISABLED` by default, or "not implemented yet" even if the flag is on.
+- The `ghost` session mode exists in the schema only.
+- `GhostPage` is a UI shell, hidden while the flag is off.
+- There is no `app/ghost` module and no ghost DB.

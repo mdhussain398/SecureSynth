@@ -11,6 +11,7 @@ import { IdentityOrb } from './orb/IdentityOrb';
 import { LEVEL_COLOR, STATE_COLOR, type OrbSignal } from './orb/types';
 import { signalsOf } from './signals';
 import { AnimatedNumber, Contours, GlassNav, spring } from './primitives';
+import { SynthMark } from '../brand/SynthMark';
 
 const CHECKPOINT: Record<string, string> = { login: 'Sign-in', beneficiary_add: 'Payee add', transfer: 'Transfer', profile_change: 'Profile change' };
 const NAV = consoleNav;
@@ -56,7 +57,7 @@ export function Intelligence() {
 
       <header className="sticky top-0 z-30 flex items-center justify-between gap-3 px-5 py-4 sm:px-8">
         <Link to="/" className="flex items-center gap-2.5" aria-label="SecureSynth home">
-          <svg width="26" height="26" viewBox="0 0 30 30" aria-hidden><circle cx="15" cy="15" r="13.5" fill="none" stroke="#101828" strokeWidth="1.5" /><circle cx="15" cy="15" r="4.5" fill="#005BFF" /></svg>
+          <SynthMark size={26} />
           <span className="hidden font-semibold sm:inline">Command Centre</span>
         </Link>
         <div className="hidden md:block"><GlassNav label="Console" items={NAV} /></div>
