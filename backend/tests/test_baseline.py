@@ -128,3 +128,13 @@ def test_seeded_history_is_realistic(app_ctx, users):
         assert max(t["hour_profile"]) < 0.5  # spread across hours, not one fixed minute
         acct = db.query(models.Account).filter_by(user_id=users["asha"].id).one()
         assert db.query(models.Transaction).filter_by(account_id=acct.id, status="completed").count() >= 10
+
+
+def test_rejected_count_counts_each_session_once(app_ctx, users, clock):
+    uid = users["asha"].id
+    with _db(app_ctx) as db:
+        before = db.get(models.Baseline, uid).rejected_count
+        for _ in range(3):  # login, payee add, transfer in the same attacker session
+            B.observe_session(db, uid, "atk-1", device_ref="dev-998", city="Bengaluru", clean=True)
+        db.commit()
+        assert db.get(models.Baseline, uid).rejected_count == before + 1

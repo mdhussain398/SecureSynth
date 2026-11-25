@@ -19,8 +19,14 @@ def config(ctx=Depends(ADMIN), st: AppState = Depends(get_state)):
 @router.get("/sessions")
 def list_sessions(decision: str | None = None, limit: int = 50, ctx=Depends(ADMIN)):
     _, _, db = ctx
-    rows = db.scalars(select(models.Session).where(models.Session.mode != "pre_otp")
-                      .order_by(models.Session.created_at.desc()).limit(max(1, min(limit, 200)))).all()
+    q = select(models.Session).where(models.Session.mode != "pre_otp")
+    if decision:  # filter in SQL on each session's latest assessment, before LIMIT
+        latest = (select(models.RiskAssessment.session_id, func.max(models.RiskAssessment.id).label("mid"))
+                  .group_by(models.RiskAssessment.session_id).subquery())
+        q = (q.join(latest, latest.c.session_id == models.Session.id)
+             .join(models.RiskAssessment, models.RiskAssessment.id == latest.c.mid)
+             .where(models.RiskAssessment.decision == decision))
+    rows = db.scalars(q.order_by(models.Session.created_at.desc()).limit(max(1, min(limit, 200)))).all()
     out = []
     for s in rows:
         r = _row(db, s)

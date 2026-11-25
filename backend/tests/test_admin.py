@@ -85,3 +85,28 @@ def test_evaluation_endpoint_serves_report(client, users):
     assert r.status_code in (200, 404)
     if r.status_code == 200:
         assert {a["name"] for a in r.json()["approaches"]} == {"password_totp", "static_rules", "securesynth"}
+
+
+def test_decision_filter_is_applied_before_limit(client, users, app_ctx):
+    from app import models
+    from app.services import clock as clk
+    _admin(client, users)
+    with app_ctx.state.ss.SessionLocal() as db:
+        for i in range(5):  # newer ALLOW sessions crowd out an older BLOCK one
+            db.add(models.Session(id=f"allow{i}", token_hash=f"t{i}", csrf_hash="c", user_id=users["asha"].id, mode="normal",
+                                  created_at=clk.now(), last_seen=clk.now(), expires_at=clk.now()))
+            db.add(models.RiskAssessment(session_id=f"allow{i}", user_id=users["asha"].id, checkpoint="login", features={},
+                                         deviations=[], ml_raw=0, ml_index=0, ml_weight=0, policy=[], risk_score=1,
+                                         decision="ALLOW", thresholds={}, model_version="t", latency_ms=1,
+                                         customer_message="", ts=clk.now()))
+        from datetime import timedelta
+        old = clk.now() - timedelta(hours=2)
+        db.add(models.Session(id="blocked1", token_hash="tb", csrf_hash="c", user_id=users["asha"].id, mode="restricted",
+                              created_at=old, last_seen=old, expires_at=old))
+        db.add(models.RiskAssessment(session_id="blocked1", user_id=users["asha"].id, checkpoint="transfer", features={},
+                                     deviations=[], ml_raw=0, ml_index=0, ml_weight=0, policy=[], risk_score=99,
+                                     decision="BLOCK", thresholds={}, model_version="t", latency_ms=1,
+                                     customer_message="", ts=old))
+        db.commit()
+    rows = client.get("/api/admin/sessions?decision=BLOCK&limit=3").json()
+    assert [r["id"] for r in rows] == ["blocked1"]

@@ -82,11 +82,15 @@ def observe_session(db, user_id: int, session_id: str, *, device_ref: str, city:
     if device_ref not in b.trusted["devices"]:
         item = _item(b, "device", device_ref)
         if item is None or not item.get("verified_by"):
-            b.rejected_count = (b.rejected_count or 0) + 1
             if item is None:
-                b.candidate.append({"kind": "device", "value": device_ref, "verified_by": None, "sessions": [],
-                                    "clean_sessions": 0, "first_seen": clock.now().isoformat(), "status": "pending",
-                                    "reason": "Not verified on trusted device — will not be learned"})
+                item = {"kind": "device", "value": device_ref, "verified_by": None, "sessions": [],
+                        "clean_sessions": 0, "first_seen": clock.now().isoformat(), "status": "pending",
+                        "reason": "Not verified on trusted device — will not be learned"}
+                b.candidate.append(item)
+            refused = item.setdefault("refused_sessions", [])
+            if session_id not in refused:  # count each refused session once, not each checkpoint
+                refused.append(session_id)
+                b.rejected_count = (b.rejected_count or 0) + 1
         elif item["status"] == "pending" and clean and session_id not in item["sessions"]:
             item["sessions"].append(session_id)
             item["clean_sessions"] = len(item["sessions"])
