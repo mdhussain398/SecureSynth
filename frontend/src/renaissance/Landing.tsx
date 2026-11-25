@@ -68,7 +68,7 @@ export function Landing() {
       </motion.div>
 
       <section className="absolute inset-x-0 bottom-0 z-10 px-5 pb-6 sm:px-8 sm:pb-9">
-        <h1 className="rn-display text-[length:var(--t-hero)] text-[color:var(--graphite)]">
+        <h1 className="rn-display text-[clamp(3.4rem,min(10.5vw,15vh),10.5rem)] text-[color:var(--graphite)]">
           <span className="block overflow-hidden pb-[0.04em]"><motion.span className="block" {...rise(0.15)}>Your identity.</motion.span></span>
           <span className="block overflow-hidden pb-[0.06em]"><motion.span className="block" {...rise(0.27)}>Beyond passwords.</motion.span></span>
         </h1>
