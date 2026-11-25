@@ -1,0 +1,94 @@
+/* SecureSynth design tokens. Two surfaces share one token set:
+   - portal (customer): calm, institutional, sage-stone canvas, deep pine accent
+   - console (SOC / Lab): dense analyst console, light + dark
+   Decision colours are reserved for ALLOW / STEP_UP / BLOCK and always ship with a text label. */
+:root {
+  color-scheme: light;
+  /* space (4px base) */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px;
+  --space-6: 32px; --space-7: 48px; --space-8: 64px;
+  /* radius: small for controls, medium for panels — hierarchy, not one radius everywhere */
+  --radius-s: 4px; --radius-m: 8px; --radius-l: 14px; --radius-pill: 999px;
+  /* type scale (≈1.2 minor third), 16px body */
+  --text-xs: 0.75rem; --text-sm: 0.8125rem; --text-base: 1rem; --text-md: 1.125rem;
+  --text-lg: 1.375rem; --text-xl: 1.75rem; --text-2xl: 2.25rem; --text-3xl: 3rem; --text-4xl: 4.5rem;
+  --font-sans: "IBM Plex Sans Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Source Serif 4 Variable", Georgia, "Times New Roman", serif;
+
+  /* neutrals (portal) */
+  --canvas: #eceee9;
+  --surface: #fbfbf9;
+  --surface-2: #f4f5f1;
+  --ink: #17201d;
+  --ink-2: #4b5551;
+  --ink-3: #6b746f;
+  --hairline: #d6dad3;
+  --hairline-strong: #b9bfb7;
+  --accent: #1d4a43;
+  --accent-hover: #163a35;
+  --accent-ink: #ffffff;
+  --accent-tint: #dfe9e5;
+  --focus: #2b6cb0;
+
+  /* decision colours (text, tint background, border) */
+  --allow: #116a3a; --allow-tint: #e1f1e7; --allow-line: #9fd0b2;
+  --stepup: #7f5300; --stepup-tint: #fbefd2; --stepup-line: #e7c57b;
+  --block: #a61f27; --block-tint: #fbe3e3; --block-line: #eba5a8;
+  --info: #1f4f86; --info-tint: #e2ecf7; --info-line: #a9c4e4;
+
+  /* chart chrome (dataviz reference palette, validated) */
+  --chart-surface: #fcfcfb;
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --chart-muted: #898781;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-line: #17201d;
+}
+
+/* Console surfaces (SOC + Lab) — cooler, denser */
+.console {
+  --canvas: #f1f2f4;
+  --surface: #ffffff;
+  --surface-2: #f6f7f8;
+  --ink: #14181d;
+  --ink-2: #48505a;
+  --ink-3: #69717b;
+  --hairline: #dde0e4;
+  --hairline-strong: #c4c9cf;
+  --accent: #24507f;
+  --accent-hover: #1b3e63;
+  --accent-tint: #e3ebf4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .console {
+    color-scheme: dark;
+    --canvas: #111418; --surface: #181c21; --surface-2: #1f242a;
+    --ink: #e7e9ec; --ink-2: #b6bcc4; --ink-3: #8d949d;
+    --hairline: #2b3138; --hairline-strong: #3c444d;
+    --accent: #7fa8d6; --accent-hover: #9bbce1; --accent-ink: #0d1117; --accent-tint: #1d2a38;
+    --focus: #8fb8ea;
+    --allow: #5cc98a; --allow-tint: #15291e; --allow-line: #2c5a3f;
+    --stepup: #e8b65a; --stepup-tint: #2d2412; --stepup-line: #6b5223;
+    --block: #f08a8f; --block-tint: #321a1c; --block-line: #6e2f33;
+    --info: #8fb8ea; --info-tint: #17222f; --info-line: #2f4b6b;
+    --chart-surface: #1a1a19; --chart-grid: #2c2c2a; --chart-axis: #383835; --chart-muted: #898781;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-line: #e7e9ec;
+  }
+}
+:root[data-theme="dark"] .console {
+  color-scheme: dark;
+  --canvas: #111418; --surface: #181c21; --surface-2: #1f242a;
+  --ink: #e7e9ec; --ink-2: #b6bcc4; --ink-3: #8d949d;
+  --hairline: #2b3138; --hairline-strong: #3c444d;
+  --accent: #7fa8d6; --accent-hover: #9bbce1; --accent-ink: #0d1117; --accent-tint: #1d2a38;
+  --focus: #8fb8ea;
+  --allow: #5cc98a; --allow-tint: #15291e; --allow-line: #2c5a3f;
+  --stepup: #e8b65a; --stepup-tint: #2d2412; --stepup-line: #6b5223;
+  --block: #f08a8f; --block-tint: #321a1c; --block-line: #6e2f33;
+  --info: #8fb8ea; --info-tint: #17222f; --info-line: #2f4b6b;
+  --chart-surface: #1a1a19; --chart-grid: #2c2c2a; --chart-axis: #383835; --chart-muted: #898781;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-line: #e7e9ec;
+}

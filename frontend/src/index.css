@@ -1,0 +1,53 @@
+@import "tailwindcss";
+@import "./design/tokens.css";
+@import "@fontsource-variable/ibm-plex-sans";
+@import "@fontsource-variable/source-serif-4";
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-accent: var(--accent);
+  --color-accent-tint: var(--accent-tint);
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.console { background: var(--canvas); color: var(--ink); min-height: 100vh; font-size: 0.875rem; }
+.console, .tnum { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.serif { font-family: var(--font-serif); }
+
+.field-label { display: block; font-size: var(--text-sm); font-weight: 500; color: var(--ink-2); margin-bottom: 6px; }
+.input {
+  width: 100%; box-sizing: border-box; font: inherit; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--hairline-strong); border-radius: var(--radius-s);
+  padding: 10px 12px; min-height: 44px;
+}
+.console .input { min-height: 36px; padding: 6px 10px; }
+.input:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; border-color: transparent; }
+.input[aria-invalid="true"] { border-color: var(--block); }
+
+@keyframes ss-shimmer { 0% { opacity: .55 } 50% { opacity: 1 } 100% { opacity: .55 } }
+.skeleton { background: var(--hairline); border-radius: var(--radius-s); animation: ss-shimmer 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
