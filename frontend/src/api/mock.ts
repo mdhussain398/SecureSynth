@@ -12,7 +12,7 @@ import type {
   ClockResponse, CounterfactualResponse, Decision, DeviceChallenge, ErrorCode, EvaluationReport,
   Operation, OverviewResponse, PolicyContribution, ResetResponse, RiskAssessment, Scenario,
   ScenarioRun, ScenarioStep, SensitiveActionResponse, SessionDetail, SessionInfo, SessionMode,
-  Transaction, UserRow, ApproachResult, DetectionMetrics,
+  Transaction, UserRow, ApproachResult,
 } from './types';
 
 interface MockChallenge {
@@ -182,38 +182,36 @@ function auditFor(row: AdminSessionRow): AuditEvent[] {
   ];
 }
 
-function metrics(tp: number, fp: number, tn: number, fn: number): DetectionMetrics {
-  const precision = tp + fp ? tp / (tp + fp) : 0;
-  const recall = tp + fn ? tp / (tp + fn) : 0;
-  return { precision, recall, f1: precision + recall ? (2 * precision * recall) / (precision + recall) : 0, fpr: fp / (fp + tn), tp, fp, tn, fn };
-}
-
 function evaluation(): EvaluationReport {
+  // Mirrors the frozen backend report (backend/artifacts/eval_report.json) so the mock UI shows realistic shapes.
   const approaches: ApproachResult[] = [
-    { name: 'password_totp', label: 'Password + TOTP only', intervention: metrics(0, 0, 3420, 180), block_only: metrics(0, 0, 3420, 180), traveller_restriction_rate: 0,
-      prevention: { attack_value_attempted_paise: 1_284_000_000, attack_value_prevented_paise: 0, attack_value_completed_paise: 1_284_000_000, legit_value_delayed_paise: 0 },
-      latency_ms: { p50: 0.1, p95: 0.2 }, per_family_recall: { A: 0, B: 0, C: 0, D: 0 } },
-    { name: 'static_rules', label: 'Static rules', intervention: metrics(139, 612, 2808, 41), block_only: metrics(52, 38, 3382, 128), traveller_restriction_rate: 0.71,
-      prevention: { attack_value_attempted_paise: 1_284_000_000, attack_value_prevented_paise: 905_000_000, attack_value_completed_paise: 379_000_000, legit_value_delayed_paise: 412_000_000 },
-      latency_ms: { p50: 0.4, p95: 0.9 }, per_family_recall: { A: 0.95, B: 0.81, C: 0.62, D: 0.33 } },
-    { name: 'securesynth', label: 'SecureSynth', intervention: metrics(164, 158, 3262, 16), block_only: metrics(118, 9, 3411, 62), traveller_restriction_rate: 0.12,
-      prevention: { attack_value_attempted_paise: 1_284_000_000, attack_value_prevented_paise: 1_196_000_000, attack_value_completed_paise: 88_000_000, legit_value_delayed_paise: 96_000_000 },
-      latency_ms: { p50: 6.2, p95: 11.8 }, per_family_recall: { A: 0.99, B: 0.93, C: 0.88, D: 0.71 } },
+    {"name": "password_totp", "label": "Password + TOTP only", "intervention": {"precision": 0.0, "recall": 0.0, "f1": 0.0, "fpr": 0.0, "tp": 0, "fp": 0, "tn": 4298, "fn": 367}, "block_only": {"precision": 0.0, "recall": 0.0, "f1": 0.0, "fpr": 0.0, "tp": 0, "fp": 0, "tn": 4298, "fn": 367}, "traveller_restriction_rate": 0.0, "new_device_restriction_rate": 0.0, "legit_block_rate": 0.0, "prevention": {"attack_value_attempted_paise": 3103842698, "attack_value_prevented_paise": 0, "attack_value_completed_paise": 3103842698, "legit_value_delayed_paise": 0, "attack_value_prevented_by_block_paise": 0, "attack_value_prevented_by_challenge_paise": 0, "legit_value_blocked_paise": 0, "legit_value_challenged_paise": 0}, "latency_ms": {"p50": 0.0, "p95": 0.0001}, "per_family_recall": {"A": 0.0, "B": 0.0, "C": 0.0, "D": 0.0, "E": 0.0}},
+    {"name": "static_rules", "label": "Static global rules", "intervention": {"precision": 0.186, "recall": 0.7657, "f1": 0.2993, "fpr": 0.2862, "tp": 281, "fp": 1230, "tn": 3068, "fn": 86}, "block_only": {"precision": 0.9815, "recall": 0.4332, "f1": 0.6011, "fpr": 0.0007, "tp": 159, "fp": 3, "tn": 4295, "fn": 208}, "traveller_restriction_rate": 0.9859, "new_device_restriction_rate": 0.2778, "legit_block_rate": 0.0007, "prevention": {"attack_value_attempted_paise": 3103842698, "attack_value_prevented_paise": 2981487870, "attack_value_completed_paise": 122354828, "legit_value_delayed_paise": 2894483678, "attack_value_prevented_by_block_paise": 2382917439, "attack_value_prevented_by_challenge_paise": 598570431, "legit_value_blocked_paise": 3077398, "legit_value_challenged_paise": 2891406280}, "latency_ms": {"p50": 0.001, "p95": 0.0012}, "per_family_recall": {"A": 1.0, "B": 1.0, "C": 0.6, "D": 0.725, "E": 0.4545}},
+    {"name": "securesynth", "label": "SecureSynth adaptive engine", "intervention": {"precision": 0.6014, "recall": 0.9128, "f1": 0.7251, "fpr": 0.0517, "tp": 335, "fp": 222, "tn": 4076, "fn": 32}, "block_only": {"precision": 0.8664, "recall": 0.6185, "f1": 0.7218, "fpr": 0.0081, "tp": 227, "fp": 35, "tn": 4263, "fn": 140}, "traveller_restriction_rate": 0.1671, "new_device_restriction_rate": 0.0873, "legit_block_rate": 0.0081, "prevention": {"attack_value_attempted_paise": 3103842698, "attack_value_prevented_paise": 2957894552, "attack_value_completed_paise": 145948146, "legit_value_delayed_paise": 570486005, "attack_value_prevented_by_block_paise": 2609618486, "attack_value_prevented_by_challenge_paise": 348276066, "legit_value_blocked_paise": 250236727, "legit_value_challenged_paise": 320249278}, "latency_ms": {"p50": 6.643, "p95": 7.082}, "per_family_recall": {"A": 1.0, "B": 1.0, "C": 0.5857, "D": 0.9625, "E": 1.0}},
   ];
   return {
-    generated_at: state.now, model_version: 'if-2026.11.25-syn',
-    dataset: { customers: 240, sessions_test: 3600, attacks_test: 180, held_out_family: 'D', seed: 2026 },
+    generated_at: state.now, model_version: "iforest-v1-956f432a",
+    dataset: { customers: 240, sessions_test: 4665, attacks_test: 367, held_out_family: 'D', seed: 9091 },
     approaches,
     assumptions: [
-      'Attacker fails independent trusted-device verification; the legitimate user passes it.',
-      'Prevented value counts attack transfers that ended non-completed (pending, restricted).',
-      'All three approaches are scored on the identical held-out test window (days 76–90).',
-    ],
+    "Unit of evaluation is a session; a session's decision is the strictest decision reached so far.",
+    "Attackers cannot complete independent trusted-device verification; genuine customers can.",
+    "Value prevented counts only attack transfers that ended restricted; legitimate value delayed is reported separately.",
+    "Prevented value is split into 'blocked' (engine decision BLOCK, permanent) and 'challenged' (STEP_UP; prevented only under the assumption that the attacker cannot pass trusted-device verification).",
+    "Legitimate value delayed is split into 'blocked' (restricted until the customer contacts the bank) and 'challenged' (completed after the customer approved on their trusted device).",
+    "Thresholds and ML weight were selected on the development validation window (seed 2026, days 60–75) only.",
+    "The final test population (seed 9091) was generated fresh and scored once with frozen model, features and thresholds.",
+    "A device approved through independent verification counts as recognised afterwards (mirrors the product)."
+],
     limitations: [
-      'Synthetic data authored by the team; real attacker behaviour is more varied.',
-      'Geography and devices are simulated; the trusted device is not a real push channel.',
-      'The risk index is a rarity percentile, not a calibrated probability.',
-      'MOCK DATA: these figures come from the in-browser mock, not `make eval`.',
+      ...[
+      "All customers, devices, locations and attacks are synthetic and authored by the team.",
+      "The risk index is a rarity percentile against legitimate validation events, not a fraud probability.",
+      "Device recognition uses a server-issued cookie: a behavioural signal, not proof of device identity.",
+      "Family D (low-and-slow) never appears in validation, so its recall estimates generalisation, not tuning.",
+      "Latency is in-process scoring time on one laptop, excluding network and database time."
+],
+      'MOCK MODE: these figures are a static copy served by the in-browser mock, not a live GET /api/admin/evaluation.',
     ],
   };
 }

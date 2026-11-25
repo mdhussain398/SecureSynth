@@ -1,38 +1,110 @@
 import { useCallback, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowDownLeft, ArrowUpRight, Plus } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, CheckCircle2, Clock, Plus, ShieldAlert, ShieldCheck } from 'lucide-react';
 import type { ChallengeRef, ChallengeStatus, Transaction, TxnStatus } from '../../api/types';
 import { useAddBeneficiary, useBeneficiaries, useMe, useOverview, useTransactions, useTransfer } from '../../api/queries';
-import { Badge, Banner, Button, ButtonLink, EmptyState, ErrorState, Money, Skeleton, fmtTime } from '../../design/components';
+import { Badge, Banner, Button, ButtonLink, EmptyState, ErrorState, Money, Skeleton, fmtTime, parseTs } from '../../design/components';
 import { ApprovalWaiting } from './ApprovalWaiting';
 
-const STATUS: Record<TxnStatus, { label: string; tone: 'neutral' | 'allow' | 'stepup' | 'block' }> = {
-  completed: { label: 'Completed', tone: 'neutral' },
-  pending_verification: { label: 'Awaiting approval', tone: 'stepup' },
-  restricted: { label: 'Stopped for protection', tone: 'block' },
-  attempted: { label: 'Not completed', tone: 'neutral' },
+const STATUS: Record<TxnStatus, { label: string; tone: 'neutral' | 'allow' | 'stepup' | 'block'; Icon: typeof Clock }> = {
+  completed: { label: 'Completed', tone: 'neutral', Icon: CheckCircle2 },
+  pending_verification: { label: 'Awaiting your approval', tone: 'stepup', Icon: Clock },
+  restricted: { label: 'Stopped for your protection', tone: 'block', Icon: ShieldAlert },
+  attempted: { label: 'Not completed', tone: 'neutral', Icon: Clock },
 };
+
+/** "SYN-4410 Meera Iyer" → "Meera Iyer"; keeps organisation names intact. */
+function payeeName(counterparty: string): string {
+  return counterparty.replace(/^SYN-\d{3,}\s+/, '');
+}
+function initials(name: string): string {
+  const words = name.replace(/^SYN\s+/, '').split(/\s+/).filter((w) => /[A-Za-z]/.test(w));
+  return ((words[0]?.[0] ?? '?') + (words[1]?.[0] ?? '')).toUpperCase();
+}
+/** Stable, muted avatar tint per name (identity only; never a status colour). */
+const AVATAR = ['#dfe9e5', '#e4e6f1', '#efe6dc', '#e2ecf0', '#ece3ea', '#e6ecdc'];
+function Avatar({ name, size = 36 }: { name: string; size?: number }) {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return (
+    <span aria-hidden className="grid place-items-center shrink-0 rounded-full text-[0.8125rem] font-semibold text-[#2b3531]"
+      style={{ width: size, height: size, background: AVATAR[h % AVATAR.length] }}>{initials(name)}</span>
+  );
+}
+
+function dayKey(isoStr: string) { const d = parseTs(isoStr); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
+function dayLabel(isoStr: string, today: Date): string {
+  const d = parseTs(isoStr);
+  const y = new Date(today); y.setDate(today.getDate() - 1);
+  const same = (x: Date, z: Date) => x.toDateString() === z.toDateString();
+  if (same(d, today)) return 'Today';
+  if (same(d, y)) return 'Yesterday';
+  return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function TxnRow({ t }: { t: Transaction }) {
+  const st = STATUS[t.status];
+  const name = payeeName(t.counterparty);
+  return (
+    <li className="flex items-center gap-3 sm:gap-4 py-3">
+      <span className="relative">
+        <Avatar name={name} />
+        <span className={`absolute -bottom-0.5 -right-0.5 grid place-items-center h-4 w-4 rounded-full border-2 border-[var(--surface)] ${t.direction === 'credit' ? 'bg-[var(--allow)] text-white' : 'bg-[var(--ink-2)] text-white'}`} aria-hidden>
+          {t.direction === 'credit' ? <ArrowDownLeft size={9} strokeWidth={3} /> : <ArrowUpRight size={9} strokeWidth={3} />}
+        </span>
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-medium truncate">{name}</p>
+        <p className="text-[0.8125rem] text-[var(--ink-3)] truncate">
+          <span className="sr-only">{t.direction === 'credit' ? 'Received. ' : 'Sent. '}</span>
+          {t.description} · {parseTs(t.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}
+        </p>
+      </div>
+      <div className="text-right shrink-0">
+        <Money paise={t.amount_paise} signed direction={t.direction}
+          className={`font-medium ${t.direction === 'credit' ? 'text-[var(--allow)]' : ''} ${t.status === 'restricted' || t.status === 'attempted' ? 'line-through decoration-[var(--ink-3)] text-[var(--ink-3)]' : ''}`} />
+        {t.status !== 'completed' && <div className="mt-0.5"><Badge tone={st.tone}><st.Icon size={12} aria-hidden />{st.label}</Badge></div>}
+      </div>
+    </li>
+  );
+}
 
 function TxnList({ txns }: { txns: Transaction[] }) {
   if (txns.length === 0) return <EmptyState title="No transactions yet">Payments you send and receive will appear here.</EmptyState>;
+  const today = txns.length ? parseTs(txns.reduce((m, t) => (t.created_at > m ? t.created_at : m), txns[0].created_at)) : new Date();
+  const now = new Date();
+  const ref = today > now ? today : now;
+  const groups: Array<{ key: string; label: string; items: Transaction[] }> = [];
+  for (const t of txns) {
+    const k = dayKey(t.created_at);
+    const g = groups[groups.length - 1];
+    if (g && g.key === k) g.items.push(t); else groups.push({ key: k, label: dayLabel(t.created_at, ref), items: [t] });
+  }
   return (
-    <ul className="divide-y divide-[var(--hairline)]">
-      {txns.map((t) => (
-        <li key={t.id} className="flex items-center gap-3 sm:gap-4 py-3.5">
-          <span className={`grid place-items-center h-9 w-9 shrink-0 rounded-full ${t.direction === 'credit' ? 'bg-[var(--allow-tint)] text-[var(--allow)]' : 'bg-[var(--surface-2)] text-[var(--ink-2)]'}`} aria-hidden>
-            {t.direction === 'credit' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-medium truncate">{t.counterparty}</p>
-            <p className="text-[0.8125rem] text-[var(--ink-3)] truncate">{t.description} · {fmtTime(t.created_at, true)}</p>
-          </div>
-          <div className="text-right shrink-0">
-            <Money paise={t.amount_paise} signed direction={t.direction} className={t.direction === 'credit' ? 'text-[var(--allow)] font-medium' : 'font-medium'} />
-            {t.status !== 'completed' && <div className="mt-0.5"><Badge tone={STATUS[t.status].tone}>{STATUS[t.status].label}</Badge></div>}
-          </div>
-        </li>
+    <div>
+      {groups.map((g) => (
+        <section key={g.key} aria-label={g.label}>
+          <h3 className="sticky top-0 bg-[var(--surface)] pt-3 pb-1 text-[0.8125rem] font-semibold text-[var(--ink-3)] border-b border-[var(--hairline)]">{g.label}</h3>
+          <ul className="divide-y divide-[var(--hairline)]">{g.items.map((t) => <TxnRow key={t.id} t={t} />)}</ul>
+        </section>
       ))}
-    </ul>
+    </div>
+  );
+}
+
+function SecurityStatus() {
+  const me = useMe();
+  if (!me.data) return null;
+  const ctx = me.data.simulated_context;
+  const stepUp = me.data.mode === 'step_up';
+  return (
+    <p className="flex items-start gap-2 text-[0.875rem] text-[var(--ink-2)]" role="status">
+      {stepUp ? <ShieldAlert size={16} className="text-[var(--stepup)] shrink-0 mt-0.5" aria-hidden /> : <ShieldCheck size={16} className="text-[var(--allow)] shrink-0 mt-0.5" aria-hidden />}
+      <span>
+        {stepUp ? 'Extra check in progress. ' : 'Protected sign-in. '}
+        <span className="text-[var(--ink-3)]">Signed in from {ctx.city} (simulated){ctx.device_recognised ? ' on a device you have used before' : ' on a new device'}.</span>
+      </span>
+    </p>
   );
 }
 
@@ -41,25 +113,36 @@ export function OverviewPage() {
   const me = useMe();
   const first = me.data?.display_name.split(' ')[0];
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {me.data?.mode === 'step_up' && <Banner tone="stepup" title="Approval pending">Payments and payee changes are paused until you approve the request on your registered device.</Banner>}
-      <section>
-        <p className="text-[var(--ink-2)]">{first ? `Good to see you, ${first}` : 'Your account'}</p>
-        {q.isPending ? <Skeleton className="h-14 w-64 mt-3" /> : q.error ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> : (
-          <>
-            <p className="serif text-[2.75rem] sm:text-[3.5rem] font-semibold leading-none tracking-tight mt-3"><Money paise={q.data.account.balance_paise} /></p>
-            <p className="text-[0.875rem] text-[var(--ink-3)] mt-2">Available balance · Savings {q.data.account.account_ref}</p>
-          </>
-        )}
-        <div className="flex flex-wrap gap-3 mt-6">
-          <ButtonLink to="/bank/transfer" size="lg">Send money</ButtonLink>
-          <ButtonLink to="/bank/beneficiaries" size="lg" variant="secondary">Manage payees</ButtonLink>
+      <div>
+        <h1 className="serif text-[1.625rem] sm:text-[1.875rem] font-semibold leading-tight">{first ? `Good to see you, ${first}` : 'Your account'}</h1>
+        <div className="mt-2"><SecurityStatus /></div>
+      </div>
+      <section aria-label="Savings account" className="relative overflow-hidden rounded-[var(--radius-l)] bg-[var(--accent)] text-[var(--accent-ink)] px-5 sm:px-7 py-6 sm:py-7">
+        <div className="relative flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <p className="text-[0.875rem] text-white/75">Savings account</p>
+            <p className="tnum text-[0.875rem] text-white/75 mt-0.5">{q.data ? q.data.account.account_ref : '\u00a0'}</p>
+          </div>
+          <span className="rounded-full bg-white/12 px-2.5 py-0.5 text-[0.75rem] text-white/85">Synthetic account</span>
+        </div>
+        <div className="relative mt-6">
+          <p className="text-[0.8125rem] text-white/75">Available balance</p>
+          {q.isPending ? <div className="h-12 w-56 mt-1 rounded bg-white/15 animate-pulse" aria-label="Loading balance" /> : q.error ? <p className="mt-1 text-white/90">Balance unavailable right now.</p> : (
+            <p className="serif text-[2.5rem] sm:text-[3.25rem] font-semibold leading-none tracking-tight mt-1"><Money paise={q.data.account.balance_paise} /></p>
+          )}
+        </div>
+        <div className="relative flex flex-wrap gap-2.5 mt-6">
+          <ButtonLink to="/bank/transfer" size="lg" className="!bg-white !text-[var(--accent)] hover:!bg-white/90">Send money</ButtonLink>
+          <ButtonLink to="/bank/beneficiaries" size="lg" variant="ghost" className="!text-white border !border-white/35 hover:!bg-white/10">Manage payees</ButtonLink>
         </div>
       </section>
+      {q.error && <ErrorState error={q.error} onRetry={() => q.refetch()} />}
       <section className="bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-m)] px-4 sm:px-6 py-4">
         <div className="flex items-baseline justify-between">
           <h2 className="text-[1.0625rem] font-semibold">Recent activity</h2>
-          <Link to="/bank/transactions" className="text-[0.875rem] text-[var(--accent)]">All transactions</Link>
+          <Link to="/bank/transactions" className="text-[0.875rem] text-[var(--accent)] font-medium">All transactions</Link>
         </div>
         <div className="mt-1">{q.isPending ? <div className="py-4"><Skeleton lines={4} /></div> : q.data ? <TxnList txns={q.data.recent} /> : null}</div>
       </section>
@@ -120,9 +203,11 @@ export function BeneficiariesPage() {
             q.data.length === 0 ? <EmptyState title="No payees yet">Add a payee to start sending money.</EmptyState> : (
               <ul className="divide-y divide-[var(--hairline)]">
                 {q.data.map((b) => (
-                  <li key={b.id} className="flex items-center justify-between gap-3 py-3.5">
-                    <div className="min-w-0"><p className="font-medium truncate">{b.name}</p><p className="text-[0.8125rem] text-[var(--ink-3)] tnum">{b.account_ref} · added {fmtTime(b.created_at, true)}</p></div>
-                    {b.trust === 'candidate' && <Badge>New</Badge>}
+                  <li key={b.id} className="flex items-center gap-3 py-3.5">
+                    <Avatar name={b.name} />
+                    <div className="min-w-0 flex-1"><p className="font-medium truncate">{b.name}</p><p className="text-[0.8125rem] text-[var(--ink-3)] tnum">{b.account_ref} · added {fmtTime(b.created_at, true)}</p></div>
+                    {b.trust === 'trusted' && <Badge tone="allow"><CheckCircle2 size={12} aria-hidden />Saved</Badge>}
+                    {b.trust === 'candidate' && <Badge tone="info">New payee</Badge>}
                     {b.trust === 'blocked' && <Badge tone="block">Not active</Badge>}
                   </li>
                 ))}

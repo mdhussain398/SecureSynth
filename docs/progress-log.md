@@ -155,3 +155,49 @@
 - "Suspicious after login" margin is thin (79.5 vs 77.7).
 - Bundle-size warning.
 - Still to do: README with licences, threat-model doc, slides, fallback video.
+
+## 2026-11-25 — Master Prompt #03 (≈15:00–17:50 IST)
+
+### Re-verification after the Codex detour
+After Claude's limit was hit, the user tried edits with Codex and then reverted them. Checked state:
+- Branch `feat/mvp-checkpoint` at `a6b2889`, as last recorded.
+- **Backend, docs, README and Makefile:** byte-identical to that commit.
+- **Uncommitted changes:** only the expected ones — contract v1.2.0 plus the frontend agent's 9 files and its screenshots.
+- No stray files.
+
+### Done
+- **History and push:** full-history scan found no secrets, TOTP seeds, databases or competition documents. Pushed; PR #1 opened (https://github.com/mdhussain398/SecureSynth/pull/1); not merged.
+- **Evaluation report:** prevention split into *stopped by BLOCK* vs *stopped by challenge*, and legitimate impact into *blocked* vs *challenged then completed*. Reporting only; the frozen manifest still verifies.
+- **Evaluation dashboard (SOC → Evaluation):**
+  - real frozen report; synthetic label;
+  - honest-reading findings that never claim more total prevention;
+  - comparison table, confusion matrices (any / block-only);
+  - money split by block vs challenge;
+  - per-family recall with D marked held out;
+  - assumptions and limitations.
+- **Product polish:**
+  - banking account card, grouped statements, payee avatars, status badges, calm security line;
+  - risk gauge with threshold bands;
+  - shaded risk timeline;
+  - SOC table scrolls inside its card;
+  - Lab run state, result box, mobile step log, simulated-time markers;
+  - SOC and Lab routes lazy-loaded (bundle warning gone).
+- **Docs:** README, ARCHITECTURE, THREAT_MODEL, RESOURCES (licences from package metadata), DEMO (script, offline checklist, troubleshooting), TEAM (to be completed by the team — contributors not invented).
+- **Code-review nits fixed:** refused-change counter; SQL decision filter. Verified-payee learning remains a documented limitation.
+
+### Verified
+- `make test` → **89 passed**.
+- `npx tsc -b` OK; `npm run build` OK with no warnings.
+- **Determinism:** 3 rounds × 6 scenarios with reset in between (18 runs) gave identical decisions, HTTP codes, balance changes and risk scores (zero drift). Seed hash identical after every reset. Presenter stayed signed in.
+- **Real-backend browser checks:**
+  - analyst login → device approval → Evaluation dashboard renders the real report;
+  - an unverified login step-up gets 403 STEP_UP_REQUIRED on account data;
+  - Lab run at 375 px with no horizontal scroll, simulated-time marker rendered;
+  - customer login → approval → restyled overview with real statements.
+- **Screenshots:** `docs/screenshots/` (mock-mode PNGs; real-backend JPGs prefixed `real-`).
+
+### Open
+- TEAM.md must be completed by the team with real names and roles.
+- Ghost Banking: not implemented and disabled (no mentor approval yet).
+- Still needed: slides in the official template, and the 2-minute fallback video.
+- Verified payees are not learned into the baseline (documented).

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, FastForward, Play, RotateCcw } from 'lucide-react';
-import type { Scenario, ScenarioStep } from '../../api/types';
+import { Clock, FastForward, Loader2, Play, RotateCcw } from 'lucide-react';
+import type { Decision, Scenario, ScenarioRun, ScenarioStep } from '../../api/types';
 import { useAdvanceClock, useClock, useReset, useRunScenario, useScenarios } from '../../api/queries';
-import { Badge, Banner, Button, Card, DataTable, DecisionPill, EmptyState, ErrorState, Money, Skeleton, fmtTime, parseTs } from '../../design/components';
+import { Badge, Banner, Button, Card, DecisionPill, EmptyState, ErrorState, Money, Skeleton, fmtTime, parseTs } from '../../design/components';
 import { PageTitle } from '../../layout/layouts';
 
 const ACTOR: Record<ScenarioStep['actor'], string> = { customer: 'Customer', attacker: 'Attacker', trusted_device: 'Trusted device', system: 'System' };
@@ -43,33 +43,87 @@ function ScenarioCard({ s }: { s: Scenario }) {
                 {(p.options ?? []).map((o) => <option key={o}>{o}</option>)}
               </select>
             ) : (
-              <input id={`${s.id}-${p.key}`} className="input tnum" type="number" min={p.min} max={p.max} value={params[p.key]} onChange={(e) => setParams((v) => ({ ...v, [p.key]: e.target.value === '' ? '' : Number(e.target.value) }))} />
+              <>
+                <input id={`${s.id}-${p.key}`} className="input tnum" type="number" min={p.min} max={p.max} value={params[p.key]} onChange={(e) => setParams((v) => ({ ...v, [p.key]: e.target.value === '' ? '' : Number(e.target.value) }))} />
+                {p.key.endsWith('_paise') && typeof params[p.key] === 'number' && <p className="text-[0.75rem] text-[var(--ink-3)] mt-0.5 tnum">= <Money paise={params[p.key] as number} whole /></p>}
+              </>
             )}
           </div>
         ))}
-        <Button type="submit" loading={run.isPending}><Play size={14} aria-hidden />{run.isPending ? 'Running…' : 'Run'}</Button>
+        <Button type="submit" loading={run.isPending} aria-label={`Run scenario: ${s.title}`}><Play size={14} aria-hidden />{run.isPending ? 'Running…' : run.data ? 'Run again' : 'Run'}</Button>
       </form>
-      {run.error && <div className="mt-3"><Banner tone="block" title="Run failed">{run.error.message}</Banner></div>}
-      {run.data && (
-        <div className="mt-4 border-t border-[var(--hairline)] pt-3" aria-live="polite">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mb-2">
-            <span className="flex items-center gap-2 text-[var(--ink-2)]">Final <DecisionPill decision={run.data.final_decision} /></span>
-            <span className="text-[var(--ink-2)]">Protected balance <Money paise={run.data.protected_balance_before_paise} whole /> → <Money paise={run.data.protected_balance_after_paise} whole className="font-semibold text-[var(--ink)]" /></span>
-            {run.data.session_id && <Link to={`/soc/sessions/${encodeURIComponent(run.data.session_id)}`} className="text-[var(--accent)] font-medium">Open in Command Centre</Link>}
-          </div>
-          <DataTable caption="Scenario steps" rows={run.data.steps} rowKey={(st) => st.n} columns={[
-            { key: 'n', header: 'Step', cell: (st) => st.n },
-            { key: 'a', header: 'Actor', cell: (st) => <Badge tone={st.actor === 'attacker' ? 'block' : st.actor === 'trusted_device' ? 'info' : 'neutral'}>{ACTOR[st.actor]}</Badge> },
-            { key: 'x', header: 'Action', cell: (st) => <div><div>{st.action}</div>{st.http.status !== 0 && <div className="text-[0.75rem] text-[var(--ink-3)] font-mono">{st.http.method} {st.http.path}</div>}</div> },
-            { key: 'h', header: 'HTTP', align: 'right', cell: (st) => st.http.status === 0 ? <span className="text-[var(--ink-3)]" aria-label="simulated time, no request">⏱</span> : <span className={st.http.status >= 400 ? 'text-[var(--block)] font-medium' : ''}>{st.http.status}</span> },
-            { key: 'd', header: 'Decision', cell: (st) => st.http.status === 0 ? null : <DecisionPill decision={st.decision} /> },
-            { key: 'r', header: 'Risk', align: 'right', cell: (st) => st.risk_score?.toFixed(1) ?? '—' },
-            { key: 'o', header: 'Note', cell: (st) => <span className="text-[var(--ink-2)]">{st.note}</span> },
-          ]} />
-          <p className="text-[0.75rem] text-[var(--ink-3)] mt-2">Run by {run.data.username} · {fmtTime(new Date().toISOString())}</p>
+      {run.isPending && (
+        <div className="mt-4 border-t border-[var(--hairline)] pt-3" role="status">
+          <p className="flex items-center gap-2 text-[var(--ink-2)]"><Loader2 size={15} className="motion-safe:animate-spin" aria-hidden />Running scenario against the API…</p>
+          <div className="mt-3 space-y-2"><Skeleton className="h-10" /><Skeleton className="h-10" /><Skeleton className="h-10" /></div>
         </div>
       )}
+      {run.error && <div className="mt-3"><Banner tone="block" title="Run failed">{run.error.message}</Banner></div>}
+      {run.data && !run.isPending && <RunResult run={run.data} />}
     </Card>
+  );
+}
+
+const OUTCOME: Record<Decision, { title: string; box: string }> = {
+  ALLOW: { title: 'Allowed', box: 'bg-[var(--allow-tint)] border-[var(--allow-line)]' },
+  STEP_UP: { title: 'Held for trusted-device approval', box: 'bg-[var(--stepup-tint)] border-[var(--stepup-line)]' },
+  BLOCK: { title: 'Blocked, session restricted', box: 'bg-[var(--block-tint)] border-[var(--block-line)]' },
+};
+
+function RunResult({ run }: { run: ScenarioRun }) {
+  const delta = run.protected_balance_after_paise - run.protected_balance_before_paise;
+  const o = run.final_decision ? OUTCOME[run.final_decision] : null;
+  return (
+    <div className="mt-4 border-t border-[var(--hairline)] pt-4" aria-live="polite">
+      <div className={`grid gap-3 sm:grid-cols-2 rounded-[var(--radius-m)] border p-3.5 ${o ? o.box : 'border-[var(--hairline)]'}`}>
+        <div>
+          <p className="text-[0.75rem] text-[var(--ink-3)]">Final decision</p>
+          <div className="flex flex-wrap items-center gap-2 mt-1"><DecisionPill decision={run.final_decision} className="text-[0.875rem] py-0.5" />{o && <span className="font-semibold">{o.title}</span>}</div>
+        </div>
+        <div>
+          <p className="text-[0.75rem] text-[var(--ink-3)]">Protected balance ({run.username})</p>
+          <p className="tnum mt-1 flex flex-wrap items-baseline gap-x-2">
+            <Money paise={run.protected_balance_before_paise} whole className="text-[var(--ink-2)]" />
+            <span aria-hidden className="text-[var(--ink-3)]">→</span><span className="sr-only">to</span>
+            <Money paise={run.protected_balance_after_paise} whole className="text-[1.125rem] font-semibold" />
+            <span className={`text-[0.8125rem] ${delta < 0 ? 'text-[var(--block)]' : 'text-[var(--ink-3)]'}`}>{delta === 0 ? 'unchanged' : <>{delta < 0 ? '−' : '+'}<Money paise={Math.abs(delta)} whole /></>}</span>
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 mt-4 mb-1">
+        <h3 className="text-[0.875rem] font-semibold">Step log</h3>
+        {run.session_id && <Link to={`/soc/sessions/${encodeURIComponent(run.session_id)}`} className="text-[0.875rem] text-[var(--accent)] font-medium">Open session in Command Centre</Link>}
+      </div>
+      <ol className="relative">
+        {run.steps.map((st) => st.http.status === 0 ? (
+          <li key={st.n} className="flex items-center gap-2 py-2 text-[0.8125rem] text-[var(--ink-3)]">
+            <span className="h-px flex-1 border-t border-dashed border-[var(--hairline-strong)]" aria-hidden />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--surface-2)] px-2.5 py-0.5"><Clock size={12} aria-hidden /><span className="sr-only">Simulated time: </span>{st.action}{st.note && <span className="text-[var(--ink-3)]"> · {st.note}</span>}</span>
+            <span className="h-px flex-1 border-t border-dashed border-[var(--hairline-strong)]" aria-hidden />
+          </li>
+        ) : (
+          <li key={st.n} className="grid grid-cols-[28px_1fr] gap-x-2 py-2.5 border-b border-[var(--hairline)] last:border-b-0">
+            <span className="tnum text-[0.75rem] text-[var(--ink-3)] pt-0.5">{st.n}</span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <Badge tone={st.actor === 'attacker' ? 'block' : st.actor === 'trusted_device' ? 'info' : 'neutral'}>{ACTOR[st.actor]}</Badge>
+                <span className="font-medium">{st.action}</span>
+                <span className="ml-auto flex items-center gap-2">
+                  {st.risk_score != null && <span className="tnum text-[0.8125rem] text-[var(--ink-2)]">risk {st.risk_score.toFixed(1)}</span>}
+                  {st.decision && <DecisionPill decision={st.decision} />}
+                </span>
+              </div>
+              <p className="text-[0.75rem] text-[var(--ink-3)] mt-1 break-all">
+                <span className="font-mono">{st.http.method} {st.http.path}</span>{' '}
+                <span className={`tnum font-medium ${st.http.status >= 400 ? 'text-[var(--block)]' : 'text-[var(--ink-2)]'}`}>→ {st.http.status}</span>
+              </p>
+              {st.note && <p className="text-[0.8125rem] text-[var(--ink-2)] mt-0.5">{st.note}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p className="text-[0.75rem] text-[var(--ink-3)] mt-2">Run as {run.username} · {fmtTime(new Date().toISOString())}</p>
+    </div>
   );
 }
 
@@ -82,7 +136,7 @@ export function LabPage() {
       {q.isPending ? <div className="grid gap-4 xl:grid-cols-2"><Skeleton className="h-48" /><Skeleton className="h-48" /></div> :
         q.error ? <ErrorState error={q.error} title={q.error.status === 404 ? 'Scenario Lab is not available' : undefined} onRetry={() => q.refetch()} /> :
           q.data.length === 0 ? <EmptyState title="No scenarios defined" /> :
-            <div className="grid gap-4 xl:grid-cols-2">{q.data.map((s) => <ScenarioCard key={s.id} s={s} />)}</div>}
+            <div className="grid gap-4 xl:grid-cols-2 items-start">{q.data.map((s) => <ScenarioCard key={s.id} s={s} />)}</div>}
     </>
   );
 }

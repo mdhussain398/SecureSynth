@@ -53,7 +53,7 @@ export function Card({ title, actions, children, className, padded = true, as: T
             {title && <h2 className="text-[0.9375rem] font-semibold leading-tight">{title}</h2>}
             {description && <p className="text-[0.8125rem] text-[var(--ink-3)] mt-0.5">{description}</p>}
           </div>
-          {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+          {actions && <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">{actions}</div>}
         </header>
       )}
       <div className={padded ? 'p-4' : undefined}>{children}</div>
@@ -92,32 +92,49 @@ export function DecisionPill({ decision, className }: { decision: Decision | nul
 }
 export const decisionLabel = (d: Decision) => DECISION[d].label;
 
-// ---------- RiskGauge: a 0–100 risk index meter (never "probability") ----------
+// ---------- RiskGauge: a 0–100 risk index meter (never "probability") with decision bands ----------
 export function RiskGauge({ value, thresholds, size = 'md' }: { value: number | null; thresholds?: { step_up: number; block: number }; size?: 'sm' | 'md' }) {
   const v = value == null ? null : Math.max(0, Math.min(100, value));
-  const tone = v == null || !thresholds ? 'var(--ink-2)' : v >= thresholds.block ? 'var(--block)' : v >= thresholds.step_up ? 'var(--stepup)' : 'var(--allow)';
-  return (
-    <div className={size === 'sm' ? 'w-24' : 'w-full'}>
-      {size === 'md' && (
-        <div className="flex items-baseline justify-between mb-1.5">
-          <span className="text-[0.8125rem] text-[var(--ink-3)]">Risk index</span>
-          <span className="tnum text-[1.375rem] font-semibold leading-none">{v == null ? '—' : v.toFixed(1)}<span className="text-[0.8125rem] font-normal text-[var(--ink-3)]"> / 100</span></span>
+  const zone: Decision | null = v == null || !thresholds ? null : v >= thresholds.block ? 'BLOCK' : v >= thresholds.step_up ? 'STEP_UP' : 'ALLOW';
+  const tone = zone === 'BLOCK' ? 'var(--block)' : zone === 'STEP_UP' ? 'var(--stepup)' : zone === 'ALLOW' ? 'var(--allow)' : 'var(--ink-2)';
+  if (size === 'sm') {
+    return (
+      <div className="w-20" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={v ?? undefined} aria-label={`Risk index ${v == null ? 'not available' : v.toFixed(1)} out of 100`}>
+        <div className="relative h-1.5 rounded-full bg-[var(--surface-2)] border border-[var(--hairline)]">
+          {v != null && <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${v}%`, background: tone }} />}
         </div>
-      )}
-      <div
-        role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={v ?? undefined}
-        aria-label={`Risk index ${v == null ? 'not available' : v.toFixed(1)} out of 100`}
-        className={cx('relative rounded-full bg-[var(--surface-2)] border border-[var(--hairline)]', size === 'sm' ? 'h-1.5' : 'h-2.5')}
-      >
-        {v != null && <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${v}%`, background: tone }} />}
-        {thresholds && [thresholds.step_up, thresholds.block].map((t) => (
-          <span key={t} className="absolute -top-0.5 -bottom-0.5 w-px bg-[var(--ink-2)]" style={{ left: `${t}%` }} aria-hidden />
-        ))}
       </div>
-      {size === 'md' && thresholds && (
-        <div className="relative h-4 mt-1 text-[0.6875rem] text-[var(--ink-3)] tnum" aria-hidden>
-          <span className="absolute -translate-x-1/2" style={{ left: `${thresholds.step_up}%` }}>step-up {thresholds.step_up}</span>
-          <span className="absolute -translate-x-1/2" style={{ left: `${thresholds.block}%` }}>block {thresholds.block}</span>
+    );
+  }
+  const bands = thresholds ? [
+    { from: 0, to: thresholds.step_up, c: 'var(--allow-tint)', line: 'var(--allow-line)', label: 'Allow' },
+    { from: thresholds.step_up, to: thresholds.block, c: 'var(--stepup-tint)', line: 'var(--stepup-line)', label: 'Step-up' },
+    { from: thresholds.block, to: 100, c: 'var(--block-tint)', line: 'var(--block-line)', label: 'Block' },
+  ] : [];
+  return (
+    <div className="w-full">
+      <div className="flex items-baseline justify-between mb-2">
+        <span className="text-[0.8125rem] text-[var(--ink-3)]">Risk index (0–100, not a probability)</span>
+        <span className="tnum text-[1.5rem] font-semibold leading-none" style={{ color: tone }}>{v == null ? '—' : v.toFixed(1)}<span className="text-[0.8125rem] font-normal text-[var(--ink-3)]"> / 100</span></span>
+      </div>
+      <div role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={v ?? undefined}
+        aria-label={`Risk index ${v == null ? 'not available' : v.toFixed(1)} out of 100${thresholds ? `; step-up at ${thresholds.step_up}, block at ${thresholds.block}` : ''}`}
+        className="relative h-7">
+        <div className="absolute inset-x-0 top-1 bottom-1 flex gap-[2px] rounded-[4px] overflow-hidden border border-[var(--hairline)] bg-[var(--surface-2)]">
+          {bands.map((b) => <span key={b.label} className="h-full" style={{ width: `${b.to - b.from}%`, background: b.c }} />)}
+        </div>
+        {v != null && (
+          <span className="absolute top-0 bottom-0 w-[3px] -translate-x-1/2 rounded-full shadow-[0_0_0_2px_var(--surface)]" style={{ left: `${v}%`, background: tone }} aria-hidden />
+        )}
+      </div>
+      {thresholds && (
+        <div className="relative h-9 mt-1 text-[0.6875rem] text-[var(--ink-3)] tnum" aria-hidden>
+          {bands.map((b) => (
+            <span key={b.label} className="absolute top-0 truncate px-1" style={{ left: `${b.from}%`, width: `${b.to - b.from}%` }}>
+              <span className="block font-medium text-[var(--ink-2)]">{b.label}</span>
+              <span className="block">{b.from === 0 ? `< ${thresholds.step_up}` : `≥ ${b.from}`}</span>
+            </span>
+          ))}
         </div>
       )}
     </div>
@@ -137,16 +154,16 @@ export function Stat({ label, value, hint, className }: { label: ReactNode; valu
 
 // ---------- DataTable ----------
 export interface Column<T> { key: string; header: ReactNode; cell: (row: T) => ReactNode; align?: 'left' | 'right'; className?: string }
-export function DataTable<T>({ columns, rows, rowKey, caption, onRowClick, dense = true }:
-  { columns: Column<T>[]; rows: T[]; rowKey: (r: T) => string | number; caption?: string; onRowClick?: (r: T) => void; dense?: boolean }) {
+export function DataTable<T>({ columns, rows, rowKey, caption, onRowClick, dense = true, minWidth }:
+  { columns: Column<T>[]; rows: T[]; rowKey: (r: T) => string | number; caption?: string; onRowClick?: (r: T) => void; dense?: boolean; minWidth?: number }) {
   return (
-    <div className="overflow-x-auto -mx-px">
-      <table className="w-full border-collapse text-left tnum">
+    <div className="overflow-x-auto -mx-px" tabIndex={minWidth ? 0 : undefined} role={minWidth ? 'region' : undefined} aria-label={minWidth ? `${caption ?? 'Table'} (scrolls horizontally)` : undefined}>
+      <table className="w-full border-collapse text-left tnum" style={minWidth ? { minWidth } : undefined}>
         {caption && <caption className="sr-only">{caption}</caption>}
         <thead>
           <tr className="border-b border-[var(--hairline)]">
             {columns.map((c) => (
-              <th key={c.key} scope="col" className={cx('px-3 py-2 text-[0.75rem] font-medium text-[var(--ink-3)] whitespace-nowrap', c.align === 'right' && 'text-right', c.className)}>{c.header}</th>
+              <th key={c.key} scope="col" className={cx('px-3 py-2 text-[0.75rem] font-medium text-[var(--ink-3)] whitespace-nowrap bg-[var(--surface-2)]', c.align === 'right' && 'text-right', c.className)}>{c.header}</th>
             ))}
           </tr>
         </thead>

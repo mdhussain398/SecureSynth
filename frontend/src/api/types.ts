@@ -5,7 +5,7 @@
  * Changes: announce to both developers first, bump CONTRACT_VERSION, update both sides in one merge.
  * All money is integer paise (INR × 100). All timestamps are ISO-8601 strings (simulated clock).
  */
-export const CONTRACT_VERSION = "1.1.0"; // 1.1.0 (additive): AdminSessionRow.user_id, RiskAssessment.features
+export const CONTRACT_VERSION = "1.2.0"; // 1.2.0 (additive): prevention split, new_device_restriction_rate, legit_block_rate; // 1.1.0 (additive): AdminSessionRow.user_id, RiskAssessment.features
 
 // ---------- common ----------
 export type Decision = "ALLOW" | "STEP_UP" | "BLOCK";
@@ -248,11 +248,21 @@ export interface ApproachResult {
   intervention: DetectionMetrics; // positive = STEP_UP or BLOCK
   block_only: DetectionMetrics;   // positive = BLOCK
   traveller_restriction_rate: number;
+  new_device_restriction_rate: number;
+  legit_block_rate: number;
   prevention: {
     attack_value_attempted_paise: number;
     attack_value_prevented_paise: number;
     attack_value_completed_paise: number;
     legit_value_delayed_paise: number;
+    /** attack value stopped by an outright BLOCK decision (permanent) */
+    attack_value_prevented_by_block_paise: number;
+    /** attack value stopped only because the attacker is assumed to fail trusted-device verification */
+    attack_value_prevented_by_challenge_paise: number;
+    /** legitimate value restricted by BLOCK (customer must contact the bank) */
+    legit_value_blocked_paise: number;
+    /** legitimate value delayed by STEP_UP, completed after the customer approved */
+    legit_value_challenged_paise: number;
   };
   latency_ms: { p50: number; p95: number };
   per_family_recall: Record<string, number>;

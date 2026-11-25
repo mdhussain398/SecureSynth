@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { FlaskConical, Ghost, X } from 'lucide-react';
 import type { RiskAssessment } from '../../api/types';
 import { useConfig, useCounterfactual, useRevoke, useSessionDetail } from '../../api/queries';
@@ -17,6 +17,8 @@ function ScoreTimeline({ items }: { items: RiskAssessment[] }) {
     <div className="h-[240px]" role="img" aria-label={`Risk index over ${items.length} checkpoints, latest ${items[items.length - 1].risk_score}. Step-up threshold ${t.step_up}, block threshold ${t.block}.`}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 12, right: 72, bottom: 4, left: -16 }}>
+          <ReferenceArea y1={t.step_up} y2={t.block} fill="var(--stepup-tint)" fillOpacity={0.9} ifOverflow="hidden" />
+          <ReferenceArea y1={t.block} y2={100} fill="var(--block-tint)" fillOpacity={0.9} ifOverflow="hidden" />
           <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
           <XAxis dataKey="short" tick={axisTick} tickLine={false} axisLine={{ stroke: 'var(--chart-axis)' }} />
           <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={axisTick} tickLine={false} axisLine={false} />
@@ -29,7 +31,11 @@ function ScoreTimeline({ items }: { items: RiskAssessment[] }) {
               return <div className="bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-s)] px-3 py-2 text-[0.8125rem] shadow-sm"><div className="text-[var(--ink-3)]">{p.label}</div><div className="flex items-center gap-2 mt-1"><span className="tnum font-semibold">{p.score.toFixed(1)}</span><DecisionPill decision={p.decision} /></div></div>;
             }} />
           <Line type="linear" dataKey="score" stroke="var(--series-line)" strokeWidth={2} isAnimationActive={false}
-            dot={{ r: 4.5, fill: 'var(--surface)', stroke: 'var(--series-line)', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+            dot={(props: { cx?: number; cy?: number; index?: number }) => {
+              const d = data[props.index ?? 0];
+              const c = d?.decision === 'BLOCK' ? 'var(--block)' : d?.decision === 'STEP_UP' ? 'var(--stepup)' : 'var(--allow)';
+              return <circle key={props.index} cx={props.cx} cy={props.cy} r={5.5} fill={c} stroke="var(--surface)" strokeWidth={2} />;
+            }} activeDot={{ r: 7 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -200,7 +206,7 @@ export function SessionPage() {
       {revoke.error && <div className="mb-4"><Banner tone="block" title="Revoke failed">{revoke.error.message}</Banner></div>}
       {assessments.length === 0 ? <Card title="Assessments"><p className="text-[var(--ink-3)]">No risk checkpoints recorded for this session yet.</p></Card> : (
         <div className="space-y-4">
-          <Card title="Risk index over the session" description="Each point is a checkpoint; dashed lines are the validation-tuned thresholds"
+          <Card title="Risk index over the session" description="Each point is a checkpoint, coloured by its decision. Shaded bands are the step-up and block zones from the validation-tuned thresholds."
             actions={<label className="text-[0.8125rem] text-[var(--ink-2)] flex items-center gap-2">Checkpoint
               <select className="input !min-h-8 !py-1 !w-auto" value={current.id} onChange={(e) => setSelected(Number(e.target.value))}>
                 {assessments.map((a) => <option key={a.id} value={a.id}>{CHECKPOINT[a.checkpoint]} · {a.risk_score.toFixed(1)}</option>)}

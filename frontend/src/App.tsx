@@ -1,14 +1,22 @@
+import { lazy, Suspense, type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthLayout, ConsoleLayout, PortalLayout } from './layout/layouts';
 import { ApprovePage, LoginPage, TotpPage } from './features/bank/auth';
 import { BeneficiariesPage, OverviewPage, TransactionsPage, TransferPage } from './features/bank/pages';
 import { DevicePage } from './features/device/DevicePage';
-import { SocOverview } from './features/soc/SocOverview';
-import { SessionPage } from './features/soc/SessionPage';
-import { BaselineIndex, BaselinePage } from './features/soc/BaselinePage';
-import { EvaluationPage } from './features/soc/EvaluationPage';
-import { GhostPage } from './features/soc/GhostPage';
-import { LabPage } from './features/lab/LabPage';
+import { Skeleton } from './design/components';
+
+// Analyst and Lab screens are code-split: customers never download the console bundle.
+const SocOverview = lazy(() => import('./features/soc/SocOverview').then((m) => ({ default: m.SocOverview })));
+const SessionPage = lazy(() => import('./features/soc/SessionPage').then((m) => ({ default: m.SessionPage })));
+const BaselineIndex = lazy(() => import('./features/soc/BaselinePage').then((m) => ({ default: m.BaselineIndex })));
+const BaselinePage = lazy(() => import('./features/soc/BaselinePage').then((m) => ({ default: m.BaselinePage })));
+const EvaluationPage = lazy(() => import('./features/soc/EvaluationPage').then((m) => ({ default: m.EvaluationPage })));
+const GhostPage = lazy(() => import('./features/soc/GhostPage').then((m) => ({ default: m.GhostPage })));
+const LabPage = lazy(() => import('./features/lab/LabPage').then((m) => ({ default: m.LabPage })));
+
+const fallback = <div className="space-y-3" aria-busy="true" aria-label="Loading"><Skeleton className="h-7 w-64" /><Skeleton className="h-48" /></div>;
+const L = (el: ReactNode) => <Suspense fallback={fallback}>{el}</Suspense>;
 
 /** Route guards here are UX only; the backend enforces every permission. */
 export default function App() {
@@ -27,13 +35,13 @@ export default function App() {
       </Route>
       <Route path="/device" element={<DevicePage />} />
       <Route element={<ConsoleLayout />}>
-        <Route path="/soc" element={<SocOverview />} />
-        <Route path="/soc/sessions/:id" element={<SessionPage />} />
-        <Route path="/soc/users" element={<BaselineIndex />} />
-        <Route path="/soc/users/:id/baseline" element={<BaselinePage />} />
-        <Route path="/soc/evaluation" element={<EvaluationPage />} />
-        <Route path="/soc/ghost/:sessionId" element={<GhostPage />} />
-        <Route path="/lab" element={<LabPage />} />
+        <Route path="/soc" element={L(<SocOverview />)} />
+        <Route path="/soc/sessions/:id" element={L(<SessionPage />)} />
+        <Route path="/soc/users" element={L(<BaselineIndex />)} />
+        <Route path="/soc/users/:id/baseline" element={L(<BaselinePage />)} />
+        <Route path="/soc/evaluation" element={L(<EvaluationPage />)} />
+        <Route path="/soc/ghost/:sessionId" element={L(<GhostPage />)} />
+        <Route path="/lab" element={L(<LabPage />)} />
       </Route>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />

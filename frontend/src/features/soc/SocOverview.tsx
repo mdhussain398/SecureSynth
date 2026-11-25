@@ -42,15 +42,15 @@ export function SocOverview() {
     { key: 'dec', header: 'Decision', cell: (r) => <DecisionPill decision={r.latest_decision} /> },
     { key: 'mode', header: 'Session mode', cell: (r) => <Badge tone={r.mode === 'restricted' || r.mode === 'revoked' ? 'block' : r.mode === 'step_up' ? 'stepup' : 'neutral'}>{r.mode.replace('_', '-')}</Badge> },
     { key: 'n', header: 'Checks', align: 'right', cell: (r) => r.assessments_count },
-    { key: 'seen', header: 'Last seen', align: 'right', cell: (r) => <span className="text-[var(--ink-2)]">{fmtTime(r.last_seen)}</span> },
+    { key: 'seen', header: 'Last seen', align: 'right', className: 'whitespace-nowrap', cell: (r) => <span className="text-[var(--ink-2)]">{fmtTime(r.last_seen)}</span> },
   ];
 
   return (
     <>
       <PageTitle title="Live sessions" sub="Every authenticated session with its latest risk checkpoint. Refreshes every 3 seconds."
         actions={<span className="inline-flex items-center gap-2 text-[0.8125rem] text-[var(--ink-3)]"><span className={`h-2 w-2 rounded-full ${q.isError ? 'bg-[var(--block)]' : 'bg-[var(--allow)]'}`} aria-hidden />{q.isError ? 'Feed interrupted' : q.isFetching ? 'Updating…' : 'Live'}</span>} />
-      <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-        <Card title="Decision mix" description="Latest decision per session" className="self-start">
+      <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
+        <Card title="Decision mix" description="Latest decision per session" className="self-start xl:sticky xl:top-[76px]">
           {q.isPending ? <Skeleton lines={3} /> : q.data ? <DecisionMix rows={q.data} /> : <ErrorState error={q.error} />}
         </Card>
         <Card padded={false} title="Sessions" actions={
@@ -65,7 +65,7 @@ export function SocOverview() {
         }>
           {q.isPending ? <div className="p-4"><Skeleton lines={6} /></div> : q.error && !q.data ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> :
             rows.length === 0 ? <EmptyState title={filter ? 'No sessions with this decision' : 'No active sessions'}>{filter ? 'Clear the filter to see all sessions.' : 'Sign in as a customer or run a Lab scenario to create one.'}</EmptyState> :
-              <DataTable caption="Live sessions" columns={cols} rows={rows} rowKey={(r) => r.id} onRowClick={(r) => nav(`/soc/sessions/${encodeURIComponent(r.id)}`)} />}
+              <DataTable caption="Live sessions" minWidth={760} columns={cols} rows={rows} rowKey={(r) => r.id} onRowClick={(r) => nav(`/soc/sessions/${encodeURIComponent(r.id)}`)} />}
         </Card>
       </div>
     </>
