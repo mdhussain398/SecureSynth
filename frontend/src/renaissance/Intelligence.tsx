@@ -22,6 +22,8 @@ const NAV = [
   { to: '/soc/intelligence', label: 'Intelligence' }, { to: '/soc', label: 'Sessions', end: true },
   { to: '/soc/evaluation', label: 'Evaluation' }, { to: '/lab', label: 'Lab' },
 ];
+/* Screen angles (0° = right, −90° = top) for ring callouts: diagonals first, so labels stay inside the centre column. */
+const RING_SLOTS = [-58, -122, 58, 122, -32, -148, 32, 148];
 const WORD: Record<Decision, string> = { ALLOW: 'Allowed', STEP_UP: 'Step-up', BLOCK: 'Blocked' };
 
 function signalsOf(a: RiskAssessment | undefined): OrbSignal[] {
@@ -51,6 +53,8 @@ export function Intelligence() {
   const signals = useMemo(() => signalsOf(a), [a]);
   const [sel, setSel] = useState<string | null>(null);
   const strongest = [...signals].sort((x, y) => y.level - x.level)[0];
+  const ringed = signals.filter((s) => s.level > 0).sort((x, y) => y.level - x.level).slice(0, RING_SLOTS.length);
+  const calm = signals.filter((s) => !ringed.includes(s));
   const focus = signals.find((s) => s.id === sel) ?? strongest;
   const dev = a?.deviations.find((d) => d.feature === focus?.id);
   const baseline = useBaseline(detail.data ? String(detail.data.session.user_id) : '');
@@ -92,7 +96,7 @@ export function Intelligence() {
             <h1 id="who" className="rn-display mt-2 text-[length:var(--t-2xl)]">{detail.data?.session.display_name ?? ' '}</h1>
             {a && (
               <>
-                <div className="mt-8 flex items-end gap-4">
+                <div className="mt-8 flex flex-wrap items-end gap-x-4 gap-y-2">
                   <span className="rn-display text-[clamp(5rem,9vw,8.5rem)] leading-[0.8]"><AnimatedNumber value={a.risk_score} /></span>
                   <div className="pb-2">
                     <AnimatePresence mode="wait">
@@ -101,7 +105,7 @@ export function Intelligence() {
                         {WORD[a.decision]}
                       </motion.p>
                     </AnimatePresence>
-                    <p className="text-[length:var(--t-sm)] text-[color:var(--graphite-3)]">risk index at {CHECKPOINT[a.checkpoint] ?? a.checkpoint.toLowerCase()}</p>
+                    <p className="whitespace-nowrap text-[length:var(--t-sm)] text-[color:var(--graphite-3)]">risk index at {CHECKPOINT[a.checkpoint] ?? a.checkpoint.toLowerCase()}</p>
                   </div>
                 </div>
                 <p className="mt-3 max-w-[26rem] text-[length:var(--t-sm)] text-[color:var(--graphite-3)]">
@@ -151,38 +155,39 @@ export function Intelligence() {
           {/* Centre: the sculpture on an instrument bezel. The bezel arc is the real risk index; its ticks mark the
               real thresholds; each callout on the ring is one behavioural signal and selects it. */}
           <section aria-label="Behavioural digital twin" className="order-1 lg:order-2">
-            <div className="relative mx-auto w-full max-w-[min(640px,76vh)]">
+            <div className="relative mx-auto w-full max-w-[min(600px,72vh)]">
               <div aria-hidden className="pointer-events-none absolute inset-[-8%] -z-10 rounded-full"
                 style={{ background: `radial-gradient(closest-side, ${a?.decision === 'BLOCK' ? 'rgba(240,68,56,0.10)' : a?.decision === 'STEP_UP' ? 'rgba(247,144,9,0.12)' : 'rgba(0,91,255,0.16)'}, rgba(0,91,255,0.05) 60%, transparent)` }} />
               <div aria-hidden className="pointer-events-none absolute bottom-[4%] left-1/2 -z-10 h-[7%] w-[46%] -translate-x-1/2 rounded-[50%] bg-[rgba(16,24,40,0.22)] blur-2xl" />
-              {a && <Bezel score={a.risk_score} stepUp={a.thresholds.step_up} block={a.thresholds.block} decision={a.decision} />}
               <div className="relative">
                 <IdentityOrb signals={signals} state={a?.decision ?? 'idle'} selected={focus?.id} onSelect={setSel} />
+                {a && <Bezel score={a.risk_score} stepUp={a.thresholds.step_up} block={a.thresholds.block} decision={a.decision} />}
               </div>
-              <ul aria-label="Behavioural signals" className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 lg:mt-0">
-                {signals.map((s, i) => {
-                  const th = ((-90 + ((i + 0.5) * 360) / signals.length) * Math.PI) / 180;
+              {/* Deviating signals are called out on the ring (diagonal slots keep them clear of the side columns). */}
+              <ul aria-label="Deviating signals" className="mt-4 flex flex-wrap justify-center gap-x-3 gap-y-2 lg:mt-0">
+                {ringed.map((s, i) => {
+                  const th = (RING_SLOTS[i] * Math.PI) / 180;
                   const cx = Math.cos(th), side = cx > 0.25 ? 'r' : cx < -0.25 ? 'l' : 'c';
                   const style = {
                     '--x': `${50 + cx * 43}%`, '--y': `${50 + Math.sin(th) * 43}%`,
                     '--tf': `translate(${side === 'r' ? '0.4rem' : side === 'l' ? 'calc(-100% - 0.4rem)' : '-50%'}, -50%)`,
                   } as CSSProperties;
-                  const on = focus?.id === s.id;
                   return (
                     <li key={s.id} style={style} className="lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:[transform:var(--tf)]">
-                      <button type="button" onClick={() => setSel(s.id)} aria-pressed={on}
-                        className={`flex items-center gap-2 whitespace-nowrap rounded-full px-2 py-1 text-[length:var(--t-sm)] transition-colors ${side === 'l' ? 'lg:flex-row-reverse' : ''} ${on ? 'bg-[rgba(255,255,255,0.85)] font-semibold text-[color:var(--graphite)] shadow-[0_4px_14px_-6px_rgba(16,24,40,0.3)]' : s.level >= 2 ? 'font-medium text-[color:var(--graphite)] hover:bg-[rgba(255,255,255,0.6)]' : 'text-[color:var(--graphite-3)] hover:bg-[rgba(255,255,255,0.6)] hover:text-[color:var(--graphite)]'}`}>
-                        <span aria-hidden className="h-2 w-2 flex-none" style={{
-                          background: LEVEL_COLOR[s.level], borderRadius: s.level === 3 ? 2 : s.level === 2 ? 1 : 999,
-                          transform: s.level === 2 ? 'rotate(45deg)' : undefined,
-                        }} />
-                        {s.label}<span className="sr-only">: {['normal', 'low', 'medium', 'high'][s.level]} deviation</span>
-                      </button>
+                      <SignalButton s={s} on={focus?.id === s.id} onClick={() => setSel(s.id)} reverse={side === 'l'} />
                     </li>
                   );
                 })}
               </ul>
             </div>
+            {calm.length > 0 && (
+              <div className="mx-auto mt-5 max-w-[640px] text-center">
+                <p className="text-[length:var(--t-sm)] text-[color:var(--graphite-3)]">Within this customer’s normal behaviour</p>
+                <ul aria-label="Signals within normal behaviour" className="mt-1.5 flex flex-wrap justify-center gap-x-1 gap-y-1">
+                  {calm.map((s) => <li key={s.id}><SignalButton s={s} on={focus?.id === s.id} onClick={() => setSel(s.id)} /></li>)}
+                </ul>
+              </div>
+            )}
             {/* Risk telemetry across this session's checkpoints. */}
             <ol className="mx-auto mt-6 flex max-w-[600px] flex-wrap items-center justify-center gap-2" aria-label="Checkpoints in this session">
               {assessments.map((x, i) => (
@@ -196,7 +201,7 @@ export function Intelligence() {
               ))}
             </ol>
             <p className="mx-auto mt-3 max-w-[38rem] text-center text-[length:var(--t-sm)] text-[color:var(--graphite-3)]">
-              The ring shows the risk index against the step-up and block thresholds. Each point inside the glass is one of this customer’s behavioural signals; its colour shows how far it deviates from their baseline. The sculpture visualises the engine’s output; it is not the model.
+              The ring shows the risk index against the step-up and block thresholds. Each point inside the glass is one of this customer’s behavioural signals; signals that deviate from their baseline are called out on the ring. The sculpture visualises the engine’s output; it is not the model.
             </p>
           </section>
 
@@ -250,11 +255,24 @@ function Bezel({ score, stepUp, block, decision }: { score: number; stepUp: numb
         return <line key={k} x1={50 + Math.cos(t) * (R + 0.6)} y1={50 + Math.sin(t) * (R + 0.6)} x2={50 + Math.cos(t) * (R + 0.6 + len)} y2={50 + Math.sin(t) * (R + 0.6 + len)}
           stroke="var(--graphite-3)" strokeOpacity={major ? 0.55 : 0.25} strokeWidth={1} vectorEffect="non-scaling-stroke" />;
       })}
-      <circle cx={50} cy={50} r={R} fill="none" stroke={STATE_COLOR[decision]} strokeWidth={3} strokeLinecap="round" pathLength={100}
-        strokeDasharray={`${Math.max(0.5, Math.min(100, score))} 100`} transform="rotate(-90 50 50)" vectorEffect="non-scaling-stroke"
+      <circle cx={50} cy={50} r={R} fill="none" stroke={STATE_COLOR[decision]} strokeWidth={0.55} strokeLinecap="round" pathLength={100}
+        strokeDasharray={`${Math.max(0.5, Math.min(100, score))} 100`} transform="rotate(-90 50 50)"
         style={{ transition: 'stroke-dasharray 900ms cubic-bezier(0.22,1,0.36,1), stroke 600ms' }} />
       {mark(stepUp, '#B54708')}
       {mark(block, '#C01048')}
     </svg>
+  );
+}
+
+function SignalButton({ s, on, onClick, reverse }: { s: OrbSignal; on: boolean; onClick: () => void; reverse?: boolean }) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={on}
+      className={`flex items-center gap-2 whitespace-nowrap rounded-full px-2.5 py-1 text-[length:var(--t-sm)] transition-colors ${reverse ? 'lg:flex-row-reverse' : ''} ${on ? 'rn-lens font-semibold text-[color:var(--graphite)]' : s.level >= 2 ? 'font-medium text-[color:var(--graphite)] hover:bg-[rgba(255,255,255,0.7)]' : 'text-[color:var(--graphite-3)] hover:bg-[rgba(255,255,255,0.7)] hover:text-[color:var(--graphite)]'}`}>
+      <span aria-hidden className="h-2 w-2 flex-none" style={{
+        background: LEVEL_COLOR[s.level], borderRadius: s.level === 3 ? 2 : s.level === 2 ? 1 : 999,
+        transform: s.level === 2 ? 'rotate(45deg)' : undefined,
+      }} />
+      {s.label}<span className="sr-only">: {['normal', 'low', 'medium', 'high'][s.level]} deviation</span>
+    </button>
   );
 }

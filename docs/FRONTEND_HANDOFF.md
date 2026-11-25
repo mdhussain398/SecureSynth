@@ -1,6 +1,6 @@
 # Frontend Renaissance — handoff (Master Prompt #04)
 
-**Status: WIP. Creative direction approved; visual refinement pass in progress (see the refinement section). Awaiting approval of the execution.** Do not extend the redesign to other pages until it is approved.
+**Status: WIP. Creative direction approved; visual refinement pass in progress (see the refinement section). Refinement verified; awaiting approval of the execution.** Do not extend the redesign to other pages until it is approved.
 **Branch:** `feat/frontend-renaissance` (from the stable MVP `313db81` on `feat/mvp-checkpoint`).
 - Push only to this branch.
 - Never merge into `feat/mvp-checkpoint` or `main` without explicit approval.
@@ -167,10 +167,32 @@ The user approved the direction but asked for a refinement pass first. What chan
   - The active item is a raised crystal lens (`.rn-lens`) instead of a black fill.
 - **Command Centre composition** (`Intelligence.tsx`):
   - The orb sits on an **instrument bezel** (`Bezel`). Its arc is the real risk index (0–100), and amber and red ticks mark the real step-up and block thresholds.
-  - Signal **callouts sit on the ring around the sculpture** and select the signal. They wrap below the orb on narrow screens.
+  - **Deviating** signals are called out on the ring, in diagonal slots (`RING_SLOTS`, up to 8) so they stay clear of the side columns. Signals within normal behaviour are listed under the orb. Both select the signal. On narrow screens the callouts wrap below the orb.
+  - Inclusions sit at 0.72 of the radius, because points near the glass edge were distorted by refraction.
   - The stage glow is tinted by the decision. Labels were shortened to fit the ring.
 
-Screenshots: `docs/screenshots/renaissance/refine-*.jpg`.
+Screenshots: `docs/screenshots/renaissance/refine-*.jpg`: landing desktop and mobile; Command Centre BLOCK, ALLOW, mobile and no-WebGL.
+
+**Refinement verification (actual, 2026-11-25):**
+
+| Check | Result |
+|---|---|
+| `tsc -b` | clean |
+| Build | OK; `OrbScene` lazy chunk 244 KB gzip. Vite prints its >500 kB chunk-size advisory for this lazy chunk; it is expected. |
+| `make test` | **89 passed** (no backend or ML files touched) |
+| Ravi | BLOCK 99.5: red arc nearly full; Browser (high) and Location (medium) on the ring; Travel speed (low) |
+| Meera | ALLOW 61.3: blue arc to 61; threshold ticks visible; checkpoint strip Sign-in 88 → Transfer 61 |
+| 375 px | no horizontal scroll on landing or the Command Centre |
+| `?gl=0` | 0 canvases, OrbScene never fetched, no off-host requests |
+| Console | only HTTP 401s from before sign-in |
+
+- **Bugs found and fixed in the pass:**
+  - Scripted CSS edit corrupted `rn.css` (an empty slice) → restored from git and reapplied.
+  - Risk arc drawn as dashes (`vector-effect: non-scaling-stroke` breaks `pathLength` dashing) → viewBox-unit stroke.
+  - Bezel covered by the canvas → drawn above it.
+  - Bezel offset on mobile → anchored to the orb square.
+  - Edge inclusions smeared by refraction → moved inward.
+- **Still not verified:** reduced motion in a real browser with the OS setting on.
 
 ## Next steps after approval (not started)
 1. Apply the system to the customer portal: floating glass nav, balance typography, step-up focus experience.

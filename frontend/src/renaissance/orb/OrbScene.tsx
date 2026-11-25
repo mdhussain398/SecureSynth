@@ -75,7 +75,7 @@ function Sculpture({ signals, state, selected, onSelect, hero, reduce, onReady }
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   }, []);
   // Inclusions sit inside the glass, so the sphere refracts and magnifies them.
-  const pts = useMemo(() => spherePoints(Math.max(signals.length, 1), hero ? 0.98 : 0.92), [signals.length, hero]);
+  const pts = useMemo(() => spherePoints(Math.max(signals.length, 1), hero ? 0.9 : 0.72), [signals.length, hero]);
   // A hairline of light runs from each deviating signal into the identity core: "this signal fed the decision".
   const conduits = useMemo(() => {
     const a: number[] = [];
