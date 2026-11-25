@@ -75,13 +75,20 @@ def test_genuine_traveller_recovers_via_trusted_device(client, users):
     assert run["steps"][-1]["http"]["status"] in (200, 201)
 
 
-def test_reset_restores_snapshot_and_invalidates_sessions(client, users, app_ctx, tmp_path):
+def test_reset_restores_snapshot_keeps_presenter_and_invalidates_others(client, users, app_ctx, tmp_path):
+    from fastapi.testclient import TestClient
+    from tests.conftest import TEST_DEVICE_RAW
     st = app_ctx.state.ss
     db_file = st.settings.database_url.removeprefix("sqlite:///")
     st.engine.dispose()
     shutil.copyfile(db_file, st.settings.seed_snapshot)
-    _admin(client, users)
-    client.post("/api/lab/scenarios/normal_customer/run", json={"params": {"username": "asha"}}, headers=csrf(client))
-    r = client.post("/api/lab/reset", headers=csrf(client))
-    assert r.status_code == 200 and r.json()["ok"] is True
-    assert client.get("/api/auth/me").status_code == 401  # old admin session gone with the reset
+    with TestClient(app_ctx, base_url="http://127.0.0.1:8000") as other:
+        other.cookies.set("ss_device", TEST_DEVICE_RAW, domain="127.0.0.1", path="/api")
+        login(other, users["asha"])
+        assert other.get("/api/auth/me").status_code == 200
+        _admin(client, users)
+        client.post("/api/lab/scenarios/normal_customer/run", json={"params": {"username": "ravi"}}, headers=csrf(client))
+        r = client.post("/api/lab/reset", headers=csrf(client))
+        assert r.status_code == 200 and r.json()["ok"] is True
+        assert client.get("/api/auth/me").status_code == 200   # presenter keeps working
+        assert other.get("/api/auth/me").status_code == 401    # everyone else is signed out

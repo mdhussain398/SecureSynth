@@ -57,7 +57,12 @@ def _path(url: str) -> Path:
 
 @router.post("/reset")
 def reset(ctx=Depends(lab_guard), st: AppState = Depends(get_state)):
-    _, _, db = ctx
+    """Restore the pristine snapshot. Every session is invalidated except the presenter's own admin session,
+    so a live demo does not need a fresh sign-in and device approval after each reset."""
+    from app import models
+    presenter, _, db = ctx
+    keep = {c.name: getattr(presenter, c.name) for c in models.Session.__table__.columns}
+    keep["device_id"] = None  # the browser-device row does not exist in the snapshot
     db.close()
     snap = Path(st.settings.seed_snapshot).resolve()
     if not snap.exists():
@@ -69,6 +74,10 @@ def reset(ctx=Depends(lab_guard), st: AppState = Depends(get_state)):
     shutil.copyfile(snap, target)
     st.engine = _sqlite_engine(st.settings.database_url)
     st.SessionLocal = sessionmaker(bind=st.engine, expire_on_commit=False)
+    with st.SessionLocal() as fresh:
+        fresh.add(models.Session(**keep))
+        audit.log(fresh, "lab", "lab.reset", keep["user_id"], keep["id"])
+        fresh.commit()
     clock.reset()
     st.login_limiter.reset()
     st.totp_limiter.reset()

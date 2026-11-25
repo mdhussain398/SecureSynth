@@ -35,8 +35,17 @@ def _history(db, user_id: int, now, limit: int = 60) -> list[dict]:
 
 
 def _baseline(db, user) -> dict:
+    """Scoring view: the trusted baseline plus devices that passed independent trusted-device verification
+    and have not been rejected. They count as recognised for scoring but are NOT in the trusted baseline
+    until promotion (clean sessions + time), and are dropped if any session on them is blocked."""
     b = db.get(models.Baseline, user.id)
-    return b.trusted if b else F.build_baseline([], home_city=user.home_city)
+    if b is None:
+        return F.build_baseline([], home_city=user.home_city)
+    view = dict(b.trusted)
+    verified = [c["value"] for c in (b.candidate or [])
+                if c["kind"] == "device" and c.get("verified_by") and c.get("status") == "pending"]
+    view["devices"] = sorted(set(b.trusted["devices"]) | set(verified))
+    return view
 
 
 def build_event(db, session: models.Session, checkpoint: str, pending_op: dict | None, now) -> dict:

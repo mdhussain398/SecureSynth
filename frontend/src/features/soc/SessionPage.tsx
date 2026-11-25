@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { FlaskConical, Ghost, X } from 'lucide-react';
 import type { RiskAssessment } from '../../api/types';
-import { useCounterfactual, useRevoke, useSessionDetail } from '../../api/queries';
+import { useConfig, useCounterfactual, useRevoke, useSessionDetail } from '../../api/queries';
 import { Badge, Banner, Button, ButtonLink, Card, DataTable, DecisionPill, ErrorState, RiskGauge, Skeleton, Stat, Timeline, fmtTime } from '../../design/components';
 import { PageTitle } from '../../layout/layouts';
 
@@ -101,6 +101,7 @@ const FEATURE_LABEL: Record<string, string> = {
   secs_login_to_sensitive: 'Seconds from login to sensitive action',
   log_secs_login_to_sensitive: 'Login → sensitive action (log seconds)',
   beneficiary_fresh: 'Payee added this session (0 / 1)',
+  travel_window_active: 'Inside verified travel window (0 / 1)',
   is_transfer: 'Checkpoint is a transfer (0 / 1)',
   is_beneficiary_add: 'Checkpoint is a payee add (0 / 1)',
   sensitive_seq: 'Sensitive sequence (0 / 1)',
@@ -108,7 +109,7 @@ const FEATURE_LABEL: Record<string, string> = {
   failed_auth_24h: 'Failed sign-ins in 24 h',
   session_action_rate: 'Session action rate',
 };
-const BINARY = /(_recognised|_known|_new|_fresh|^sensitive_seq|^is_transfer|^is_beneficiary_add)$/;
+const BINARY = /(_recognised|_known|_new|_fresh|_active|^sensitive_seq|^is_transfer|^is_beneficiary_add)$/;
 const featureLabel = (k: string) => FEATURE_LABEL[k] ?? k;
 
 function CounterfactualDrawer({ a, onClose }: { a: RiskAssessment; onClose: () => void }) {
@@ -167,6 +168,7 @@ export function SessionPage() {
   const { id = '' } = useParams();
   const q = useSessionDetail(id);
   const revoke = useRevoke(id);
+  const config = useConfig();
   const [selected, setSelected] = useState<number | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
@@ -183,7 +185,7 @@ export function SessionPage() {
         title={<span className="flex flex-wrap items-center gap-2">{s.display_name}<span className="text-[var(--ink-3)] font-normal text-[0.9375rem]">session {s.id}</span></span>}
         sub={`${s.city} · ${s.device_recognised ? 'device recognised' : 'device not recognised'} · mode ${s.mode.replace('_', '-')}${s.is_lab ? ' · lab session' : ''}`}
         actions={<>
-          <ButtonLink to={`/soc/ghost/${encodeURIComponent(s.id)}`} variant="secondary" size="sm"><Ghost size={14} aria-hidden />Ghost compare</ButtonLink>
+          {config.data?.ghost_banking_enabled && <ButtonLink to={`/soc/ghost/${encodeURIComponent(s.id)}`} variant="secondary" size="sm"><Ghost size={14} aria-hidden />Ghost compare</ButtonLink>}
           <ButtonLink to={`/soc/users/${s.user_id}/baseline`} variant="secondary" size="sm">Baseline</ButtonLink>
           {assessments.length > 0 && <Button variant="secondary" size="sm" onClick={() => setDrawer(true)}><FlaskConical size={14} aria-hidden />What-if</Button>}
           {confirmRevoke ? (

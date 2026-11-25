@@ -60,9 +60,9 @@ function ScenarioCard({ s }: { s: Scenario }) {
           <DataTable caption="Scenario steps" rows={run.data.steps} rowKey={(st) => st.n} columns={[
             { key: 'n', header: 'Step', cell: (st) => st.n },
             { key: 'a', header: 'Actor', cell: (st) => <Badge tone={st.actor === 'attacker' ? 'block' : st.actor === 'trusted_device' ? 'info' : 'neutral'}>{ACTOR[st.actor]}</Badge> },
-            { key: 'x', header: 'Action', cell: (st) => <div><div>{st.action}</div><div className="text-[0.75rem] text-[var(--ink-3)] font-mono">{st.http.method} {st.http.path}</div></div> },
-            { key: 'h', header: 'HTTP', align: 'right', cell: (st) => <span className={st.http.status >= 400 ? 'text-[var(--block)] font-medium' : ''}>{st.http.status}</span> },
-            { key: 'd', header: 'Decision', cell: (st) => <DecisionPill decision={st.decision} /> },
+            { key: 'x', header: 'Action', cell: (st) => <div><div>{st.action}</div>{st.http.status !== 0 && <div className="text-[0.75rem] text-[var(--ink-3)] font-mono">{st.http.method} {st.http.path}</div>}</div> },
+            { key: 'h', header: 'HTTP', align: 'right', cell: (st) => st.http.status === 0 ? <span className="text-[var(--ink-3)]" aria-label="simulated time, no request">⏱</span> : <span className={st.http.status >= 400 ? 'text-[var(--block)] font-medium' : ''}>{st.http.status}</span> },
+            { key: 'd', header: 'Decision', cell: (st) => st.http.status === 0 ? null : <DecisionPill decision={st.decision} /> },
             { key: 'r', header: 'Risk', align: 'right', cell: (st) => st.risk_score?.toFixed(1) ?? '—' },
             { key: 'o', header: 'Note', cell: (st) => <span className="text-[var(--ink-2)]">{st.note}</span> },
           ]} />

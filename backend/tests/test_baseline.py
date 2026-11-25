@@ -100,3 +100,31 @@ def test_verified_travel_window_gives_transparent_credit():
     f = {"device_recognised": 1, "city_known": 1, "travel_speed_kmh": 0, "sensitive_seq": 0, "amount_robust_z": 0,
          "failed_auth_24h": 0, "travel_window_active": 1}
     assert any(c["rule"] == "verified_travel_window" and c["points"] == -15 for c in policy.contributions(f))
+
+
+def test_verified_device_is_provisionally_recognised_but_not_trusted(app_ctx, users, clock):
+    from app.risk import engine
+    uid = users["asha"].id
+    with _db(app_ctx) as db:
+        B.record_verified(db, uid, "device", "dev-800", challenge_id="c8", session_id="s0")
+        user = db.get(models.User, uid)
+        scoring = engine._baseline(db, user)
+        assert "dev-800" in scoring["devices"]
+        assert "dev-800" not in _trusted(db, uid)[0]["devices"]
+
+
+def test_rejected_device_is_not_recognised(app_ctx, users, clock):
+    from app.risk import engine
+    uid = users["asha"].id
+    with _db(app_ctx) as db:
+        B.record_verified(db, uid, "device", "dev-801", challenge_id="c9", session_id="s0")
+        B.reject_session(db, uid, "s0", device_ref="dev-801")
+        assert "dev-801" not in engine._baseline(db, db.get(models.User, uid))["devices"]
+
+
+def test_seeded_history_is_realistic(app_ctx, users):
+    with _db(app_ctx) as db:
+        t, _ = _trusted(db, users["asha"].id)
+        assert max(t["hour_profile"]) < 0.5  # spread across hours, not one fixed minute
+        acct = db.query(models.Account).filter_by(user_id=users["asha"].id).one()
+        assert db.query(models.Transaction).filter_by(account_id=acct.id, status="completed").count() >= 10

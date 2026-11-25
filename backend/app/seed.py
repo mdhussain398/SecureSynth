@@ -54,10 +54,13 @@ def seed_history(db, user, *, device_raw: str, days: int = 45, login_hour: int =
     db.flush()
     ben = add_beneficiary(db, user.id, "Landlord Synth", f"SYN-{8000 + user.id:04d}", age_days=days + 2)
     import numpy as np
+    from ml.generate import PERSONAS
     rng = np.random.default_rng(1000 + user.id)  # deterministic per customer; same spread as ml/generate.py
+    centres, sd = (PERSONAS[user.persona][:2] if user.persona in PERSONAS else ([login_hour], 1.5))
     events = []
     for d in range(days, 0, -1):
-        ts = (now - timedelta(days=d)).astimezone(F.LOCAL_TZ).replace(hour=login_hour, minute=(d * 7) % 60,
+        hour = int(round(rng.choice(centres) + rng.normal(0, sd))) % 24  # persona spread, like ml/generate.py
+        ts = (now - timedelta(days=d)).astimezone(F.LOCAL_TZ).replace(hour=hour, minute=int(rng.integers(60)),
                                                                        second=0, microsecond=0)
         ref = f"hist-{user.id}-{d}"
         events.append({"ts": ts, "type": "login", "device": _device_ref(dev.id), "city": user.home_city, "session": ref})
@@ -69,6 +72,12 @@ def seed_history(db, user, *, device_raw: str, days: int = 45, login_hour: int =
         db.add(models.HistoryEvent(user_id=user.id, session_ref=e["session"], ts=e["ts"], event_type=e["type"],
                                    device_ref=e["device"], city=e["city"], amount_paise=e.get("amount"),
                                    beneficiary_ref=e.get("beneficiary"), seconds_since_login=e.get("secs_since_login")))
+    acct = db.scalar(__import__("sqlalchemy").select(models.Account).where(models.Account.user_id == user.id))
+    for e in events:  # visible statement history matching the behavioural history
+        if e["type"] == "transfer" and acct is not None:
+            db.add(models.Transaction(account_id=acct.id, beneficiary_id=ben.id, amount_paise=e["amount"],
+                                      direction="debit", counterparty=ben.name, description="Monthly rent share",
+                                      status="completed", created_at=e["ts"]))
     trusted = F.build_baseline(events, home_city=user.home_city)
     db.merge(models.Baseline(user_id=user.id, version=1, trusted=trusted, candidate=[], rejected_count=0, updated_at=now))
     db.add(models.BaselineVersion(user_id=user.id, version=1, snapshot=trusted, diff={"init": "seeded history"},

@@ -10,8 +10,12 @@ os.environ.setdefault("SS_GHOST_BANKING_ENABLED", "false")
 
 @pytest.fixture()
 def clock():
+    from datetime import timedelta
+    from app.risk.features import LOCAL_TZ
     from app.services import clock as clk
     clk.reset()
+    local = clk.now().astimezone(LOCAL_TZ)
+    clk.set_offset(timedelta(hours=(9 - local.hour) % 24))  # deterministic: tests run at 09:xx customer-local
     yield clk
     clk.reset()
 
