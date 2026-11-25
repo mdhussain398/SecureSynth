@@ -47,6 +47,17 @@ Block only:
 | Static global rules | ₹3.10 cr | ₹2.98 cr | ₹12.2 lakh | ₹2.89 cr |
 | SecureSynth | ₹3.10 cr | ₹2.96 cr | ₹14.6 lakh | ₹57.0 lakh |
 
+### Blocked vs challenged
+"Prevented" includes money stopped by a step-up challenge, on the assumption that the attacker cannot pass trusted-device verification. The split:
+
+| Approach | Attack value stopped by BLOCK (permanent) | Stopped by challenge (assumes attacker fails it) | Legit value blocked | Legit value challenged, then completed |
+|---|---|---|---|---|
+| Static global rules | ₹2.38 cr | ₹59.9 lakh | ₹0.3 lakh | ₹2.89 cr |
+| SecureSynth | ₹2.61 cr | ₹34.8 lakh | ₹25.0 lakh | ₹32.0 lakh |
+
+- SecureSynth stops more attack money outright (₹2.61 cr vs ₹2.38 cr) and relies less on the verification assumption.
+- It also blocks more legitimate money outright (₹25 lakh vs ₹0.3 lakh). That is the real cost of its higher block rate.
+
 ## Latency
 SecureSynth in-process decision: p50 5.46 ms, p95 5.59 ms. This is single-event scoring on a laptop and excludes network and database time.
 

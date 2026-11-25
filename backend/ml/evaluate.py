@@ -58,7 +58,8 @@ def run_approach(name, label, decide_fn, rows, sessions):
     for i, m in enumerate(rows.meta):
         by_session.setdefault(m["session_ref"], []).append(i)
     final, lat = {}, []
-    prev = dict(attempted=0, prevented=0, completed=0, legit_delayed=0)
+    prev = dict(attempted=0, prevented=0, completed=0, legit_delayed=0,
+                prevented_blocked=0, prevented_challenged=0, legit_blocked=0, legit_challenged=0)
     for ref, idxs in by_session.items():
         s = sessions[ref]
         running = "ALLOW"
@@ -73,8 +74,13 @@ def run_approach(name, label, decide_fn, rows, sessions):
                 if s["label"] == "ato":
                     prev["attempted"] += m["amount"]
                     prev["prevented" if o == "restricted" else "completed"] += m["amount"]
+                    if running == "BLOCK":
+                        prev["prevented_blocked"] += m["amount"]       # stopped outright by the engine
+                    elif running == "STEP_UP":
+                        prev["prevented_challenged"] += m["amount"]    # stopped only because the attacker fails verification
                 elif o != "completed":
                     prev["legit_delayed"] += m["amount"]
+                    prev["legit_blocked" if running == "BLOCK" else "legit_challenged"] += m["amount"]
         final[ref] = running
     refs = list(final)
     y = [sessions[r]["label"] == "ato" for r in refs]
@@ -90,7 +96,11 @@ def run_approach(name, label, decide_fn, rows, sessions):
         "new_device_restriction_rate": round(float(np.mean([final[r] != "ALLOW" for r in new_devs])), 4) if new_devs else 0.0,
         "legit_block_rate": round(float(np.mean([final[r] == "BLOCK" for r in legit])), 4),
         "prevention": {"attack_value_attempted_paise": prev["attempted"], "attack_value_prevented_paise": prev["prevented"],
-                       "attack_value_completed_paise": prev["completed"], "legit_value_delayed_paise": prev["legit_delayed"]},
+                       "attack_value_completed_paise": prev["completed"], "legit_value_delayed_paise": prev["legit_delayed"],
+                       "attack_value_prevented_by_block_paise": prev["prevented_blocked"],
+                       "attack_value_prevented_by_challenge_paise": prev["prevented_challenged"],
+                       "legit_value_blocked_paise": prev["legit_blocked"],
+                       "legit_value_challenged_paise": prev["legit_challenged"]},
         "latency_ms": {"p50": round(float(np.percentile(lat, 50)), 4), "p95": round(float(np.percentile(lat, 95)), 4)},
         "per_family_recall": {f: round(float(np.mean([final[r] != "ALLOW" for r in refs
                                                       if sessions[r]["attack_family"] == f])), 4) for f in fams},
@@ -148,6 +158,8 @@ def main() -> dict:
             "Unit of evaluation is a session; a session's decision is the strictest decision reached so far.",
             "Attackers cannot complete independent trusted-device verification; genuine customers can.",
             "Value prevented counts only attack transfers that ended restricted; legitimate value delayed is reported separately.",
+            "Prevented value is split into 'blocked' (engine decision BLOCK, permanent) and 'challenged' (STEP_UP; prevented only under the assumption that the attacker cannot pass trusted-device verification).",
+            "Legitimate value delayed is split into 'blocked' (restricted until the customer contacts the bank) and 'challenged' (completed after the customer approved on their trusted device).",
             "Thresholds and ML weight were selected on the development validation window (seed 2026, days 60–75) only.",
             "The final test population (seed 9091) was generated fresh and scored once with frozen model, features and thresholds.",
             "A device approved through independent verification counts as recognised afterwards (mirrors the product).",
