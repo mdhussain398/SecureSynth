@@ -1,6 +1,6 @@
 # Frontend Renaissance — handoff (Master Prompt #04)
 
-**Status: WIP prototype, awaiting the user's visual approval.** Do not extend the redesign to other pages until it is approved.
+**Status: WIP. Creative direction approved; visual refinement pass in progress (see the refinement section). Awaiting approval of the execution.** Do not extend the redesign to other pages until it is approved.
 **Branch:** `feat/frontend-renaissance` (from the stable MVP `313db81` on `feat/mvp-checkpoint`).
 - Push only to this branch.
 - Never merge into `feat/mvp-checkpoint` or `main` without explicit approval.
@@ -136,6 +136,41 @@ Known issues:
 - In the browser pane, unfocused frames are throttled to 2 fps (measured), so first screenshots can predate the WebGL frame.
 - Legacy pages (`/login`, `/bank`, old `/soc/*`, `/lab`) still use the old design.
 - The landing "Scenario Lab" entry goes to the legacy Lab.
+
+## Refinement pass (user review, 2026-11-25)
+The user approved the direction but asked for a refinement pass first. What changed:
+- **Orb → optical glass sculpture** (`orb/OrbScene.tsx`, rewritten):
+  - Solid sphere with real `transmission`, IOR 1.32, dispersion and light absorption.
+  - Reflections come from a procedural studio environment of softbox strips plus an electric-blue fill (no assets).
+  - An opaque backdrop (page-matched porcelain, an electric glow and faint etched contours) gives the glass something to refract. The canvas edge is feathered with a CSS radial mask so it melts into the page.
+  - Removed the orbit rings, the node-and-edge network and the neon rim (the "atom diagram" look).
+  - Signals are small inclusions inside the glass; deviating ones glow in their severity colour, and a hairline runs from each one to the identity core.
+  - The selection ring always faces the viewer. Hit targets are generous.
+  - Motion: only the inner inclusions rotate (0.035 rad/s); the pointer tilt is damped (λ 1.6) and small; the core breathes ±6% (BLOCK: faster, ±10%).
+  - `NeutralToneMapping` keeps the whites clean.
+- **CSS fallback** restyled as glass (absorption edge, electric caustic, softbox highlights); no rings.
+- **Background depth:** a top light falls to a deeper porcelain (`.rn` background). Stage light sits behind the orb, with a contact shadow beneath it.
+- **Contours:** opacity 0.40–0.45, thinner strokes, and a `clearAt` radial mask so they fade out around the focal subject.
+- **Type:** the secondary scale was raised:
+
+  | Token | Size |
+  |---|---|
+  | xs | 13 px |
+  | sm | 15 px |
+  | base | 17 px |
+  | md | 19 px |
+  | lg | 24 px |
+
+  `--graphite-3` was darkened to `#4A5466` (7.4:1).
+- **Liquid glass nav** (`.rn-glass`):
+  - Heavier blur and saturation, a specular top line, a gradient lensing edge (`::before` mask), and a blue-tinted float shadow.
+  - The active item is a raised crystal lens (`.rn-lens`) instead of a black fill.
+- **Command Centre composition** (`Intelligence.tsx`):
+  - The orb sits on an **instrument bezel** (`Bezel`). Its arc is the real risk index (0–100), and amber and red ticks mark the real step-up and block thresholds.
+  - Signal **callouts sit on the ring around the sculpture** and select the signal. They wrap below the orb on narrow screens.
+  - The stage glow is tinted by the decision. Labels were shortened to fit the ring.
+
+Screenshots: `docs/screenshots/renaissance/refine-*.jpg`.
 
 ## Next steps after approval (not started)
 1. Apply the system to the customer portal: floating glass nav, balance typography, step-up focus experience.

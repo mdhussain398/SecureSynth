@@ -1,20 +1,20 @@
 /* Command Centre — Intelligence workspace (prototype). Admin-only data, fetched from the same authorised
  * endpoints as the existing console; every number, signal and decision below comes from the backend. */
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useBaseline, useLogout, useMe, useSessionDetail, useSessions } from '../api/queries';
 import type { Decision, RiskAssessment } from '../api/types';
 import './rn.css';
 import { IdentityOrb } from './orb/IdentityOrb';
-import type { OrbSignal, SignalLevel } from './orb/types';
+import { LEVEL_COLOR, STATE_COLOR, type OrbSignal, type SignalLevel } from './orb/types';
 import { AnimatedNumber, Contours, GlassNav, spring } from './primitives';
 
 const SIGNAL_LABEL: Record<string, string> = {
   device_recognised: 'Browser', hour_rarity: 'Time of day', city_known: 'Location', log_km_from_home: 'Distance from home',
   travel_speed_kmh: 'Travel speed', amount_robust_z: 'Amount', txn_velocity_ratio: 'Transfer frequency',
-  beneficiary_new: 'New payee', beneficiary_fresh: 'Payee added this session', log_secs_login_to_sensitive: 'Speed to act',
-  sensitive_seq: 'Add-then-pay sequence', failed_auth_24h: 'Failed sign-ins', travel_window_active: 'Verified travel window',
+  beneficiary_new: 'New payee', beneficiary_fresh: 'Payee just added', log_secs_login_to_sensitive: 'Speed to act',
+  sensitive_seq: 'Add-then-pay', failed_auth_24h: 'Failed sign-ins', travel_window_active: 'Travel window',
 };
 const SEV: Record<string, SignalLevel> = { low: 1, medium: 2, high: 3 };
 const CHECKPOINT: Record<string, string> = { login: 'Sign-in', beneficiary_add: 'Payee add', transfer: 'Transfer', profile_change: 'Profile change' };
@@ -63,7 +63,7 @@ export function Intelligence() {
 
   return (
     <main className="rn relative isolate min-h-[100dvh] overflow-x-hidden">
-      <Contours className="absolute inset-0 -z-10 h-full w-full opacity-60" hourProfile={baseline.data?.trusted.hour_profile ?? null} levels={16} />
+      <Contours className="absolute inset-0 -z-10 h-full w-full opacity-40" hourProfile={baseline.data?.trusted.hour_profile ?? null} levels={16} clearAt={[50, 44]} />
 
       <header className="sticky top-0 z-30 flex items-center justify-between gap-3 px-5 py-4 sm:px-8">
         <Link to="/" className="flex items-center gap-2.5" aria-label="SecureSynth home">
@@ -85,9 +85,9 @@ export function Intelligence() {
           <Link to="/lab" className="rn-btn rn-btn-primary mt-8">Open the Scenario Lab</Link>
         </section>
       ) : (
-        <div className="grid gap-8 px-5 pb-28 sm:px-8 md:pb-12 lg:grid-cols-[minmax(260px,0.9fr)_minmax(0,1.5fr)_minmax(240px,0.8fr)] lg:gap-6">
+        <div className="grid gap-8 px-5 pb-28 sm:px-8 md:pb-12 lg:grid-cols-[minmax(290px,0.85fr)_minmax(0,1.7fr)_minmax(270px,0.8fr)] lg:gap-4">
           {/* Left: the reading. */}
-          <section aria-labelledby="who" className="order-2 lg:order-1 lg:pt-10">
+          <section aria-labelledby="who" className="order-2 lg:order-1 lg:pt-14">
             <p className="text-[length:var(--t-sm)] text-[color:var(--graphite-3)]">{detail.data ? `${detail.data.session.city} (simulated), ${detail.data.session.device_recognised ? 'recognised browser' : 'unrecognised browser'}${detail.data.session.is_lab ? ', lab session' : ''}` : ' '}</p>
             <h1 id="who" className="rn-display mt-2 text-[length:var(--t-2xl)]">{detail.data?.session.display_name ?? ' '}</h1>
             {a && (
@@ -110,7 +110,7 @@ export function Intelligence() {
 
                 {/* Signal inspector: the selected behavioural signal, observed vs this customer's baseline. */}
                 <div className="mt-8 border-t border-[color:var(--silver-2)] pt-6" aria-live="polite">
-                  <p className="text-[length:var(--t-sm)] text-[color:var(--graphite-3)]">Signal</p>
+                  <p className="text-[length:var(--t-sm)] text-[color:var(--graphite-3)]">Selected signal</p>
                   <p className="mt-1 text-[length:var(--t-lg)] font-semibold">{focus?.label ?? 'No signals'}</p>
                   {dev ? (
                     <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-[length:var(--t-base)]">
@@ -148,31 +148,60 @@ export function Intelligence() {
             )}
           </section>
 
-          {/* Centre: the dominant focal visualisation. */}
+          {/* Centre: the sculpture on an instrument bezel. The bezel arc is the real risk index; its ticks mark the
+              real thresholds; each callout on the ring is one behavioural signal and selects it. */}
           <section aria-label="Behavioural digital twin" className="order-1 lg:order-2">
-            <div className="mx-auto max-w-[min(680px,78vh)]">
-              <IdentityOrb signals={signals} state={a?.decision ?? 'idle'} selected={focus?.id} onSelect={setSel} />
+            <div className="relative mx-auto w-full max-w-[min(640px,76vh)]">
+              <div aria-hidden className="pointer-events-none absolute inset-[-8%] -z-10 rounded-full"
+                style={{ background: `radial-gradient(closest-side, ${a?.decision === 'BLOCK' ? 'rgba(240,68,56,0.10)' : a?.decision === 'STEP_UP' ? 'rgba(247,144,9,0.12)' : 'rgba(0,91,255,0.16)'}, rgba(0,91,255,0.05) 60%, transparent)` }} />
+              <div aria-hidden className="pointer-events-none absolute bottom-[4%] left-1/2 -z-10 h-[7%] w-[46%] -translate-x-1/2 rounded-[50%] bg-[rgba(16,24,40,0.22)] blur-2xl" />
+              {a && <Bezel score={a.risk_score} stepUp={a.thresholds.step_up} block={a.thresholds.block} decision={a.decision} />}
+              <div className="relative">
+                <IdentityOrb signals={signals} state={a?.decision ?? 'idle'} selected={focus?.id} onSelect={setSel} />
+              </div>
+              <ul aria-label="Behavioural signals" className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 lg:mt-0">
+                {signals.map((s, i) => {
+                  const th = ((-90 + ((i + 0.5) * 360) / signals.length) * Math.PI) / 180;
+                  const cx = Math.cos(th), side = cx > 0.25 ? 'r' : cx < -0.25 ? 'l' : 'c';
+                  const style = {
+                    '--x': `${50 + cx * 43}%`, '--y': `${50 + Math.sin(th) * 43}%`,
+                    '--tf': `translate(${side === 'r' ? '0.4rem' : side === 'l' ? 'calc(-100% - 0.4rem)' : '-50%'}, -50%)`,
+                  } as CSSProperties;
+                  const on = focus?.id === s.id;
+                  return (
+                    <li key={s.id} style={style} className="lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:[transform:var(--tf)]">
+                      <button type="button" onClick={() => setSel(s.id)} aria-pressed={on}
+                        className={`flex items-center gap-2 whitespace-nowrap rounded-full px-2 py-1 text-[length:var(--t-sm)] transition-colors ${side === 'l' ? 'lg:flex-row-reverse' : ''} ${on ? 'bg-[rgba(255,255,255,0.85)] font-semibold text-[color:var(--graphite)] shadow-[0_4px_14px_-6px_rgba(16,24,40,0.3)]' : s.level >= 2 ? 'font-medium text-[color:var(--graphite)] hover:bg-[rgba(255,255,255,0.6)]' : 'text-[color:var(--graphite-3)] hover:bg-[rgba(255,255,255,0.6)] hover:text-[color:var(--graphite)]'}`}>
+                        <span aria-hidden className="h-2 w-2 flex-none" style={{
+                          background: LEVEL_COLOR[s.level], borderRadius: s.level === 3 ? 2 : s.level === 2 ? 1 : 999,
+                          transform: s.level === 2 ? 'rotate(45deg)' : undefined,
+                        }} />
+                        {s.label}<span className="sr-only">: {['normal', 'low', 'medium', 'high'][s.level]} deviation</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
             {/* Risk telemetry across this session's checkpoints. */}
-            <ol className="mx-auto mt-2 flex max-w-[560px] items-center justify-center gap-2" aria-label="Checkpoints in this session">
+            <ol className="mx-auto mt-6 flex max-w-[600px] flex-wrap items-center justify-center gap-2" aria-label="Checkpoints in this session">
               {assessments.map((x, i) => (
                 <li key={x.id} className="flex items-center gap-2">
                   {i > 0 && <span aria-hidden className="h-px w-8 bg-[var(--silver)] sm:w-14" />}
                   <button type="button" onClick={() => setCpPick(x.id)} aria-pressed={x.id === a?.id}
-                    className={`rounded-full px-3 py-1.5 text-[length:var(--t-sm)] transition-colors ${x.id === a?.id ? 'bg-[var(--graphite)] text-[color:var(--crystal)]' : 'text-[color:var(--graphite-2)] hover:bg-[rgba(16,24,40,0.05)]'}`}>
-                    <span className="rn-state" data-d={x.decision} style={x.id === a?.id ? { color: 'inherit' } : undefined}>{CHECKPOINT[x.checkpoint] ?? x.checkpoint} <span className="rn-num">{x.risk_score.toFixed(0)}</span></span>
+                    className={`relative rounded-full px-3.5 py-2 text-[length:var(--t-sm)] transition-colors ${x.id === a?.id ? 'rn-lens text-[color:var(--graphite)]' : 'text-[color:var(--graphite-2)] hover:bg-[rgba(255,255,255,0.6)]'}`}>
+                    <span className="rn-state" data-d={x.decision}><span className="text-[color:var(--graphite)]">{CHECKPOINT[x.checkpoint] ?? x.checkpoint}</span> <span className="rn-num">{x.risk_score.toFixed(0)}</span></span>
                   </button>
                 </li>
               ))}
             </ol>
-            <p className="mt-3 text-center text-[length:var(--t-xs)] text-[color:var(--graphite-3)]">
-              Each point is one of this customer’s behavioural signals at the selected checkpoint; colour shows how far it deviates from their baseline. The orb visualises the engine’s output; it is not the model.
+            <p className="mx-auto mt-3 max-w-[38rem] text-center text-[length:var(--t-sm)] text-[color:var(--graphite-3)]">
+              The ring shows the risk index against the step-up and block thresholds. Each point inside the glass is one of this customer’s behavioural signals; its colour shows how far it deviates from their baseline. The sculpture visualises the engine’s output; it is not the model.
             </p>
-            <ul className="sr-only">{signals.map((s) => <li key={s.id}><button type="button" onClick={() => setSel(s.id)}>{s.label}: {['normal', 'low', 'medium', 'high'][s.level]} deviation</button></li>)}</ul>
           </section>
 
           {/* Right: readable event stream. */}
-          <section aria-labelledby="stream" className="order-3 lg:pt-10">
+          <section aria-labelledby="stream" className="order-3 lg:pt-14">
             <div className="flex items-baseline justify-between">
               <h2 id="stream" className="text-[length:var(--t-md)] font-semibold">Live sessions</h2>
               <span className="text-[length:var(--t-xs)] text-[color:var(--graphite-3)]">updates every 3 s</span>
@@ -203,4 +232,29 @@ export function Intelligence() {
 
 function FragmentRow({ label, value }: { label: string; value: string }) {
   return (<><dt className="text-[color:var(--graphite-3)]">{label}</dt><dd className="rn-num text-right">{value}</dd></>);
+}
+
+/** Instrument bezel around the sculpture: hairline ticks, threshold marks and an arc for the backend's risk index. */
+function Bezel({ score, stepUp, block, decision }: { score: number; stepUp: number; block: number; decision: Decision }) {
+  const R = 41;
+  const at = (v: number) => { const t = ((v / 100) * 360 - 90) * (Math.PI / 180); return [50 + Math.cos(t) * R, 50 + Math.sin(t) * R, t] as const; };
+  const mark = (v: number, color: string) => {
+    const [, , t] = at(v);
+    return <line x1={50 + Math.cos(t) * (R - 2.6)} y1={50 + Math.sin(t) * (R - 2.6)} x2={50 + Math.cos(t) * (R + 2.6)} y2={50 + Math.sin(t) * (R + 2.6)} stroke={color} strokeWidth={2} vectorEffect="non-scaling-stroke" />;
+  };
+  return (
+    <svg aria-hidden viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
+      <circle cx={50} cy={50} r={R} fill="none" stroke="var(--silver)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+      {Array.from({ length: 100 }, (_, k) => {
+        const t = ((k / 100) * 360 - 90) * (Math.PI / 180), major = k % 10 === 0, len = major ? 1.6 : 0.8;
+        return <line key={k} x1={50 + Math.cos(t) * (R + 0.6)} y1={50 + Math.sin(t) * (R + 0.6)} x2={50 + Math.cos(t) * (R + 0.6 + len)} y2={50 + Math.sin(t) * (R + 0.6 + len)}
+          stroke="var(--graphite-3)" strokeOpacity={major ? 0.55 : 0.25} strokeWidth={1} vectorEffect="non-scaling-stroke" />;
+      })}
+      <circle cx={50} cy={50} r={R} fill="none" stroke={STATE_COLOR[decision]} strokeWidth={3} strokeLinecap="round" pathLength={100}
+        strokeDasharray={`${Math.max(0.5, Math.min(100, score))} 100`} transform="rotate(-90 50 50)" vectorEffect="non-scaling-stroke"
+        style={{ transition: 'stroke-dasharray 900ms cubic-bezier(0.22,1,0.36,1), stroke 600ms' }} />
+      {mark(stepUp, '#B54708')}
+      {mark(block, '#C01048')}
+    </svg>
+  );
 }

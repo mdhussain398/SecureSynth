@@ -68,14 +68,14 @@ export function CursorLight() {
 /** Floating glass navigation with a fluid active indicator. */
 export function GlassNav({ items, label }: { items: { to: string; label: string; end?: boolean }[]; label: string }) {
   return (
-    <nav aria-label={label} className="rn-glass flex items-center gap-1 rounded-full p-1.5">
+    <nav aria-label={label} className="rn-glass flex items-center gap-0.5 rounded-full p-1.5">
       {items.map((it) => (
         <NavLink key={it.to} to={it.to} end={it.end}
-          className="relative rounded-full px-4 py-2 text-[length:var(--t-sm)] font-medium text-[color:var(--graphite-2)] transition-colors hover:text-[color:var(--graphite)]">
+          className="relative flex min-h-10 items-center rounded-full px-4 text-[length:var(--t-sm)] font-medium text-[color:var(--graphite-2)] transition-colors hover:text-[color:var(--graphite)] aria-[current=page]:text-[color:var(--graphite)]">
           {({ isActive }) => (
             <>
-              {isActive && <motion.span layoutId={`${label}-pill`} transition={spring} className="absolute inset-0 rounded-full bg-[var(--graphite)]" />}
-              <span className={`relative ${isActive ? 'text-[color:var(--crystal)]' : ''}`}>{it.label}</span>
+              {isActive && <motion.span layoutId={`${label}-pill`} transition={spring} className="rn-lens absolute inset-0 rounded-full" />}
+              <span className={`relative ${isActive ? 'font-semibold' : ''}`}>{it.label}</span>
             </>
           )}
         </NavLink>
@@ -103,8 +103,10 @@ function fieldFrom(hourProfile: number[] | null, seed: number) {
 }
 
 /** Marching squares → SVG paths. Deterministic, computed once. */
-export function Contours({ hourProfile = null, levels = 14, seed = 0.6, className, stroke = 'var(--silver)' }:
-  { hourProfile?: number[] | null; levels?: number; seed?: number; className?: string; stroke?: string }) {
+export function Contours({ hourProfile = null, levels = 14, seed = 0.6, className, stroke = 'var(--silver)', clearAt }:
+  { hourProfile?: number[] | null; levels?: number; seed?: number; className?: string; stroke?: string;
+    /** fade the lines out around this point (percent x/y) so they never compete with the focal subject */
+    clearAt?: [number, number] }) {
   const d = useMemo(() => {
     const N = 72, f = fieldFrom(hourProfile, seed);
     const g: number[][] = [];
@@ -132,8 +134,9 @@ export function Contours({ hourProfile = null, levels = 14, seed = 0.6, classNam
     return paths;
   }, [hourProfile, levels, seed]);
   return (
-    <svg aria-hidden viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" className={className}>
-      {d.map((p, i) => <path key={i} d={p} fill="none" stroke={stroke} strokeWidth={i % 4 === 3 ? 1.1 : 0.65} vectorEffect="non-scaling-stroke" />)}
+    <svg aria-hidden viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" className={className}
+      style={clearAt ? (() => { const m = `radial-gradient(60vmin 60vmin at ${clearAt[0]}% ${clearAt[1]}%, transparent 35%, #000 100%)`; return { maskImage: m, WebkitMaskImage: m }; })() : undefined}>
+      {d.map((p, i) => <path key={i} d={p} fill="none" stroke={stroke} strokeWidth={i % 4 === 3 ? 0.9 : 0.5} vectorEffect="non-scaling-stroke" />)}
     </svg>
   );
 }

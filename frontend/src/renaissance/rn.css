@@ -14,7 +14,7 @@
   --graphite: #101828;
   /* supporting (contrast-checked on porcelain/crystal) */
   --graphite-2: #344054;   /* body secondary  · 10.3:1 */
-  --graphite-3: #5B6474;   /* tertiary        ·  5.9:1 */
+  --graphite-3: #4A5466;   /* tertiary        ·  7.4:1 */
   --silver-2: #E3E7ED;     /* hairlines */
   --electric-ink: #0047CC; /* blue text on white · 7.0:1 */
   --electric-wash: rgba(0, 91, 255, 0.08);
@@ -29,17 +29,22 @@
   --ui: "Geist Variable", "Geist", system-ui, -apple-system, sans-serif;
 
   /* type scale (≈1.25 modular, display steps jump) */
-  --t-xs: 0.75rem; --t-sm: 0.8125rem; --t-base: 0.9375rem; --t-md: 1.0625rem; --t-lg: 1.375rem;
+  /* secondary sizes raised for distance reading on a projector */
+  --t-xs: 0.8125rem; --t-sm: 0.9375rem; --t-base: 1.0625rem; --t-md: 1.1875rem; --t-lg: 1.5rem;
   --t-xl: 2rem; --t-2xl: clamp(2.5rem, 5vw, 4rem); --t-hero: clamp(3.4rem, 10.5vw, 10.5rem);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --shadow-float: 0 1px 1px rgba(16, 24, 40, 0.04), 0 12px 32px -12px rgba(16, 24, 40, 0.18), 0 40px 80px -40px rgba(0, 61, 170, 0.18);
 
-  background: var(--porcelain);
+  /* depth: a cool top light falling to a deeper porcelain floor */
+  background:
+    radial-gradient(120% 70% at 50% -12%, #FFFFFF 0%, rgba(255,255,255,0) 62%),
+    linear-gradient(180deg, #F4F6FA 0%, #E9EDF4 100%);
+  background-attachment: fixed;
   color: var(--graphite);
   font-family: var(--ui);
   font-size: var(--t-base);
-  line-height: 1.5;
+  line-height: 1.55;
   font-feature-settings: "ss01", "tnum" 0;
   -webkit-font-smoothing: antialiased;
   min-height: 100dvh;
@@ -61,16 +66,37 @@
 }
 .rn-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 
-/* Liquid glass — used only for floating navigation and focused overlays, never as a generic card. */
+/* Liquid glass — used only for floating navigation and focused overlays, never as a generic card.
+ * Layers: a thin tinted body, heavy blur + saturation, a bright top specular line, a lensing edge (gradient
+ * hairline via ::before) and a two-stage float shadow tinted with the brand blue. */
 .rn-glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.52));
-  backdrop-filter: blur(18px) saturate(1.6);
-  -webkit-backdrop-filter: blur(18px) saturate(1.6);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(192, 199, 209, 0.35), var(--shadow-float);
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.66) 0%, rgba(255, 255, 255, 0.34) 100%);
+  backdrop-filter: blur(24px) saturate(1.9) brightness(1.04);
+  -webkit-backdrop-filter: blur(24px) saturate(1.9) brightness(1.04);
+  border: 0;
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 1),
+    inset 0 -1px 1px rgba(16, 24, 40, 0.05),
+    inset 0 0 18px rgba(255, 255, 255, 0.35),
+    0 1px 2px rgba(16, 24, 40, 0.06),
+    0 12px 32px -12px rgba(16, 24, 40, 0.24),
+    0 32px 64px -32px rgba(0, 61, 170, 0.32);
+}
+.rn-glass::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.25) 38%, rgba(0, 91, 255, 0.22) 72%, rgba(255, 255, 255, 0.85) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .rn-glass { background: rgba(255, 255, 255, 0.94); }
+}
+/* The active item in glass navigation: a raised crystal lens rather than a flat fill. */
+.rn-lens {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F1F5FB 100%);
+  box-shadow: inset 0 1px 0 #FFFFFF, inset 0 -1px 0 rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.12), 0 8px 18px -8px rgba(0, 61, 170, 0.45);
 }
 
 .rn-btn {

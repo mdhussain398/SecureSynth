@@ -36,7 +36,10 @@ export function Landing() {
 
   return (
     <main className="rn relative isolate h-[100dvh] min-h-[640px] overflow-hidden">
-      <Contours className="absolute inset-0 -z-10 h-full w-full opacity-70" seed={0.9} />
+      <Contours className="absolute inset-0 -z-10 h-full w-full opacity-45" seed={0.9} clearAt={[72, 44]} />
+      {/* stage: electric light behind the sculpture and a soft contact shadow beneath it give the page depth */}
+      <div aria-hidden className="pointer-events-none absolute -z-10 right-[-10vw] top-[2%] h-[min(90vw,560px)] w-[min(90vw,560px)] rounded-full md:right-[2vw] md:top-[44%] md:h-[min(70vw,100vh)] md:w-[min(70vw,100vh)] md:-translate-y-1/2"
+        style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.20), rgba(0,91,255,0.07) 55%, transparent)' }} />
       <CursorLight />
 
       <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-4 px-5 pt-5 sm:px-8 sm:pt-7">
