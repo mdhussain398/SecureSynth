@@ -226,3 +226,8 @@ After Claude's limit was hit, the user tried edits with Codex and then reverted 
 - **Contents:** speaker notes for 4 speakers, a native chart and diagrams, fresh real screenshots, `SPEAKER_NOTES.md` and `JUDGE_QA.md`.
 - **Validation:** `validate.py` passed.
 - **Open:** vector PDF export needs the user to answer PowerPoint's Grant File Access prompts; team names are still TBD.
+
+## 2026-11-25 ~21:15 IST — Mac 2, Phase 4 (freeze)
+- **Checks:** tests 89 passed; build OK; manifest 6/6; six scenarios match via the real API; 60 FPS logo; offline; reduced motion; 375 px across 8 pages; secrets scan clean.
+- **State:** demo reset (seed `59aff8dfce5d8c27`); `submission/` bundle assembled with a SHA-256 manifest.
+- **Pending (team):** names, vector PDF export, fallback recording, rehearsals.

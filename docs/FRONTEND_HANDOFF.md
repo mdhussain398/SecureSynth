@@ -271,3 +271,13 @@ The new brand system lives in `frontend/src/brand/`:
 - static SVG and PNG exports and favicons in `frontend/public/`.
 
 It replaces `BrandMark` and the inline landing and Intelligence marks; the behavioural orb is unchanged. Measured FPS, fixes and details: `docs/MAC2_HANDOFF.md` §12.
+
+## Final freeze (Master Prompt #05, Phase 4, 2026-11-25)
+**Verified:**
+- 375 px: 8 pages have no horizontal scroll.
+- Reduced motion: emulated, plus the real macOS setting for the logo.
+- Offline: no off-host requests.
+- Judge Mode: works in Chrome.
+- Logo: 60 FPS.
+
+The headless-only Judge Mode "stall" is a frame-production artifact; the evidence is in `docs/MAC2_HANDOFF.md` §12 › Phase 4.

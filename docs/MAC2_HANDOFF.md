@@ -28,7 +28,7 @@ Read this first on a fresh machine or in a fresh Claude session. It is self-cont
 - **Ghost Banking:** disabled and unimplemented (needs mentor approval).
 - **Detailed history:** `docs/FRONTEND_HANDOFF.md` (frontend), `docs/team-handoff.md` (MVP invariants, frozen ML), `docs/progress-log.md`.
 
-**Master Prompt #05:** Phases 1 (logo), 2 (documentation and report) and 3 (presentation) are done on Mac 2; see §12. Phase 4 (freeze) remains (§9).
+**Master Prompt #05:** all four phases are done on Mac 2 (logo, documentation, presentation, freeze); see §12. Only the TEAM items in §12 › *Phase 4* remain.
 
 ## 3. Requirements
 - **Python 3.12** (verified 3.12.16). The Makefile calls `python3.12`.
@@ -358,3 +358,61 @@ They were captured with headless Chrome after a scripted sign-in of the syntheti
 3. **Poppins:** confirm the font is installed on the presentation machine, or accept PowerPoint's substitute. The template's look depends on it.
 4. **Time limit:** confirm the official limit; the script assumes 10 minutes plus Q&A.
 5. **Pending check:** one earlier headless Judge Mode capture stayed on "Running against the API". It could not be reproduced: three runs at 1× and 2× completed in about 11 s. Re-check in Phase 4.
+
+### Phase 4: final verification and submission freeze (done, 2026-11-25)
+| Check | Result (measured) |
+|---|---|
+| `make test` | **89 passed** |
+| `npx tsc -b` and `npm run build` | pass |
+| Frozen manifest | **6/6 OK**, `iforest-v1-956f432a`; model never retrained on Mac 2 |
+| Six scenarios (real API, after reset) | See the scenario table below. Each run takes about 0.1 s server-side. |
+| Judge Mode | Takeover run completes in Chrome: Blocked 99.1, ₹96,200 unchanged, 403s. See the note below. |
+| Synth Core logo FPS | 60 at 1440×900@2x (980² canvas) and at 1920×1080@2x (1100²); first second 58 |
+| No WebGL (`?gl=0`) | 0 canvases, three.js not fetched (Phase 1) |
+| Offline | 0 off-host requests on `/judge` during a live run |
+| Reduced motion | Emulated `reduce` in Chrome, and macOS Reduce motion **on** for the logo: the orb and logo both render (WebGL ready); the logo's hover change still applies |
+| 375 px | No horizontal scroll on 8 pages: `/`, `/brand`, `/login`, `/device`, `/judge`, `/soc/intelligence`, `/soc/evaluation`, `/lab` |
+| Secrets scan | No sensitive paths tracked. The only history pattern hit is the placeholder `SS_FERNET_KEY=generate-with-cryptography-fernet` (`c1df8a2`). None of the 15 local demo credential values appear in the repo. Ignore rules confirmed for `.env`, the DBs, `artifacts/` and `submission/`. |
+| Demo reset | Done last: seed `59aff8dfce5d8c27`; only the presenter session remains |
+
+**Scenario outcomes (real API, after reset):**
+
+| # | Scenario | Outcome |
+|---|---|---|
+| 1 | Normal customer | ALLOW; asha −₹2,500 |
+| 2 | Takeover despite password + TOTP | BLOCK 99.5; Ravi ₹96,200 unchanged |
+| 3 | Suspicious activity after a legitimate login | ALLOW → STEP-UP 79.5; balance unchanged |
+| 4 | Genuine traveller | STEP-UP 87.7 → approved → ALLOW; −₹2,500 |
+| 5 | Customer on a new device | STEP-UP 82.8 → approved → ALLOW; −₹2,500 |
+| 6 | Unusual but legitimate transfer | ALLOW at ₹1,50,000 |
+
+**Judge Mode "stall" explained:**
+- In headless Chrome, a run sometimes stayed on "Running against the API" even though the API had returned 200.
+- Cause: headless Chrome produces no frames while nothing on screen changes.
+- Proof: the moment a single `requestAnimationFrame` was requested, the page updated at once ("Run again", steps revealing; 61 rAF/s).
+- A visible browser always services frame requests, so this is a **capture artifact, not a product bug**.
+- Still rehearse in the presentation browser; the "Show all steps" button is the fallback.
+
+**Submission bundle** (`submission/`, gitignored because it contains the official template):
+
+| Item | Notes |
+|---|---|
+| Deck | PPTX and PDF |
+| `report/` | PROJECT_REPORT in PDF, DOCX and MD |
+| `presentation-notes/` | Speaker notes, judge Q&A, fallback storyboard |
+| `screenshots/` | Real screenshots and the logo still |
+| `SecureSynth-source-<commit>.zip` | `git archive` of the pushed commit; contains no secrets, DBs or artifacts |
+| `SUBMISSION_MANIFEST.txt` | SHA-256 of every file |
+
+**Fallback recording:** **pending**. There is no `ffmpeg` here and recording needs a person. Script: `docs/presentation/FALLBACK_STORYBOARD.md`.
+
+**Remaining before submission (TEAM; cannot be done without the team):**
+1. **Real names** in `docs/TEAM.md`, on slide 1 (`[Member 2–4]`), and in the speaker notes and script.
+2. **Vector deck PDF:**
+   1. In PowerPoint, answer the two **Grant File Access** prompts. The app is still open with them; Cancel is also fine.
+   2. Open the deck and choose *File → Export → PDF*.
+   3. Replace the raster backup.
+3. **Fallback recording**, following the storyboard.
+4. **Poppins:** confirm the font is on the presentation machine.
+5. **Official time limit:** confirm it, then do two timed rehearsals.
+6. **Mentor decisions:** Ghost Banking (stays off), and review of PR #1. **Do not merge** without approval.

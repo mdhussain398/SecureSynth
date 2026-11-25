@@ -43,4 +43,5 @@ This is a single honest list of what SecureSynth does not do or has not proven. 
 - **The Synth Core logo holds 60 FPS on one machine only:** Apple M1 in Chrome, at three viewport sizes. Projectors, Intel GPUs and Safari were not measured.
 - **The behavioural orb's lazy chunk is 244 KB gzip.** Vite prints a size advisory. It is loaded only on pages that show the orb.
 - **Judge Mode full screen** did not engage inside the desktop app's embedded browser pane. Use Chrome or Safari, or F11.
-- **Reduced motion:** the Synth Core logo was checked on Mac 2 with the macOS Reduce motion setting **on**. It renders a static frame and the hover change still works. The behavioural orb under that setting is still verified in code only; re-check it in Phase 4.
+- **Reduced motion:** the Synth Core logo was checked with the macOS Reduce motion setting **on**. The orb and logo were also checked under Chrome's emulated `prefers-reduced-motion: reduce`; both render a static WebGL frame. The orb has not yet been checked under the real OS setting in Safari.
+- **Fallback recording:** not yet made; see `docs/presentation/FALLBACK_STORYBOARD.md`.
