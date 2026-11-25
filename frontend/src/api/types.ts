@@ -11,7 +11,7 @@ export const CONTRACT_VERSION = "1.2.0"; // 1.2.0 (additive): prevention split, 
 export type Decision = "ALLOW" | "STEP_UP" | "BLOCK";
 export type SessionMode = "pre_otp" | "normal" | "step_up" | "restricted" | "ghost" | "revoked";
 export type Role = "customer" | "admin";
-export type Operation = "login" | "beneficiary_add" | "transfer";
+export type Operation = "login" | "beneficiary_add" | "transfer" | "incident_verify";
 export type Checkpoint = "login" | "beneficiary_add" | "transfer" | "profile_change";
 export type ActionResult = "completed" | "pending_verification" | "restricted";
 export type ChallengeStatus = "pending" | "approved" | "denied" | "expired" | "consumed";
@@ -21,7 +21,8 @@ export type ErrorCode =
   | "UNAUTHENTICATED" | "FORBIDDEN" | "CSRF_FAILED" | "ORIGIN_REJECTED"
   | "RISK_BLOCKED" | "SESSION_RESTRICTED" | "STEP_UP_REQUIRED"
   | "VALIDATION_ERROR" | "INSUFFICIENT_FUNDS" | "NOT_FOUND"
-  | "CHALLENGE_INVALID" | "FEATURE_DISABLED" | "DEVICE_UNAUTHENTICATED";
+  | "CHALLENGE_INVALID" | "FEATURE_DISABLED" | "DEVICE_UNAUTHENTICATED"
+  | "REAUTH_REQUIRED" | "REAUTH_FAILED" | "INCIDENT_RESOLVED" | "SESSION_NOT_ELIGIBLE";
 
 export interface ErrorBody {
   error: { code: ErrorCode; message: string; request_id: string };
@@ -307,3 +308,69 @@ export interface ScenarioRun {
 }
 export interface ResetResponse { ok: true; seed_hash: string; now: string }
 export interface ClockResponse { now: string }
+
+
+// ---------- security incidents (analyst-assisted recovery) ----------
+export type IncidentStatus = "pending_review" | "verification_requested" | "session_restored" | "user_cleared"
+  | "restriction_retained" | "session_revoked";
+export type IncidentAction = "unblock_session" | "clear_user" | "keep_restricted" | "revoke_session" | "request_verification";
+
+export interface IncidentRow {
+  id: number;
+  user_id: number;
+  username: string;
+  display_name: string;
+  session_id: string;
+  session_ids: string[];
+  assessment_id: number | null;
+  trigger: "risk_block" | "verification_denied";
+  checkpoint: string;
+  risk_score: number | null; // 0–100 risk index, NOT a probability
+  severity: "high" | "critical";
+  amount_paise: number | null;
+  city: string;
+  device_ref: string | null;
+  device_recognised: boolean;
+  reason: string;
+  block_count: number;
+  status: IncidentStatus;
+  open: boolean;
+  verification: "requested" | "approved" | "denied" | "expired" | null;
+  is_lab: boolean;
+  unread: boolean;
+  created_at: string;
+  last_activity_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  resolution_action: IncidentAction | null;
+  resolution_reason: string | null;
+}
+export interface IncidentSummary { open: number; unread: number; latest: IncidentRow[] }
+export interface IncidentSession extends AdminSessionRow {
+  expires_at: string;
+  login_verified: boolean;
+  unblock_eligible: boolean;
+  eligibility: string;
+  assessments: RiskAssessment[];
+}
+export interface IncidentDetail {
+  incident: IncidentRow;
+  trigger_assessment: RiskAssessment | null;
+  latest_assessment: RiskAssessment | null;
+  sessions: IncidentSession[];
+  balance_paise: number | null;
+  transactions: { id: number; created_at: string; amount_paise: number; counterparty: string; status: 'attempted' | 'pending_verification' | 'restricted' | 'completed'; session_id: string | null; in_incident: boolean }[];
+  attempts: { ts: string; amount_paise: number | null; outcome: string | null; session_id: string; assessment_id: number | null }[];
+  recent_sessions: AdminSessionRow[];
+  timeline: AuditEvent[];
+}
+export interface IncidentActionRequest { action: IncidentAction; reason: string; totp_code?: string; session_id?: string }
+export interface IncidentActionResponse { incident_id: number; status: IncidentStatus; idempotent: boolean; reviewed_attempts?: number }
+
+export type CustomerIncidentStatus = "pending_review" | "verification_required" | "access_restored" | "restriction_retained";
+export interface MyIncident {
+  incident: null | { id: number; status: CustomerIncidentStatus; updated_at: string; opened_at: string;
+    verification: { number_match: number; expires_at: string } | null };
+  session_mode: SessionMode;
+  next_step: "continue" | "wait" | "verify" | "sign_in_again" | "contact_bank";
+}

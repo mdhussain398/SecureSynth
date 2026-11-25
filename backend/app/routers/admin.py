@@ -183,3 +183,144 @@ def rollback_baseline(user_id: int, body: RollbackBody, ctx=Depends(ADMIN)):
         raise ApiError(422, "VALIDATION_ERROR", "Invalid version for rollback.")
     db.commit()
     return baseline_view(db, user_id)
+
+
+# ---------------------------------------------------------------- security incidents (analyst recovery)
+from typing import Literal
+
+from app.security import totp as totp_mod
+from app.services import clock, incidents
+
+
+class IncidentAction(BaseModel):
+    action: Literal["unblock_session", "clear_user", "keep_restricted", "revoke_session", "request_verification"]
+    reason: str = Field(min_length=8, max_length=300)
+    totp_code: str | None = Field(default=None, pattern=r"^\d{6}$")
+    session_id: str | None = Field(default=None, max_length=32)
+
+
+def _incident(db, incident_id: int) -> models.SecurityIncident:
+    inc = db.get(models.SecurityIncident, incident_id)
+    if inc is None:
+        raise ApiError(404, "NOT_FOUND", "Incident not found.")
+    incidents.refresh_verification(db, inc)
+    return inc
+
+
+@router.get("/incidents/summary")
+def incidents_summary(ctx=Depends(ADMIN)):
+    """Polled by the analyst console for the notification bell (near-real-time, no page refresh)."""
+    _, _, db = ctx
+    open_n = db.scalar(select(func.count()).select_from(models.SecurityIncident)
+                       .where(models.SecurityIncident.status.in_(incidents.OPEN)))
+    unread = db.scalar(select(func.count()).select_from(models.SecurityIncident)
+                       .where(models.SecurityIncident.analyst_read_at.is_(None)))
+    latest = db.scalars(select(models.SecurityIncident).order_by(models.SecurityIncident.last_activity_at.desc())
+                        .limit(6)).all()
+    return {"open": open_n, "unread": unread, "latest": [incidents.summary_row(db, i) for i in latest]}
+
+
+@router.get("/incidents")
+def list_incidents(status: Literal["open", "resolved", "all"] = "open", limit: int = 100, ctx=Depends(ADMIN)):
+    _, _, db = ctx
+    q = select(models.SecurityIncident)
+    if status == "open":
+        q = q.where(models.SecurityIncident.status.in_(incidents.OPEN))
+    elif status == "resolved":
+        q = q.where(models.SecurityIncident.status.in_(incidents.CLOSED))
+    rows = db.scalars(q.order_by(models.SecurityIncident.last_activity_at.desc()).limit(max(1, min(limit, 200)))).all()
+    return [incidents.summary_row(db, i) for i in rows]
+
+
+@router.get("/incidents/{incident_id}")
+def incident_detail(incident_id: int, ctx=Depends(ADMIN), st: AppState = Depends(get_state)):
+    _, _, db = ctx
+    inc = _incident(db, incident_id)
+    trigger = db.get(models.RiskAssessment, inc.assessment_id) if inc.assessment_id else None
+    latest = db.get(models.RiskAssessment, inc.last_assessment_id) if inc.last_assessment_id else None
+    sessions_out = []
+    for sid in inc.session_ids or []:
+        s = db.get(models.Session, sid)
+        if s is None:
+            continue
+        ok, why = incidents.session_eligibility(db, st, s)
+        sessions_out.append({**_row(db, s), "expires_at": s.expires_at, "login_verified": incidents.login_verified(db, s),
+                             "unblock_eligible": ok, "eligibility": why,
+                             "assessments": [assessment_out(a) for a in db.scalars(
+                                 select(models.RiskAssessment).where(models.RiskAssessment.session_id == s.id)
+                                 .order_by(models.RiskAssessment.id)).all()]})
+    acct = db.scalar(select(models.Account).where(models.Account.user_id == inc.user_id))
+    txns = db.scalars(select(models.Transaction).where(models.Transaction.account_id == acct.id)
+                      .order_by(models.Transaction.id.desc()).limit(12)).all() if acct else []
+    attempts = db.scalars(select(models.HistoryEvent).where(
+        models.HistoryEvent.user_id == inc.user_id, models.HistoryEvent.session_ref.in_(inc.session_ids or []),
+        models.HistoryEvent.event_type == "transfer").order_by(models.HistoryEvent.id)).all()
+    recent_sessions = db.scalars(select(models.Session).where(models.Session.user_id == inc.user_id,
+                                                              models.Session.mode != "pre_otp")
+                                 .order_by(models.Session.created_at.desc()).limit(8)).all()
+    timeline = db.scalars(select(models.AuditEvent).where(models.AuditEvent.user_id == inc.user_id,
+                                                          func.json_extract(models.AuditEvent.details, "$.incident_id") == inc.id)
+                          .order_by(models.AuditEvent.id)).all()
+    return {"incident": incidents.summary_row(db, inc),
+            "trigger_assessment": assessment_out(trigger) if trigger else None,
+            "latest_assessment": assessment_out(latest) if latest else None,
+            "sessions": sessions_out,
+            "balance_paise": acct.balance_paise if acct else None,
+            "transactions": [{"id": t.id, "created_at": t.created_at, "amount_paise": t.amount_paise,
+                              "counterparty": t.counterparty, "status": t.status, "session_id": t.session_id,
+                              "in_incident": t.session_id in (inc.session_ids or [])} for t in txns],
+            "attempts": [{"ts": h.ts, "amount_paise": h.amount_paise, "outcome": h.outcome, "session_id": h.session_ref,
+                          "assessment_id": h.assessment_id} for h in attempts],
+            "recent_sessions": [_row(db, s) for s in recent_sessions],
+            "timeline": [{"id": e.id, "ts": e.ts, "actor": e.actor, "event_type": e.event_type, "details": e.details}
+                         for e in timeline]}
+
+
+@router.post("/incidents/{incident_id}/read")
+def incident_read(incident_id: int, ctx=Depends(ADMIN)):
+    admin_s, admin, db = ctx
+    inc = _incident(db, incident_id)
+    if inc.analyst_read_at is None:
+        inc.analyst_read_at = clock.now()
+        audit.log(db, admin.username, "incident.reviewed", inc.user_id, inc.session_id, incident_id=inc.id,
+                  status=inc.status)
+        db.commit()
+    return {"id": inc.id, "unread": False}
+
+
+@router.post("/incidents/read-all")
+def incidents_read_all(ctx=Depends(ADMIN)):
+    _, admin, db = ctx
+    rows = db.scalars(select(models.SecurityIncident).where(models.SecurityIncident.analyst_read_at.is_(None))).all()
+    for inc in rows:
+        inc.analyst_read_at = clock.now()
+    audit.log(db, admin.username, "incident.read_all", None, None, count=len(rows))
+    db.commit()
+    return {"marked": len(rows)}
+
+
+@router.post("/incidents/{incident_id}/actions")
+def incident_action(incident_id: int, body: IncidentAction, ctx=Depends(ADMIN), st: AppState = Depends(get_state)):
+    """Analyst decision. Lifting a restriction (unblock_session, clear_user) needs a fresh analyst TOTP code,
+    so a stolen analyst cookie alone cannot release a customer."""
+    _, admin, db = ctx
+    inc = _incident(db, incident_id)
+    reason = " ".join(body.reason.split())
+    if len(reason) < 8:
+        raise ApiError(422, "VALIDATION_ERROR", "Give a reason of at least 8 characters.")
+    if body.action in incidents.CLEARANCES:
+        key = f"totp:{admin.id}"
+        if not st.totp_limiter.allowed(key):
+            raise ApiError(429, "RATE_LIMITED", "Too many attempts. Try again later.")
+        if not body.totp_code:
+            raise ApiError(403, "REAUTH_REQUIRED", "Enter a current code from your authenticator to confirm.")
+        step = totp_mod.verify(st.box.decrypt(admin.totp_secret_enc), body.totp_code, last_step=admin.totp_last_step)
+        if step is None:
+            st.totp_limiter.record_failure(key)
+            audit.log(db, admin.username, "incident.reauth_failed", inc.user_id, inc.session_id, incident_id=inc.id,
+                      action=body.action)
+            db.commit()
+            raise ApiError(403, "REAUTH_FAILED", "That code is not valid, or was already used. Wait for the next one.")
+        admin.totp_last_step = step
+        db.flush()
+    return incidents.act(db, st, inc, admin, body.action, reason, body.session_id)

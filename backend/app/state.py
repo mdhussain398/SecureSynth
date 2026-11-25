@@ -44,9 +44,23 @@ class AppState:
         st.engine = _sqlite_engine(settings.database_url)
         st.SessionLocal = sessionmaker(bind=st.engine, expire_on_commit=False)
         st.box = SecretBox(settings.fernet_key)
-        Base.metadata.create_all(st.engine)
+        ensure_schema(st.engine)
         st.model = _load_model(settings)
         return st
+
+
+def ensure_schema(engine) -> None:
+    """Create missing tables and add the additive columns introduced after the first release. Idempotent, and
+    needed because the demo reset restores a snapshot built with the older schema. Never drops or rewrites data."""
+    from sqlalchemy import inspect, text
+
+    Base.metadata.create_all(engine)
+    have = {c["name"] for c in inspect(engine).get_columns("history_events")}
+    with engine.begin() as conn:
+        if "outcome" not in have:
+            conn.execute(text("ALTER TABLE history_events ADD COLUMN outcome VARCHAR(12)"))
+        if "assessment_id" not in have:
+            conn.execute(text("ALTER TABLE history_events ADD COLUMN assessment_id INTEGER"))
 
 
 def get_state(request: Request) -> AppState:

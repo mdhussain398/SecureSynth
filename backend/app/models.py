@@ -212,6 +212,48 @@ class HistoryEvent(Base):
     amount_paise: Mapped[int | None] = mapped_column(Integer, nullable=True)
     beneficiary_ref: Mapped[str | None] = mapped_column(String(40), nullable=True)
     seconds_since_login: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Live events only (NULL for seeded history). For transfers: completed | pending | blocked | denied | reviewed.
+    # "reviewed" = an attempt that never executed and was adjudicated by an analyst; the row is kept as evidence.
+    outcome: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    assessment_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+
+
+class SecurityIncident(Base):
+    """One unresolved security incident per customer: opened by a BLOCK (or a denied trusted-device check),
+    later BLOCKs attach to it instead of raising duplicate alerts. Resolution is an explicit analyst decision."""
+    __tablename__ = "security_incidents"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    session_id: Mapped[str] = mapped_column(String(32), index=True)   # primary (latest) restricted session
+    session_ids: Mapped[list] = mapped_column(JSON, default=list)     # every session restricted under it
+    assessment_id: Mapped[int | None] = mapped_column(Integer, nullable=True)       # triggering assessment
+    last_assessment_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    transaction_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    trigger: Mapped[str] = mapped_column(String(24))                  # risk_block | verification_denied
+    checkpoint: Mapped[str] = mapped_column(String(20))
+    risk_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    severity: Mapped[str] = mapped_column(String(10))
+    amount_paise: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    city: Mapped[str] = mapped_column(String(40), default="")
+    device_ref: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    device_recognised: Mapped[bool] = mapped_column(Boolean, default=False)
+    reason: Mapped[str] = mapped_column(String(300))
+    block_count: Mapped[int] = mapped_column(Integer, default=1)
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    verification: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    verification_challenge_id: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    is_lab: Mapped[bool] = mapped_column(Boolean, default=False)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    last_activity_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    analyst_read_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    resolved_by: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    resolution_action: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    resolution_reason: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    __table_args__ = (CheckConstraint(
+        "status in ('pending_review','verification_requested','session_restored','user_cleared',"
+        "'restriction_retained','session_revoked')"),)
 
 
 class ScenarioLabel(Base):

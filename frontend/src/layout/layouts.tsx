@@ -1,11 +1,13 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Moon, Sun, Smartphone } from 'lucide-react';
 import { useLogout, useMe } from '../api/queries';
 import { ApiError, USE_MOCKS } from '../api/client';
 import { Button, ErrorState, Skeleton, SyntheticMarker } from '../design/components';
 import { RestrictedNotice } from '../features/bank/RestrictedNotice';
-import { Contours, GlassNav } from '../renaissance/primitives';
+import { motion, useReducedMotion } from 'motion/react';
+import { Contours, GlassNav, ScrollBrand, useHideOnScroll } from '../renaissance/primitives';
+import { NotificationBell } from '../features/soc/NotificationBell';
 import { SynthMark } from '../brand/SynthMark';
 
 /** The SecureSynth mark (Synth Core, flat SVG). Kept as a named export for existing imports. */
@@ -62,6 +64,7 @@ const portalNav = [
 
 export function PortalLayout() {
   const me = useMe();
+  const brandHidden = useHideOnScroll();
   const signOut = useSignOut();
   const loc = useLocation();
   if (me.isPending) return <div className="max-w-3xl mx-auto p-8"><Skeleton lines={4} /></div>;
@@ -75,7 +78,7 @@ export function PortalLayout() {
     <div className="relative isolate min-h-screen flex flex-col overflow-x-clip">
       <header className="sticky top-0 z-30 px-4 sm:px-8 py-4">
         <div className="mx-auto max-w-6xl flex items-center justify-between gap-4">
-          <Link to="/bank" className="no-underline"><Brand sub="Simulated retail banking" /></Link>
+          <ScrollBrand hidden={brandHidden}><Link to="/bank" className="no-underline"><Brand sub="Simulated retail banking" /></Link></ScrollBrand>
           {!restricted && <div className="hidden md:block"><GlassNav label="Banking" items={portalNav} /></div>}
           <div className="flex items-center gap-2">
             <span className="hidden lg:block text-[0.9375rem] text-[color:var(--ink-2)]">{me.data.display_name}</span>
@@ -108,17 +111,46 @@ function useConsoleTheme(): [string, () => void] {
 export const consoleNav = [
   { to: '/soc/intelligence', label: 'Intelligence' },
   { to: '/soc', label: 'Sessions', end: true, match: '/soc/sessions' },
+  { to: '/soc/incidents', label: 'Incidents' },
   { to: '/soc/users', label: 'Baselines' },
   { to: '/soc/evaluation', label: 'Evaluation' },
   { to: '/lab', label: 'Lab' },
   { to: '/judge', label: 'Judge mode' },
 ];
 
+/** Warm the console's route chunks while idle so switching sections never flashes a loading state. */
+function usePreloadConsole() {
+  useEffect(() => {
+    const go = () => { void import('../renaissance/Intelligence'); void import('../features/soc/SocOverview'); void import('../features/soc/IncidentsPage'); };
+    const w = window as Window & { requestIdleCallback?: (cb: () => void) => number };
+    if (w.requestIdleCallback) w.requestIdleCallback(go); else setTimeout(go, 400);
+  }, []);
+}
+
+/**
+ * The Command Centre shell. Intelligence renders inside it (full-bleed) instead of carrying its own header, so the
+ * header and its navigation stay mounted across every section: the active pill slides between tabs instead of
+ * snapping, and only the page content cross-fades.
+ */
 export function ConsoleLayout() {
   const me = useMe();
   const signOut = useSignOut();
   const [theme, toggle] = useConsoleTheme();
   const loc = useLocation();
+  const reduce = useReducedMotion();
+  const brandHidden = useHideOnScroll();
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerH, setHeaderH] = useState(72);
+  const fullBleed = loc.pathname === '/soc/intelligence';
+  usePreloadConsole();
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setHeaderH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  useEffect(() => { window.scrollTo({ top: 0 }); }, [loc.pathname]);
   let body: ReactNode = <Outlet />;
   if (me.isPending) body = <div className="p-6"><Skeleton lines={6} /></div>;
   else if (me.error) {
@@ -127,13 +159,22 @@ export function ConsoleLayout() {
   } else if (me.data.role !== 'admin') {
     body = <ErrorState error={null} title="Analyst access required" />;
   }
+  const isAdmin = me.data?.role === 'admin';
+  const content = (
+    <motion.div key={fullBleed ? 'intel' : loc.pathname.split('/').slice(0, 3).join('/')}
+      initial={reduce ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}>
+      {body}
+    </motion.div>
+  );
   return (
-    <div className="console flex flex-col">
-      <header className="sticky top-0 z-30 px-4 lg:px-8 py-3.5">
+    <div className="console flex flex-col" style={{ ['--console-header-h' as string]: `${headerH}px` }}>
+      <header ref={headerRef} className="sticky top-0 z-30 px-4 lg:px-8 py-3.5">
         <div className="flex items-center gap-4">
-          <Link to="/soc/intelligence" className="no-underline shrink-0"><Brand sub="Command Centre" /></Link>
+          <div className="shrink-0"><ScrollBrand hidden={brandHidden}><Link to="/soc/intelligence" className="no-underline"><Brand sub="Command Centre" /></Link></ScrollBrand></div>
           <div className="hidden lg:flex flex-1 justify-center min-w-0"><GlassNav label="Command Centre" items={consoleNav} /></div>
           <div className="flex items-center gap-1 shrink-0 ml-auto lg:ml-0">
+            {isAdmin && <NotificationBell />}
             <Link to="/device" target="_blank" className="hidden md:inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.875rem] text-[color:var(--ink-2)] hover:text-[color:var(--ink)] hover:bg-[rgba(16,24,40,0.05)] no-underline" title="Open the trusted device simulator in a new tab">
               <Smartphone size={15} aria-hidden />Device
             </Link>
@@ -145,8 +186,10 @@ export function ConsoleLayout() {
         </div>
       </header>
       <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-3 lg:hidden"><GlassNav label="Command Centre (mobile)" items={consoleNav} /></div>
-      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 lg:px-8 pt-3 pb-28 lg:pb-8">{body}</main>
-      <Footer>Analyst view. Scores are a 0–100 risk index, not a probability.</Footer>
+      {fullBleed
+        ? <div className="flex-1 w-full -mt-[var(--console-header-h)]">{content}</div>
+        : <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 lg:px-8 pt-3 pb-28 lg:pb-8">{content}</main>}
+      {!fullBleed && <Footer>Analyst view. Scores are a 0–100 risk index, not a probability.</Footer>}
     </div>
   );
 }

@@ -62,7 +62,7 @@ def add_beneficiary(body: schemas.AddBeneficiaryRequest, response: Response, ctx
     payload = {"name": body.name, "account_ref": body.account_ref}
     a = engine.assess(db, st, s, user, "beneficiary_add", payload)
     if a.decision == "BLOCK":
-        enforcement.on_block(db, st, s)
+        enforcement.on_block(db, st, s, a)
         audit.log(db, "system", "beneficiary.restricted", user.id, s.id, decision="BLOCK")
         db.commit()
         raise ApiError(403, "RISK_BLOCKED", a.customer_message)
@@ -103,7 +103,7 @@ def transfer(body: schemas.TransferRequest, response: Response, ctx=Depends(WRIT
     a = engine.assess(db, st, s, user, "transfer", payload)
     if a.decision == "BLOCK":
         t = ledger.record(db, acct.id, ben, body.amount_paise, "restricted", s.id, a.id, body.idempotency_key, body.note)
-        enforcement.on_block(db, st, s)
+        enforcement.on_block(db, st, s, a, t)
         audit.log(db, "system", "transfer.restricted", user.id, s.id, transaction_id=t.id,
                   amount_paise=body.amount_paise, decision="BLOCK")
         db.commit()

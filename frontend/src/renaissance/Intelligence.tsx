@@ -3,18 +3,15 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { useBaseline, useLogout, useMe, useSessionDetail, useSessions } from '../api/queries';
+import { useBaseline, useMe, useSessionDetail, useSessions } from '../api/queries';
 import type { Decision } from '../api/types';
 import './rn.css';
-import { consoleNav } from '../layout/layouts';
 import { IdentityOrb } from './orb/IdentityOrb';
 import { LEVEL_COLOR, STATE_COLOR, type OrbSignal } from './orb/types';
 import { signalsOf } from './signals';
-import { AnimatedNumber, Contours, GlassNav, spring } from './primitives';
-import { SynthMark } from '../brand/SynthMark';
+import { AnimatedNumber, Contours, spring } from './primitives';
 
 const CHECKPOINT: Record<string, string> = { login: 'Sign-in', beneficiary_add: 'Payee add', transfer: 'Transfer', profile_change: 'Profile change' };
-const NAV = consoleNav;
 /* Screen angles (0° = right, −90° = top) for ring callouts: diagonals first, so labels stay inside the centre column. */
 const RING_SLOTS = [-58, -122, 58, 122, -32, -148, 32, 148];
 const WORD: Record<Decision, string> = { ALLOW: 'Allowed', STEP_UP: 'Step-up', BLOCK: 'Blocked' };
@@ -26,7 +23,6 @@ function fmtTime(ts: string) {
 
 export function Intelligence() {
   const me = useMe();
-  const logout = useLogout();
   const reduce = useReducedMotion();
   const sessions = useSessions('');
   const rows = useMemo(() => (sessions.data ?? []).filter((s) => s.assessments_count > 0 && s.username !== me.data?.username), [sessions.data, me.data]);
@@ -52,19 +48,8 @@ export function Intelligence() {
   const policyTotal = a ? a.policy.reduce((s, p) => s + p.points, 0) : 0;
 
   return (
-    <main className="rn relative isolate min-h-[100dvh] overflow-x-hidden">
+    <div className="rn relative isolate min-h-[100dvh] overflow-x-hidden pt-[var(--console-header-h,72px)]">
       <Contours className="absolute inset-0 -z-10 h-full w-full opacity-40" hourProfile={baseline.data?.trusted.hour_profile ?? null} levels={16} clearAt={[50, 44]} />
-
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-3 px-5 py-4 sm:px-8">
-        <Link to="/" className="flex items-center gap-2.5" aria-label="SecureSynth home">
-          <SynthMark size={26} />
-          <span className="hidden font-semibold sm:inline">Command Centre</span>
-        </Link>
-        <div className="hidden md:block"><GlassNav label="Console" items={NAV} /></div>
-        <button type="button" className="rn-btn rn-btn-ghost min-h-10 whitespace-nowrap text-[length:var(--t-sm)]" onClick={() => logout.mutate()}>Sign out</button>
-      </header>
-      {/* Phones: the same navigation floats at the bottom, within thumb reach. */}
-      <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-3 md:hidden"><GlassNav label="Console (mobile)" items={NAV} /></div>
 
       {sessions.isPending || me.isPending ? (
         <p className="px-8 pt-24 text-[color:var(--graphite-3)]" aria-busy="true">Loading live sessions</p>
@@ -217,7 +202,7 @@ export function Intelligence() {
           </section>
         </div>
       )}
-    </main>
+    </div>
   );
 }
 

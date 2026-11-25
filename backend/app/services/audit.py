@@ -6,6 +6,8 @@ ALLOWED_KEYS = {
     "reason", "decision", "risk_score", "checkpoint", "mode", "city", "device_recognised",
     "amount_paise", "beneficiary_id", "transaction_id", "challenge_id", "operation", "status",
     "version", "to_version", "scenario", "count", "username", "ip", "role", "feature",
+    "incident_id", "action", "previous_state", "resulting_state", "severity", "trigger", "session_ids",
+    "previous_session_mode", "resulting_session_mode", "verification", "reviewed_attempts",
 }
 
 

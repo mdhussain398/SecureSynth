@@ -5,7 +5,7 @@ import { getDeviceKey, setDeviceKey, USE_MOCKS } from '../../api/client';
 import { useDevicePending, useDeviceRespond } from '../../api/queries';
 import { Banner, Button, ErrorState, Skeleton, SyntheticMarker, fmtTime } from '../../design/components';
 
-const OP_LABEL: Record<DeviceChallenge['operation'], string> = { login: 'Sign-in request', beneficiary_add: 'New payee request', transfer: 'Transfer request' };
+const OP_LABEL: Record<DeviceChallenge['operation'], string> = { login: 'Sign-in request', beneficiary_add: 'New payee request', transfer: 'Transfer request', incident_verify: 'Bank security check' };
 
 function ChallengeCard({ c }: { c: DeviceChallenge }) {
   const respond = useDeviceRespond();

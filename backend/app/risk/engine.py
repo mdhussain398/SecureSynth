@@ -22,8 +22,16 @@ def _aware(dt):
     return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
+OUTCOME = {"ALLOW": "completed", "STEP_UP": "pending", "BLOCK": "blocked"}
+
+
 def _history(db, user_id: int, now, limit: int = 60) -> list[dict]:
-    rows = db.scalars(select(models.HistoryEvent).where(models.HistoryEvent.user_id == user_id)
+    """Recent raw events for velocity / travel context. Like training, unexecuted attempts DO count (rapid
+    retries are a fraud signal). The one exception is an attempt an analyst has adjudicated during incident
+    resolution (`reviewed`): it stays in the table as evidence but no longer counts as customer behaviour."""
+    rows = db.scalars(select(models.HistoryEvent).where(models.HistoryEvent.user_id == user_id,
+                                                        (models.HistoryEvent.outcome.is_(None))
+                                                        | (models.HistoryEvent.outcome != "reviewed"))
                       .order_by(models.HistoryEvent.ts.desc()).limit(limit)).all()
     out = []
     for r in reversed(rows):
@@ -46,6 +54,15 @@ def _baseline(db, user) -> dict:
                 if c["kind"] == "device" and c.get("verified_by") and c.get("status") == "pending"]
     view["devices"] = sorted(set(b.trusted["devices"]) | set(verified))
     return view
+
+
+def set_outcome(db, assessment_id: int | None, outcome: str) -> None:
+    """A STEP_UP attempt's final outcome once the trusted device answers (completed / denied)."""
+    if assessment_id is None:
+        return
+    for h in db.scalars(select(models.HistoryEvent).where(models.HistoryEvent.assessment_id == assessment_id)).all():
+        if h.outcome != "reviewed":
+            h.outcome = outcome
 
 
 def build_event(db, session: models.Session, checkpoint: str, pending_op: dict | None, now) -> dict:
@@ -120,9 +137,11 @@ def assess(db, st, session: models.Session, user: models.User, checkpoint: str,
         latency_ms=round((time.perf_counter() - t0) * 1000, 3),
         customer_message=policy.customer_message(decision, contribs), ts=now)
     db.add(a)
+    db.flush()
     db.add(models.HistoryEvent(user_id=user.id, session_ref=session.id, ts=now, event_type=ev["type"],
                                device_ref=ev["device"], city=ev["city"], amount_paise=ev.get("amount"),
-                               beneficiary_ref=ev.get("beneficiary"), seconds_since_login=ev["secs_since_login"]))
+                               beneficiary_ref=ev.get("beneficiary"), seconds_since_login=ev["secs_since_login"],
+                               outcome=OUTCOME[decision], assessment_id=a.id))
     db.flush()
     session.risk_current = a.risk_score
     if db.get(models.Baseline, user.id) is not None:

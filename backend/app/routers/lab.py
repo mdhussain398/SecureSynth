@@ -11,7 +11,7 @@ from app.errors import ApiError
 from app.lab import scenarios
 from app.services import audit, clock
 from app.services.sessions import LOOPBACK, require
-from app.state import AppState, _sqlite_engine, get_state
+from app.state import AppState, _sqlite_engine, ensure_schema, get_state
 
 router = APIRouter(prefix="/lab", tags=["scenario lab (demo only)"])
 _ADMIN = require("normal", roles=("admin",))
@@ -73,6 +73,7 @@ def reset(ctx=Depends(lab_guard), st: AppState = Depends(get_state)):
         Path(f"{target}{suffix}").unlink(missing_ok=True)
     shutil.copyfile(snap, target)
     st.engine = _sqlite_engine(st.settings.database_url)
+    ensure_schema(st.engine)  # the snapshot predates incidents: this recreates an empty incident table
     st.SessionLocal = sessionmaker(bind=st.engine, expire_on_commit=False)
     with st.SessionLocal() as fresh:
         fresh.add(models.Session(**keep))

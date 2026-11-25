@@ -82,6 +82,19 @@ All admin routes require an admin session and return 403 `FORBIDDEN` otherwise.
 - a loopback client;
 - Origin and CSRF checks.
 
+## Security incidents (analyst-assisted recovery)
+Added after the 28 paths above; see `docs/INCIDENT_RECOVERY.md` for semantics.
+
+| Method | Path | Who | Purpose |
+|---|---|---|---|
+| GET | `/admin/incidents/summary` | admin | Open count, unread count, latest 6 (bell; polled every 4 s) |
+| GET | `/admin/incidents?status=open\|resolved\|all` | admin | Incident list |
+| GET | `/admin/incidents/{id}` | admin | Evidence: triggering assessment, sessions + eligibility, transactions, attempts, audit timeline |
+| POST | `/admin/incidents/{id}/read` | admin | Mark read (audited once as `incident.reviewed`) |
+| POST | `/admin/incidents/read-all` | admin | Mark all read |
+| POST | `/admin/incidents/{id}/actions` | admin | `{action, reason, totp_code?, session_id?}`; `unblock_session` and `clear_user` need `totp_code`. Errors: `REAUTH_REQUIRED`, `REAUTH_FAILED` (403), `SESSION_NOT_ELIGIBLE`, `INCIDENT_RESOLVED` (409) |
+| GET | `/auth/incident` | customer (own session) | Read-only incident status for the restricted screen: `next_step` = continue \| wait \| verify \| sign_in_again \| contact_bank |
+
 ## Session modes
 | Mode | Reads | Payee add / transfer | Entered by |
 |---|---|---|---|

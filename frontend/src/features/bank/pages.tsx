@@ -56,7 +56,7 @@ function TxnRow({ t }: { t: Transaction }) {
       <div className="min-w-0 flex-1">
         <p className="font-medium truncate">{name}</p>
         <p className="text-[0.875rem] text-[var(--ink-3)] truncate">
-          <span className="sr-only">{t.direction === 'credit' ? 'Received. ' : 'Sent. '}</span>
+          <span className="sr-only">{t.status === 'restricted' || t.status === 'attempted' ? 'Not sent. ' : t.direction === 'credit' ? 'Received. ' : 'Sent. '}</span>
           {t.description} · {parseTs(t.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}
         </p>
       </div>

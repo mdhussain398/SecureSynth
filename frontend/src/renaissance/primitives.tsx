@@ -65,6 +65,47 @@ export function CursorLight() {
   );
 }
 
+/**
+ * Scroll-responsive chrome: true while the reader is scrolling down past `offset`, false when they scroll up
+ * or return near the top. Reads the document's real scrolling element (the page scrolls the document, not an
+ * inner container) once per animation frame, and ignores jitter below `tolerance` px so trackpad noise and
+ * small corrections never toggle it.
+ */
+export function useHideOnScroll({ offset = 72, tolerance = 14 }: { offset?: number; tolerance?: number } = {}) {
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    const el = () => document.scrollingElement ?? document.documentElement;
+    let last = el().scrollTop, anchor = last, frame = 0, state = false;
+    const apply = (v: boolean) => { if (v !== state) { state = v; setHidden(v); } };
+    const read = () => {
+      frame = 0;
+      const y = Math.max(0, el().scrollTop);
+      if (y <= offset) { anchor = y; last = y; apply(false); return; }
+      if ((y > last) !== (anchor < last)) anchor = last; // direction changed: measure travel from here
+      if (y - anchor > tolerance) apply(true);
+      else if (anchor - y > tolerance) apply(false);
+      last = y;
+    };
+    const on = () => { if (!frame) frame = requestAnimationFrame(read); };
+    window.addEventListener('scroll', on, { passive: true });
+    return () => { window.removeEventListener('scroll', on); if (frame) cancelAnimationFrame(frame); };
+  }, [offset, tolerance]);
+  return hidden;
+}
+
+/** Wraps a header's brand: fades and lifts away on downward scroll, returns on upward scroll. Its box keeps its
+ * size, so nothing around it shifts. Reduced motion swaps instantly. */
+export function ScrollBrand({ hidden, children }: { hidden: boolean; children: ReactNode }) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div aria-hidden={hidden || undefined} style={{ pointerEvents: hidden ? 'none' : undefined }}
+      initial={false} animate={hidden ? { opacity: 0, y: -10, filter: 'blur(4px)' } : { opacity: 1, y: 0, filter: 'blur(0px)' }}
+      transition={reduce ? { duration: 0 } : { duration: 0.34, ease: [0.22, 1, 0.36, 1] }}>
+      {children}
+    </motion.div>
+  );
+}
+
 /** Floating glass navigation with a fluid active indicator. */
 export function GlassNav({ items, label, className }: { items: { to: string; label: string; end?: boolean; match?: string }[]; label: string; className?: string }) {
   const { pathname } = useLocation();

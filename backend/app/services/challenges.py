@@ -72,20 +72,28 @@ def respond(db, st, user, challenge_id: str, selected: int, approve: bool) -> st
         db.commit()
         raise invalid
     s = db.get(models.Session, c.session_id)
+    if c.operation == "incident_verify":  # analyst-requested identity check: evidence only, never unlocks
+        return _respond_incident(db, user, c, s, selected, approve)
     if s is None or s.mode != "step_up" or operation_hash(s.id, c.operation, c.payload) != c.operation_hash:
         c.status = "denied"
         db.commit()
         raise invalid
     if not approve or selected != c.number_match:
         c.status, s.mode = "denied", "restricted"
+        t = None
         if c.operation == "transfer":
             t = db.get(models.Transaction, c.payload.get("transaction_id"))
             if t is not None and t.status == "pending_verification":
                 t.status = "restricted"
-        from app.services import baseline
+        from app.risk import engine
+        from app.services import baseline, incidents
+        engine.set_outcome(db, c.assessment_id, "denied")
         if db.get(models.Baseline, user.id) is not None:
             baseline.reject_session(db, user.id, s.id, device_ref=f"dev-{s.device_id}" if s.device_id else None)
         audit.log(db, "trusted_device", "challenge.denied", user.id, s.id, challenge_id=c.id, operation=c.operation)
+        incidents.on_restriction(db, s, trigger="verification_denied",
+                                 assessment=db.get(models.RiskAssessment, c.assessment_id) if c.assessment_id else None,
+                                 transaction=t)
         db.commit()
         return "denied"
     c.status = "approved"
@@ -107,6 +115,8 @@ def respond(db, st, user, challenge_id: str, selected: int, approve: bool) -> st
             raise ApiError(422, "INSUFFICIENT_FUNDS", "Insufficient balance for this transfer.")
         ledger.debit(db, t.account_id, t.amount_paise)
         t.status = "completed"
+        from app.risk import engine
+        engine.set_outcome(db, c.assessment_id, "completed")
         audit.log(db, "trusted_device", "transfer.completed", user.id, s.id, transaction_id=t.id,
                   amount_paise=t.amount_paise)
     _learn_verified(db, user, s, c)
@@ -128,3 +138,22 @@ def _learn_verified(db, user, s, c) -> None:
             baseline.record_verified(db, user.id, "device", f"dev-{s.device_id}", c.id, s.id)
         if s.city and s.city not in b.trusted["cities"]:
             baseline.record_verified(db, user.id, "city", s.city, c.id, s.id)
+
+
+def _respond_incident(db, user, c, s, selected: int, approve: bool) -> str:
+    """Answer to an analyst's verification request. The session stays restricted either way: the analyst
+    still decides. A correct number proves the customer holds the registered device AND sees the restricted
+    screen; a wrong number or a decline is recorded as evidence."""
+    from app.errors import ApiError
+    from app.services import audit, incidents
+    if s is None or operation_hash(s.id, c.operation, c.payload) != c.operation_hash:
+        c.status = "denied"
+        db.commit()
+        raise ApiError(400, "CHALLENGE_INVALID", "This request is no longer valid.")
+    ok = approve and selected == c.number_match
+    c.status = "approved" if ok else "denied"
+    incidents.on_verification_result(db, c, ok)
+    audit.log(db, "trusted_device", "challenge.approved" if ok else "challenge.denied", user.id, s.id,
+              challenge_id=c.id, operation=c.operation)
+    db.commit()
+    return "approved" if ok else "denied"

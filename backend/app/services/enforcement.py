@@ -8,9 +8,13 @@ MESSAGES = {
 }
 
 
-def on_block(db, st, s: models.Session) -> None:
+def on_block(db, st, s: models.Session, assessment: models.RiskAssessment | None = None,
+             transaction: models.Transaction | None = None) -> models.SecurityIncident:
+    """Restrict the session and raise (or update) the analyst's security incident for this customer."""
+    from app.services import incidents
     s.mode = "ghost" if st.settings.ghost_banking_enabled else "restricted"
     audit.log(db, "system", "session.restricted", s.user_id, s.id, mode=s.mode)
+    return incidents.on_restriction(db, s, trigger="risk_block", assessment=assessment, transaction=transaction)
 
 
 def on_step_up(db, st, s: models.Session, operation: str, payload: dict, summary: str,

@@ -8,6 +8,7 @@ import { parseTs } from '../../design/components';
 const OPERATION_TEXT: Record<ChallengeRef['operation'], string> = {
   login: 'this sign-in',
   beneficiary_add: 'adding this payee',
+  incident_verify: 'this security check',
   transfer: 'this transfer',
 };
 

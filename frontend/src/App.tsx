@@ -12,6 +12,7 @@ const SessionPage = lazy(() => import('./features/soc/SessionPage').then((m) => 
 const BaselineIndex = lazy(() => import('./features/soc/BaselinePage').then((m) => ({ default: m.BaselineIndex })));
 const BaselinePage = lazy(() => import('./features/soc/BaselinePage').then((m) => ({ default: m.BaselinePage })));
 const EvaluationPage = lazy(() => import('./features/soc/EvaluationPage').then((m) => ({ default: m.EvaluationPage })));
+const IncidentsPage = lazy(() => import('./features/soc/IncidentsPage').then((m) => ({ default: m.IncidentsPage })));
 const GhostPage = lazy(() => import('./features/soc/GhostPage').then((m) => ({ default: m.GhostPage })));
 // Renaissance full-screen views: code-split so three.js loads only where the orb is shown.
 const Landing = lazy(() => import('./renaissance/Landing').then((m) => ({ default: m.Landing })));
@@ -42,6 +43,9 @@ export default function App() {
       <Route element={<ConsoleLayout />}>
         <Route path="/soc" element={L(<SocOverview />)} />
         <Route path="/soc/sessions/:id" element={L(<SessionPage />)} />
+        <Route path="/soc/incidents" element={L(<IncidentsPage />)} />
+        <Route path="/soc/incidents/:id" element={L(<IncidentsPage />)} />
+        <Route path="/soc/intelligence" element={<Suspense fallback={null}><Intelligence /></Suspense>} />
         <Route path="/soc/users" element={L(<BaselineIndex />)} />
         <Route path="/soc/users/:id/baseline" element={L(<BaselinePage />)} />
         <Route path="/soc/evaluation" element={L(<EvaluationPage />)} />
@@ -49,7 +53,6 @@ export default function App() {
         <Route path="/lab" element={L(<LabPage />)} />
       </Route>
       <Route path="/judge" element={<Suspense fallback={null}><JudgeMode /></Suspense>} />
-      <Route path="/soc/intelligence" element={<Suspense fallback={null}><Intelligence /></Suspense>} />
       <Route path="/brand" element={<Suspense fallback={null}><BrandPage /></Suspense>} />
       <Route path="/" element={<Suspense fallback={null}><Landing /></Suspense>} />
       <Route path="*" element={<Navigate to="/login" replace />} />

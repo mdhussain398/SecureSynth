@@ -26,7 +26,7 @@ This is a single honest list of what SecureSynth does not do or has not proven. 
   - SQLite (WAL);
   - in-memory rate limits, reset on restart;
   - local dev servers without TLS.
-- **Restriction is per session.** A blocked attacker can sign in again, but every new login is re-assessed and needs the trusted device.
+- **Restriction is per session.** A blocked attacker can sign in again, but every new login is re-assessed. A restricted genuine customer is recovered by an analyst decision (`docs/INCIDENT_RECOVERY.md`), never automatically. Incident notifications are near-real-time (4 s polling), not push.
 
 ## Not implemented
 - **Ghost Banking** (an isolated decoy ledger for blocked sessions) is designed, but only stubs exist:

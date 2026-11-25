@@ -1,5 +1,5 @@
 import { useReducedMotion } from 'motion/react';
-import { Component, lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LEVEL_COLOR, STATE_COLOR, spherePoints, webglAvailable, type OrbProps } from './types';
 
 const OrbScene = lazy(() => import('./OrbScene'));
@@ -47,6 +47,20 @@ export function IdentityOrb(props: OrbProps) {
   const reduce = !!useReducedMotion();
   const [gl] = useState(webglAvailable);
   const [ready, setReady] = useState(false);
+  // Creating the WebGL context and compiling shaders blocks the main thread for ~300 ms. Start it only after the
+  // page's entrance (nav pill slide, content fade, ~350 ms) has finished and the browser is idle, so navigating to
+  // a page with the orb never stutters. The CSS orb covers the gap and crossfades exactly as before.
+  const [mountGl, setMountGl] = useState(false);
+  useEffect(() => {
+    if (!gl) return;
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    let idle = 0;
+    const t = setTimeout(() => {
+      if (w.requestIdleCallback) idle = w.requestIdleCallback(() => setMountGl(true), { timeout: 600 });
+      else setMountGl(true);
+    }, 420);
+    return () => { clearTimeout(t); if (idle && w.cancelIdleCallback) w.cancelIdleCallback(idle); };
+  }, [gl]);
   const fb = <OrbFallback {...props} />;
   if (!gl) return fb;
   // The CSS orb stays visible until the WebGL scene has drawn a real frame, then crossfades: never an empty hero.
@@ -56,7 +70,7 @@ export function IdentityOrb(props: OrbProps) {
       <div className="absolute inset-0 transition-opacity duration-700" style={{ opacity: ready ? 1 : 0 }}>
         <GlBoundary fallback={null}>
           <Suspense fallback={null}>
-            <OrbScene {...props} reduce={reduce} onReady={() => setReady(true)} />
+            {mountGl && <OrbScene {...props} reduce={reduce} onReady={() => setReady(true)} />}
           </Suspense>
         </GlBoundary>
       </div>

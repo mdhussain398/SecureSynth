@@ -85,7 +85,7 @@ def verify_totp(body: schemas.TotpRequest, request: Request, response: Response,
         challenge = enforcement.on_step_up(db, st, s, "login", {"login": True},
                                            f"Sign-in · {s.city} (simulated)", a.id)
     elif a.decision == "BLOCK":
-        enforcement.on_block(db, st, s)
+        enforcement.on_block(db, st, s, a)
     audit.log(db, user.username, "auth.login", user.id, s.id, decision=a.decision, city=s.city,
               device_recognised=recognised)
     db.commit()
@@ -121,3 +121,35 @@ def logout(response: Response, ctx=Depends(require("normal", "step_up", "restric
     sessions.clear_auth_cookies(response)
     response.status_code = 204
     return response
+
+
+@router.get("/incident")
+def my_incident(request: Request, response: Response, db=Depends(get_db), st: AppState = Depends(get_state)):
+    """Customer-side incident status, polled from the restricted screen. Read-only: there is no customer
+    endpoint that changes an incident. Also answers for a session an analyst closed during recovery, so the
+    customer learns to sign in again; such a token still grants nothing else (every other route rejects it)."""
+    from app.security import tokens
+    from app.services import incidents
+    raw = request.cookies.get(sessions.SESSION_COOKIE)
+    s = db.scalar(select(models.Session).where(models.Session.token_hash == tokens.hash_token(raw or "")))
+    if s is None or s.mode == "pre_otp":
+        raise ApiError(401, "UNAUTHENTICATED", "Sign in required.")
+    closed = s.mode == "revoked" and (s.context or {}).get("closed_by_incident")
+    if s.mode == "revoked" and not closed:
+        raise ApiError(401, "UNAUTHENTICATED", "Sign in required.")
+    if not closed:
+        now = clock.now()
+        idle = timedelta(minutes=st.settings.session_idle_min)
+        if now >= sessions._aware(s.expires_at) or now - sessions._aware(s.last_seen) > idle:
+            s.mode = "revoked"
+            db.commit()
+            raise ApiError(401, "UNAUTHENTICATED", "Session expired.")
+        s.last_seen = now
+        db.commit()
+    inc = next((i for i in db.scalars(select(models.SecurityIncident).where(models.SecurityIncident.user_id == s.user_id)
+                                      .order_by(models.SecurityIncident.id.desc()).limit(20)).all()
+                if s.id in (i.session_ids or [])), None)  # the newest incident this session belongs to
+    out = incidents.customer_view(db, inc, s)
+    if closed:
+        sessions.clear_auth_cookies(response)  # the old token is finished; the customer signs in afresh
+    return out

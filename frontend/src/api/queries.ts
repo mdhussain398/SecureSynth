@@ -3,7 +3,8 @@ import { api, ApiError } from './client';
 import type {
   AddBeneficiaryRequest, AdminSessionRow, AppConfig, BaselineView, Beneficiary, ChallengeStatusResponse,
   ClockResponse, CounterfactualRequest, CounterfactualResponse, Decision, DeviceChallenge,
-  DeviceRespondRequest, DeviceRespondResponse, EvaluationReport, GhostCompare, LoginRequest, LoginResponse,
+  DeviceRespondRequest, DeviceRespondResponse, EvaluationReport, GhostCompare, IncidentActionRequest, IncidentActionResponse, IncidentDetail,
+  IncidentRow, IncidentSummary, LoginRequest, LoginResponse, MyIncident,
   OverviewResponse, ResetResponse, Scenario, ScenarioRun, SensitiveActionResponse, SessionDetail,
   SessionInfo, TotpRequest, TotpResponse, Transaction, TransferRequest, UserRow,
 } from './types';
@@ -24,6 +25,10 @@ export const qk = {
   baseline: (id: string) => ['admin', 'baseline', id] as const,
   evaluation: ['admin', 'evaluation'] as const,
   ghost: (id: string) => ['admin', 'ghost', id] as const,
+  incidentSummary: ['admin', 'incidents', 'summary'] as const,
+  incidents: (status: string) => ['admin', 'incidents', 'list', status] as const,
+  incident: (id: number) => ['admin', 'incidents', 'detail', id] as const,
+  myIncident: ['me', 'incident'] as const,
   scenarios: ['lab', 'scenarios'] as const,
   clock: ['lab', 'clock'] as const,
 };
@@ -39,7 +44,10 @@ export const useTotp = () => {
   const qc = useQueryClient();
   return useMutation<TotpResponse, ApiError, TotpRequest>({
     mutationFn: (b) => api.post<TotpResponse>('/auth/totp', b).then((r) => r.data),
-    onSuccess: (d) => { qc.setQueryData(qk.me, d.session); },
+    onSuccess: (d) => {  // a new session: drop anything cached from a previous (possibly restricted) one
+      qc.removeQueries({ queryKey: qk.myIncident }); qc.removeQueries({ queryKey: ['bank'] });
+      qc.setQueryData(qk.me, d.session);
+    },
   });
 };
 
@@ -135,6 +143,42 @@ export const useEvaluation = () =>
   useQuery({ queryKey: qk.evaluation, queryFn: () => api.get<EvaluationReport>('/admin/evaluation'), retry: false });
 export const useGhost = (sessionId: string) =>
   useQuery({ queryKey: qk.ghost(sessionId), queryFn: () => api.get<GhostCompare>(`/admin/ghost/${encodeURIComponent(sessionId)}`), retry: false });
+
+// ---------- security incidents ----------
+/** Analyst notification feed: polled, so new alerts appear without a page refresh. */
+export const useIncidentSummary = (enabled = true) =>
+  useQuery({ queryKey: qk.incidentSummary, queryFn: () => api.get<IncidentSummary>('/admin/incidents/summary'),
+    refetchInterval: 4000, refetchIntervalInBackground: true, enabled, retry: false });
+export const useIncidents = (status: 'open' | 'resolved' | 'all') =>
+  useQuery({ queryKey: qk.incidents(status), queryFn: () => api.get<IncidentRow[]>(`/admin/incidents?status=${status}`), refetchInterval: 4000 });
+export const useIncident = (id: number | null) =>
+  useQuery({ queryKey: qk.incident(id ?? 0), queryFn: () => api.get<IncidentDetail>(`/admin/incidents/${id}`), enabled: id != null, refetchInterval: 4000 });
+export const useIncidentRead = () => {
+  const qc = useQueryClient();
+  return useMutation<unknown, ApiError, number>({
+    mutationFn: (id) => api.post(`/admin/incidents/${id}/read`),
+    onSettled: () => { qc.invalidateQueries({ queryKey: ['admin', 'incidents'] }); },
+  });
+};
+export const useIncidentsReadAll = () => {
+  const qc = useQueryClient();
+  return useMutation<unknown, ApiError, void>({
+    mutationFn: () => api.post('/admin/incidents/read-all'),
+    onSettled: () => { qc.invalidateQueries({ queryKey: ['admin', 'incidents'] }); },
+  });
+};
+export const useIncidentAction = (id: number) => {
+  const qc = useQueryClient();
+  return useMutation<IncidentActionResponse, ApiError, IncidentActionRequest>({
+    mutationFn: (b) => api.post<IncidentActionResponse>(`/admin/incidents/${id}/actions`, b).then((r) => r.data),
+    onSettled: () => { qc.invalidateQueries({ queryKey: ['admin'] }); },
+  });
+};
+/** Customer side: the restricted screen polls its own incident status (read-only endpoint). */
+export const useMyIncident = (enabled: boolean) =>
+  useQuery({ queryKey: qk.myIncident, queryFn: () => api.get<MyIncident>('/auth/incident'), enabled,
+    refetchInterval: (q) => (q.state.data?.next_step === 'sign_in_again' || q.state.data?.next_step === 'continue' ? false : 3000),
+    refetchIntervalInBackground: true, retry: false });
 
 // ---------- lab ----------
 export const useScenarios = () => useQuery({ queryKey: qk.scenarios, queryFn: () => api.get<Scenario[]>('/lab/scenarios'), retry: false });
