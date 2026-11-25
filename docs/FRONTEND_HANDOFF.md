@@ -259,3 +259,7 @@ All of this sits within the `team-handoff.md` §4 invariants: frontend only, con
 | Judge Mode | Steps reveal one by one; R runs; Esc exits to Intelligence |
 | Full-screen button | Did not engage inside the desktop app's browser pane (Fullscreen API likely blocked there). Check it in Chrome; F11 works as a fallback. |
 | Reset demo | Ran afterwards (seed `518023119e69b9c4`); only the analyst session remains |
+
+## Later fixes and continuation (2026-11-25)
+- `c5f312d`: the landing headline size is now capped by viewport height (`min(10.5vw,15vh)`), so it no longer overlaps the header in short or narrow Safari windows.
+- Cross-machine continuation and the rest of Master Prompt #05 (Synth Core logo, documentation, presentation, freeze): see `docs/MAC2_HANDOFF.md`.
