@@ -248,3 +248,14 @@ Screenshots: `docs/screenshots/renaissance/` (`judge-mode-takeover`, `evaluation
 7. Update `RESOURCES.md`.
 
 All of this sits within the `team-handoff.md` §4 invariants: frontend only, contract v1.2.0, no scores on customer screens, Ghost Banking off.
+
+## Competition-readiness check (2026-11-25)
+| Check | Result |
+|---|---|
+| `make test` | 89 passed |
+| `npm run build` | OK |
+| Frozen manifest | 6/6 hashes match, `iforest-v1-956f432a` |
+| All six Lab scenarios | Outcomes match their expected text (see `docs/DEMO.md`) |
+| Judge Mode | Steps reveal one by one; R runs; Esc exits to Intelligence |
+| Full-screen button | Did not engage inside the desktop app's browser pane (Fullscreen API likely blocked there). Check it in Chrome; F11 works as a fallback. |
+| Reset demo | Ran afterwards (seed `518023119e69b9c4`); only the analyst session remains |

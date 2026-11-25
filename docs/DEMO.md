@@ -21,6 +21,27 @@
 - [ ] A backup laptop has the same setup, and the 2-minute fallback video is on the desktop.
 - [ ] **TOTP replay protection is real:** one code works once. If you just used a code, wait for the next one.
 
+## Judge Mode run order (verified 2026-11-25)
+Open `/judge` signed in as analyst. Press **R** to run the selected scenario live, and **Esc** to exit. Full screen: use the button, or F11 if the browser blocks it. Press *Reset demo* in the Lab before you start; the analyst stays signed in.
+
+| # | Scenario | Verified outcome |
+|---|---|---|
+| 1 | Normal customer | Allowed; asha pays ₹2,500 with no friction |
+| 2 | Takeover despite password + TOTP | Blocked, session restricted; ravi's ₹96,200 unchanged |
+| 3 | Suspicious activity after a legitimate login | Sign-in allowed, then step-up and restriction; balance unchanged |
+| 4 | Genuine traveller | Step-up, approved on the trusted device, transfer completes (₹2,500) |
+| 5 | Customer on a new device | Step-up, approved, transfer completes |
+| 6 | Unusual but legitimate transfer | Allowed at the default ₹1,50,000; vary the amount in the Lab to show friction growing |
+
+Suggested story:
+1. Show 1 (the baseline).
+2. Then 2, the headline: a correct password and OTP, still stopped.
+3. Then 3, continuous checks after login.
+4. Then 4, which shows low friction for real customers.
+5. Close on the Evaluation page.
+
+Run 5 and 6 only if there is time.
+
 ## Script
 | Time | Beat | What to show |
 |---|---|---|
