@@ -7,7 +7,9 @@ ATO families:
   A  credential + SIM-swap: new device, distant/foreign city, add payee then drain within minutes
   B  real-time OTP relay: new device, nearby city, odd hour, add payee then large transfer quickly
   C  mid-session hijack: login looks normal (recognised browser, home city) then payee + large transfer
-  D  low-and-slow mule (HELD OUT: test split only): new device, home region, modest amounts to a new payee
+  D  low-and-slow mule (HELD OUT: test split only)
+  E  remote-access takeover on the victim's own device
+v2 details and rationale: docs/EVALUATION_PROTOCOL.md
 """
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -70,51 +72,66 @@ def _amount(rng, median_rupees, scale=1.0):
 
 
 def _customer(rng, u, days):
+    """Legitimate behaviour v2 (see docs/EVALUATION_PROTOCOL.md): overlapping, drifting, sometimes messy."""
     centres, sd, rate, med, p_tx, p_trip = PERSONAS[u["persona"]]
+    centres = list(centres)
     uid = u["user_id"]
     devices = [f"u{uid}-d1"]
+    family_laptop = f"u{uid}-fam"
     bens = [f"u{uid}-b{k}" for k in range(int(rng.integers(3, 7)))]
-    phone_change_day = int(rng.integers(20, days)) if rng.random() < 0.25 else None
-    trip = None  # (city, until_day)
+    phone_change_day = int(rng.integers(15, days)) if rng.random() < 0.30 else None
+    grows = rng.random() < 0.30
+    shift_day = int(rng.integers(20, days)) if (u["persona"] in ("night_shift", "salaried") and rng.random() < 0.10) else None
+    trip = None
     sessions, n = [], 0
     for day in range(days):
         if phone_change_day == day:
-            devices = [f"u{uid}-d2"]  # legitimate new device
+            devices = [f"u{uid}-d2"]
+        if shift_day == day:
+            centres = [(c + 6) % 24 for c in centres]
         if trip is None and rng.random() < p_trip:
-            trip = (TRAVEL_CITIES[int(rng.integers(len(TRAVEL_CITIES)))], day + int(rng.integers(2, 7)))
+            pool = TRAVEL_CITIES if rng.random() < 0.6 else [c for c in HOME_CITIES if c != u["home_city"]]
+            trip = (pool[int(rng.integers(len(pool)))], day + int(rng.integers(2, 7)))
         if trip and day > trip[1]:
             trip = None
         city = trip[0] if trip else u["home_city"]
+        day_med = med * (1.01 ** (day / 7) if grows else 1.0)
         for _ in range(int(rng.poisson(rate))):
             ts = EPOCH + timedelta(days=day, hours=_hour(rng, centres, sd), minutes=int(rng.integers(60)))
             n += 1
-            ev = [{"type": "login", "ts": ts, "device": devices[0], "city": city}]
+            dev = family_laptop if rng.random() < 0.05 else devices[0]
+            failed = int(rng.integers(1, 3)) if rng.random() < 0.03 else 0
+            ev = [{"type": "login", "ts": ts, "device": dev, "city": city, "failed_auth_24h": failed}]
             t = ts
             if rng.random() < p_tx:
-                if rng.random() < 0.04:  # legitimate new payee, used after a pause
+                if rng.random() < 0.04:  # legitimate new payee
                     nb = f"u{uid}-b{len(bens)}"
-                    t = t + timedelta(minutes=int(rng.integers(2, 30)))
-                    ev.append({"type": "beneficiary_add", "ts": t, "device": devices[0], "city": city, "beneficiary": nb})
+                    t = t + timedelta(minutes=int(rng.integers(1, 30)))
+                    ev.append({"type": "beneficiary_add", "ts": t, "device": dev, "city": city, "beneficiary": nb})
                     bens.append(nb)
-                    t = t + timedelta(minutes=int(rng.integers(5, 240)))
-                    ev.append({"type": "transfer", "ts": t, "device": devices[0], "city": city, "beneficiary": nb,
-                               "amount": _amount(rng, med), "beneficiary_added_at": ev[-1]["ts"]})
+                    gap = int(rng.integers(1, 9)) if rng.random() < 0.30 else int(rng.integers(5, 240))
+                    t = t + timedelta(minutes=gap)
+                    ev.append({"type": "transfer", "ts": t, "device": dev, "city": city, "beneficiary": nb,
+                               "amount": _amount(rng, day_med), "beneficiary_added_at": ev[-1]["ts"]})
                 else:
-                    scale = rng.choice([1.0, 6.0], p=[0.97, 0.03])  # occasional unusual-but-legit spend
+                    scale = rng.choice([1.0, 6.0, 15.0], p=[0.96, 0.03, 0.01])
                     t = t + timedelta(minutes=int(rng.integers(1, 20)))
-                    ev.append({"type": "transfer", "ts": t, "device": devices[0], "city": city,
-                               "beneficiary": bens[int(rng.integers(len(bens)))], "amount": _amount(rng, med, scale)})
-            kind = "traveller" if trip else ("new_device" if phone_change_day is not None and
-                                              phone_change_day <= day < phone_change_day + 3 else "normal")
+                    ev.append({"type": "transfer", "ts": t, "device": dev, "city": city,
+                               "beneficiary": bens[int(rng.integers(len(bens)))], "amount": _amount(rng, day_med, scale)})
+            if trip:
+                kind = "traveller"
+            elif dev not in (devices[0],) or (phone_change_day is not None and phone_change_day <= day < phone_change_day + 3):
+                kind = "new_device"
+            else:
+                kind = "normal"
             sessions.append(_session(uid, n, ts, ev, "legit", None, split_of(day), kind))
-    # inject attacks into validation and test windows only (IF trains on legitimate history)
     for split, lo, hi in SPLITS[1:]:
-        fams = ["A", "B", "C"] + (["D"] if split == "test" else [])
+        fams = ["A", "B", "C", "E"] + (["D"] if split == "test" else [])
         for fam in fams:
             if rng.random() < 0.30:
                 day = int(rng.integers(lo, hi))
                 n += 1
-                sessions.extend(_attack(rng, u, uid, n, day, fam, med, devices, bens, split))
+                sessions.extend(_attack(rng, u, uid, n, day, fam, med, devices, bens, split, centres))
     return sessions
 
 
@@ -128,32 +145,46 @@ def _session(uid, n, ts, events, label, family, split, kind):
             "attack_family": family, "split": split, "kind": kind}
 
 
-def _attack(rng, u, uid, n, day, fam, med, devices, bens, split):
-    hour = int(rng.integers(24))
-    ts = EPOCH + timedelta(days=day, hours=hour, minutes=int(rng.integers(60)))
+def _attack(rng, u, uid, n, day, fam, med, devices, bens, split, centres):
+    """Attack families v2 (see docs/EVALUATION_PROTOCOL.md)."""
+    victim_hour = lambda: _hour(rng, centres, PERSONAS[u["persona"]][1])
+    new_dev = f"atk-{uid}-{n}"
     mule = f"mule-{uid}-{n}"
+    pay_existing = False
+    failed = 0
     if fam == "A":
-        city, dev = FOREIGN[int(rng.integers(len(FOREIGN)))], f"atk-{uid}-{n}"
-        gap1, gap2, amt = rng.integers(20, 120), rng.integers(10, 90), _amount(rng, med, rng.uniform(8, 25))
+        city = FOREIGN[int(rng.integers(len(FOREIGN)))] if rng.random() < 0.5 else \
+            [c for c in HOME_CITIES if c != u["home_city"]][int(rng.integers(len(HOME_CITIES) - 1))]
+        dev, hour = new_dev, int(rng.integers(24))
+        gap1, gap2, scale = rng.integers(20, 120), rng.integers(10, 90), rng.uniform(8, 25)
         failed = int(rng.integers(0, 4))
     elif fam == "B":
-        city, dev = rng.choice(HOME_CITIES), f"atk-{uid}-{n}"
-        gap1, gap2, amt = rng.integers(15, 90), rng.integers(10, 60), _amount(rng, med, rng.uniform(4, 12))
-        failed = 0
+        city = u["home_city"] if rng.random() < 0.5 else HOME_CITIES[int(rng.integers(len(HOME_CITIES)))]
+        dev = new_dev
+        hour = victim_hour() if rng.random() < 0.6 else int(rng.integers(24))
+        gap1, gap2, scale = rng.integers(15, 90), rng.integers(10, 60), rng.uniform(3, 10)
     elif fam == "C":
-        city, dev = u["home_city"], devices[0]
-        hour = int(rng.choice(PERSONAS[u["persona"]][0]))
-        ts = EPOCH + timedelta(days=day, hours=hour, minutes=int(rng.integers(60)))
-        gap1, gap2, amt = rng.integers(300, 1800), rng.integers(20, 120), _amount(rng, med, rng.uniform(5, 15))
-        failed = 0
-    else:  # D low-and-slow
-        city, dev = u["home_city"], f"atk-{uid}-{n}"
-        gap1, gap2, amt = rng.integers(120, 900), rng.integers(300, 3000), _amount(rng, med, rng.uniform(1, 2.5))
-        failed = 0
+        city, dev, hour = u["home_city"], devices[0], victim_hour()
+        gap1, gap2, scale = rng.integers(300, 1800), rng.integers(20, 120), rng.uniform(3, 8)
+        pay_existing = rng.random() < 0.5
+    elif fam == "E":
+        city, dev, hour = u["home_city"], devices[0], victim_hour()
+        gap1, gap2, scale = rng.integers(60, 600), rng.integers(1800, 10800), rng.uniform(1, 4)
+    else:  # D low-and-slow, held out of validation
+        city = u["home_city"]
+        dev = devices[0] if rng.random() < 0.5 else new_dev
+        hour = victim_hour()
+        gap1, gap2, scale = rng.integers(120, 900), rng.integers(1200, 7200), rng.uniform(0.5, 1.5)
+    ts = EPOCH + timedelta(days=day, hours=hour, minutes=int(rng.integers(60)))
     t1 = ts + timedelta(seconds=int(gap1))
     t2 = t1 + timedelta(seconds=int(gap2))
-    ev = [{"type": "login", "ts": ts, "device": dev, "city": city, "failed_auth_24h": failed},
-          {"type": "beneficiary_add", "ts": t1, "device": dev, "city": city, "beneficiary": mule},
-          {"type": "transfer", "ts": t2, "device": dev, "city": city, "beneficiary": mule, "amount": amt,
-           "beneficiary_added_at": t1}]
+    amt = _amount(rng, med, scale)
+    ev = [{"type": "login", "ts": ts, "device": dev, "city": city, "failed_auth_24h": failed}]
+    if pay_existing:
+        ev.append({"type": "transfer", "ts": t2, "device": dev, "city": city,
+                   "beneficiary": bens[int(rng.integers(len(bens)))], "amount": amt})
+    else:
+        ev += [{"type": "beneficiary_add", "ts": t1, "device": dev, "city": city, "beneficiary": mule},
+               {"type": "transfer", "ts": t2, "device": dev, "city": city, "beneficiary": mule, "amount": amt,
+                "beneficiary_added_at": t1}]
     return [_session(uid, n, ts, ev, "ato", fam, split, f"ato_{fam}")]

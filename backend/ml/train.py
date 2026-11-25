@@ -40,7 +40,9 @@ def feature_rows(ds: generate.Dataset) -> Rows:
     X, meta = [], []
     for s in ds.sessions:  # chronological
         uid = s["user_id"]
-        base = F.build_baseline(trusted_hist[uid], users[uid]["home_city"])
+        # min_device_sessions=1 mirrors the product: a device approved via independent verification
+        # is provisionally recognised from then on (docs/EVALUATION_PROTOCOL.md, product-consistency assumption)
+        base = F.build_baseline(trusted_hist[uid], users[uid]["home_city"], min_device_sessions=1)
         recent = raw_hist[uid][-60:]
         sess_events = []
         for e in s["events"]:
@@ -109,6 +111,21 @@ def tune(model: Model, val: Rows, max_fpr: float = 0.05, max_block_fpr: float = 
     return model
 
 
+FROZEN_FILES = ["artifacts/model.joblib", "app/risk/features.py", "app/risk/policy.py", "app/risk/model.py",
+                "ml/generate.py", "ml/train.py"]
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def file_hashes() -> dict:
+    return {f: hashlib.sha256((ROOT / f).read_bytes()).hexdigest() for f in FROZEN_FILES}
+
+
+def write_manifest(model) -> None:
+    manifest = {"model_version": model.version, "w_ml": model.w_ml, "t_step": model.t_step, "t_block": model.t_block,
+                "files": file_hashes()}
+    (ARTIFACTS / "frozen_manifest.json").write_text(json.dumps(manifest, indent=2))
+
+
 def main() -> None:
     ds = generate.generate(seed=SEED)
     rows = feature_rows(ds)
@@ -118,6 +135,7 @@ def main() -> None:
     model.version = f"iforest-v1-{digest}"
     ARTIFACTS.mkdir(exist_ok=True)
     joblib.dump(model, ARTIFACTS / "model.joblib")
+    write_manifest(model)
     print(json.dumps({"version": model.version, "w_ml": model.w_ml, "t_step": model.t_step,
                       "t_block": model.t_block, "train_rows": int(len(rows.subset(['train']).X)),
                       "val_rows": int(len(rows.subset(['val']).X))}, indent=2))

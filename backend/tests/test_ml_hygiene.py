@@ -42,3 +42,17 @@ def test_inference_code_never_reads_scenario_labels():
         names = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)} | \
                 {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
         assert "ScenarioLabel" not in names, f"{path} references ScenarioLabel"
+
+
+def test_final_evaluation_refuses_when_frozen_files_change(monkeypatch, tmp_path):
+    import json
+    from ml import evaluate
+    (tmp_path / "frozen_manifest.json").write_text(json.dumps({"files": {"app/risk/policy.py": "0" * 64}}))
+    monkeypatch.setattr(train, "ARTIFACTS", tmp_path)
+    with pytest.raises(SystemExit):
+        evaluate.verify_frozen()
+
+
+def test_final_test_population_is_separate_from_development():
+    from ml import evaluate
+    assert evaluate.FINAL_SEED != train.SEED

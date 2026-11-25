@@ -1,4 +1,4 @@
-"""Held-out evaluation (A8): three approaches, identical TEST sessions, one shared outcome function.
+"""FINAL held-out evaluation (protocol v2, docs/EVALUATION_PROTOCOL.md) — A8: three approaches, identical TEST sessions, one shared outcome function.
 
 Run: python -m ml.evaluate  → artifacts/eval_report.json and ../docs/EVALUATION.md
 The test split is read here and nowhere else; nothing in this file feeds back into tuning.
@@ -79,12 +79,16 @@ def run_approach(name, label, decide_fn, rows, sessions):
     refs = list(final)
     y = [sessions[r]["label"] == "ato" for r in refs]
     travellers = [r for r in refs if sessions[r]["kind"] == "traveller"]
+    new_devs = [r for r in refs if sessions[r]["kind"] == "new_device"]
+    legit = [r for r in refs if sessions[r]["label"] == "legit"]
     fams = sorted({sessions[r]["attack_family"] for r in refs if sessions[r]["label"] == "ato"})
     return {
         "name": name, "label": label,
         "intervention": metrics(y, [final[r] != "ALLOW" for r in refs]),
         "block_only": metrics(y, [final[r] == "BLOCK" for r in refs]),
         "traveller_restriction_rate": round(float(np.mean([final[r] != "ALLOW" for r in travellers])), 4) if travellers else 0.0,
+        "new_device_restriction_rate": round(float(np.mean([final[r] != "ALLOW" for r in new_devs])), 4) if new_devs else 0.0,
+        "legit_block_rate": round(float(np.mean([final[r] == "BLOCK" for r in legit])), 4),
         "prevention": {"attack_value_attempted_paise": prev["attempted"], "attack_value_prevented_paise": prev["prevented"],
                        "attack_value_completed_paise": prev["completed"], "legit_value_delayed_paise": prev["legit_delayed"]},
         "latency_ms": {"p50": round(float(np.percentile(lat, 50)), 4), "p95": round(float(np.percentile(lat, 95)), 4)},
@@ -93,9 +97,23 @@ def run_approach(name, label, decide_fn, rows, sessions):
     }
 
 
+FINAL_SEED = 9091  # fresh population, never used during development
+
+
+def verify_frozen() -> dict:
+    manifest = json.loads((train.ARTIFACTS / "frozen_manifest.json").read_text())
+    current = train.file_hashes()
+    changed = [f for f, h in manifest["files"].items() if current.get(f) != h]
+    if changed:
+        raise SystemExit(f"Refusing to evaluate: frozen files changed since training: {changed}. "
+                         "Re-run `make train` (new protocol version) first.")
+    return manifest
+
+
 def main() -> dict:
+    manifest = verify_frozen()
     model = joblib.load(train.ARTIFACTS / "model.joblib")
-    ds = generate.generate(seed=train.SEED)
+    ds = generate.generate(seed=FINAL_SEED)
     rows = train.feature_rows(ds).subset(["test"])
     sessions = {s["session_ref"]: s for s in ds.sessions if s["split"] == "test"}
     cols = rows.feature_columns
@@ -123,13 +141,16 @@ def main() -> dict:
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(), "model_version": model.version,
         "dataset": {"customers": len(ds.users), "sessions_test": len(sessions), "attacks_test": n_atk,
-                    "held_out_family": "D", "seed": train.SEED},
+                    "held_out_family": "D", "seed": FINAL_SEED, "protocol": "v2",
+                    "frozen_manifest_files": manifest["files"]},
         "approaches": approaches,
         "assumptions": [
             "Unit of evaluation is a session; a session's decision is the strictest decision reached so far.",
             "Attackers cannot complete independent trusted-device verification; genuine customers can.",
             "Value prevented counts only attack transfers that ended restricted; legitimate value delayed is reported separately.",
-            "Thresholds and ML weight were selected on the validation window (days 60–75) only.",
+            "Thresholds and ML weight were selected on the development validation window (seed 2026, days 60–75) only.",
+            "The final test population (seed 9091) was generated fresh and scored once with frozen model, features and thresholds.",
+            "A device approved through independent verification counts as recognised afterwards (mirrors the product).",
         ],
         "limitations": [
             "All customers, devices, locations and attacks are synthetic and authored by the team.",
