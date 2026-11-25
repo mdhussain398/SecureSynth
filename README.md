@@ -1,3 +1,5 @@
+<p align="center"><img src="frontend/public/brand/synth-core-hero-2048.png" alt="Synth Core: the SecureSynth logo, two glass ribbons forming an S around a glowing shield" width="220"></p>
+
 # SecureSynth
 
 **Risk-based authentication and continuous account-takeover detection — a correct password and OTP are not proof that the customer is present.**
@@ -44,13 +46,27 @@ Attackers bypass passwords and one-time codes through phishing, real-time OTP re
 | …of which stopped outright by BLOCK | ₹0 | ₹2.38 cr | **₹2.61 cr** |
 | Legitimate value delayed | ₹0 | ₹2.89 cr | **₹57 lakh** |
 | …of which blocked outright | ₹0 | ₹0.3 lakh | ₹25 lakh |
-| Decision latency p95 (in-process) | – | – | 5.6 ms |
+| Decision latency p95 (in-process) | – | – | 5.61 ms |
 
 **Honest reading:**
 - **Higher recall at about one-fifth of the customer friction.**
 - **It does not prevent more total money than static rules**, which challenge nearly everyone.
 - **It stops more attack money outright, but also blocks more legitimate money outright.**
 - **Weakness:** session hijack on the customer's own familiar device (recall 0.59). See [limitations](#limitations).
+
+## The product
+| Screen | What it shows |
+|---|---|
+| `/` | Landing: the identity orb and a live status line for the risk engine |
+| `/bank` | Customer portal: balance, statements, payees, transfers, and a full-screen step-up focus that shows the number to match |
+| `/device` | Simulated trusted device: number-matching approval |
+| `/soc/intelligence` | **Command Centre:** live sessions; a Digital Twin orb visualising the backend's signals; risk index on a bezel with the real step-up and block thresholds |
+| `/soc`, `/soc/users`, `/soc/evaluation` | Investigation, baselines with rollback, and the frozen evaluation as an editorial data story |
+| `/lab` | Scenario Lab: the six scenarios as an event sequence with real before and after balances |
+| `/judge` | **Judge Mode:** full-screen live runs, revealed step by step (R runs, Esc exits) |
+| `/brand` | The Synth Core logo: a glass hero with an SVG fallback |
+
+Screenshots: [docs/screenshots/](docs/screenshots/).
 
 ## Architecture
 ```mermaid
@@ -83,14 +99,14 @@ Details, request flow and trust boundaries: [docs/ARCHITECTURE.md](docs/ARCHITEC
 
 ## Tech stack
 - **Backend:** Python 3.12, FastAPI, SQLAlchemy 2, Pydantic 2, SQLite (WAL), PyOTP, argon2-cffi, cryptography (Fernet), scikit-learn, NumPy, pandas (offline data generation only), pytest.
-- **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS v4, TanStack Query, Recharts, Lucide.
+- **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS v4, TanStack Query, Recharts, Lucide; three.js + React Three Fiber for the lazy-loaded glass identity orb and the Synth Core logo; Motion for reduced-motion-aware interface motion; Archivo and Geist fonts bundled locally.
 - **Runs fully offline** after install. No Docker, no external APIs, no paid services.
 
 ## Install and run
 Prerequisites:
 - macOS or Linux;
 - Python 3.12 (`brew install python@3.12`);
-- Node 20+ (tested with Node 24);
+- Node 20+ (tested with Node 24 on Mac 1 and Node 22 on Mac 2);
 - `make`.
 
 Do the one-time setup on a good network.
@@ -105,6 +121,8 @@ cd SecureSynth && make setup
 - runs `npm ci`;
 - generates local secrets in `backend/.env`;
 - trains the model (deterministic, about 5 s);
+
+  > **Do not run `make setup` or `make train` on a machine that already holds the frozen artifacts copied from another machine.** Training overwrites `model.joblib`. Use the manual steps in [docs/MAC2_HANDOFF.md](docs/MAC2_HANDOFF.md) §12 instead.
 - builds the demo database and a reset snapshot.
 
 Run (two terminals):
@@ -121,7 +139,7 @@ Open http://localhost:5173.
 
 | Command | Purpose |
 |---|---|
-| `make test` | Backend test suite (87 tests) |
+| `make test` | Backend test suite (89 tests) |
 | `make train` | Retrain + validation tuning + write the frozen manifest |
 | `make eval` | Final held-out evaluation (refuses if frozen files changed) |
 | `make seed` | Rebuild the demo DB and its reset snapshot (new demo credentials) |
@@ -130,13 +148,18 @@ Open http://localhost:5173.
 ## Documentation
 | Document | Contents |
 |---|---|
+| [docs/report/PROJECT_REPORT.md](docs/report/PROJECT_REPORT.md) (+ `.docx`, `.pdf`) | Full technical report |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, request flows, data model, session modes |
+| [docs/API.md](docs/API.md) | API reference generated from OpenAPI (contract v1.2.0) |
+| [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) | Every known limitation in one place |
+| [docs/SUBMISSION_CHECKLIST.md](docs/SUBMISSION_CHECKLIST.md) | Pre-submission and on-the-day checklist |
 | [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) | Assets, attackers, trust boundaries, controls, out-of-scope, residual risk |
 | [docs/EVALUATION.md](docs/EVALUATION.md) · [docs/EVALUATION_PROTOCOL.md](docs/EVALUATION_PROTOCOL.md) | Methodology, frozen results, limitations |
 | [docs/DEMO.md](docs/DEMO.md) | 10-minute demo script, offline checklist, troubleshooting |
 | [docs/RESOURCES.md](docs/RESOURCES.md) | External libraries, fonts, licences, AI assistance |
 | [docs/TEAM.md](docs/TEAM.md) | Team and contributions |
 | [docs/api-contract.md](docs/api-contract.md) | API contract (frontend ↔ backend) |
+| [docs/FRONTEND_HANDOFF.md](docs/FRONTEND_HANDOFF.md) · [docs/MAC2_HANDOFF.md](docs/MAC2_HANDOFF.md) | Frontend design system and cross-machine handoff |
 | [docs/progress-log.md](docs/progress-log.md) | Hackathon build log with test evidence |
 
 ## Limitations

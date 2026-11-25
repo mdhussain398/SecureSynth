@@ -15,6 +15,18 @@
 | Admin & lab | `routers/admin.py`, `routers/lab.py`, `lab/scenarios.py` | Investigation API, counterfactuals, demo-only lab |
 | ML pipeline | `backend/ml/{generate,train,evaluate}.py` | Synthetic data, training, validation tuning, frozen final evaluation |
 
+## Frontend architecture (Renaissance redesign)
+| Part | Location | Notes |
+|---|---|---|
+| Design system | `frontend/src/design/tokens.css`, `renaissance/rn.css` | Porcelain, crystal, silver, electric blue and graphite. Amber and red are reserved for security states. |
+| Glass identity orb | `renaissance/orb/` | R3F scene, lazy-loaded. Visualises **backend** signals (`assessment.features`, `deviations`, `decision`); it is not the model. CSS fallback without WebGL. |
+| Command Centre | `renaissance/Intelligence.tsx` | Live sessions, Digital Twin orb, risk bezel with the real thresholds, signal inspector |
+| Judge Mode | `renaissance/JudgeMode.tsx` | Calls the real Lab API and reveals the recorded steps one at a time |
+| Scenario event sequence | `renaissance/RunSequence.tsx` | Authentication → behavioural assessment → risk evaluation → decision → outcome |
+| Brand | `brand/` | Synth Core: SVG nav mark, R3F glass hero (`/brand`), static exports in `public/brand/` |
+
+Route guards in the frontend are for UX only; the backend enforces every permission.
+
 ## Request flow: login → OTP → risk → decision
 ```mermaid
 sequenceDiagram

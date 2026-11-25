@@ -11,7 +11,7 @@
   make dev-frontend
   ```
 - [ ] `curl -s http://127.0.0.1:8000/api/health` returns `{"status":"ok"}`.
-- [ ] `make test` is green (87 tests, ~12 s).
+- [ ] `make test` is green (89 tests, ~19 s).
 - [ ] Browser tabs open:
   - **Tab 1** http://localhost:5173/login (customer);
   - **Tab 2** http://localhost:5173/device (trusted device, paired with the customer's `trusted_device_key`);

@@ -59,7 +59,7 @@ Block only:
 - It also blocks more legitimate money outright (₹25 lakh vs ₹0.3 lakh). That is the real cost of its higher block rate.
 
 ## Latency
-SecureSynth in-process decision: p50 5.46 ms, p95 5.59 ms. This is single-event scoring on a laptop and excludes network and database time.
+SecureSynth in-process decision: p50 5.48 ms, p95 5.61 ms (values from the frozen `eval_report.json`; latency is the only non-deterministic metric, and an earlier draft of this page quoted a previous run's 5.46 / 5.59 ms). This is single-event scoring on a laptop and excludes network and database time.
 
 ## Honest reading
 - **The main result is friction, not catch rate.** SecureSynth catches more takeovers than static rules (91% vs 77%) while restricting about 5× fewer legitimate sessions (5.2% vs 28.6%), and delaying about 5× less legitimate money.

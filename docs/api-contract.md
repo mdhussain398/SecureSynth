@@ -1,4 +1,6 @@
-# SecureSynth API Contract — v1.1.0 (2026-11-25)
+# SecureSynth API Contract — v1.2.0 (2026-11-25)
+
+> 1.2.0 additive change: the evaluation report gains the prevention split (blocked vs challenged), `new_device_restriction_rate` and `legit_block_rate`. A reconciled reference generated from OpenAPI is in [API.md](API.md).
 
 > 1.1.0 additive change: `AdminSessionRow.user_id`, `RiskAssessment.features` (counterfactual feature names = its keys). Transfer/beneficiary STEP_UP sets session mode `step_up` until the challenge resolves. `ChallengeStatus.consumed` is unused (approved challenges stay `approved`).
 
@@ -43,7 +45,7 @@ Shapes: `frontend/src/api/types.ts` is the source of truth for JSON bodies. Back
 | POST `/lab/scenarios/{id}/run` | lab** | `{ "params": {...} }` | `ScenarioRun` | |
 | POST `/lab/reset` | lab** | — | `ResetResponse` | |
 | GET/POST `/lab/clock` | lab** | POST `{ "advance_hours": 72 }` | `ClockResponse` | |
-| GET `/lab/demo-credentials/{username}` | lab** | — | `{ "totp_uri": "...", "device_key": "..." }` | |
+| ~~GET `/lab/demo-credentials/{username}`~~ | — | — | **Not implemented.** Credentials live only in the local `backend/artifacts/demo_credentials.json`. | |
 
 \* `restricted` sessions may read a masked overview only; all sensitive routes return 403.
 \** lab = `DEMO_MODE=true` (otherwise router not mounted → 404) + admin session + loopback client + Origin check + CSRF.

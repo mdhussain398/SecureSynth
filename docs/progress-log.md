@@ -216,3 +216,7 @@ After Claude's limit was hit, the user tried edits with Codex and then reverted 
 - **Logo:** Synth Core logo shipped: SVG nav mark, R3F glass hero, `/brand` sheet, PNG, favicon and stills.
 - **FPS (measured, Chrome, M1):** 60 at 1440×900@2x, 390×844@3x and 1920×1080@2x after the adaptive pixel-ratio cap. Before the cap: 37–40.
 - **Checks:** `make test` 89 passed; build OK; `?gl=0` path verified. Details in `docs/MAC2_HANDOFF.md` §12.
+
+## 2026-11-25 ~21:00 IST — Mac 2, Phase 2 (documentation and report)
+- **Added:** `API.md` (from OpenAPI), `KNOWN_LIMITATIONS.md`, `SUBMISSION_CHECKLIST.md`, and the technical report in MD, DOCX and PDF with charts generated from the frozen report.
+- **Corrected:** EVALUATION latency (now matches the artifact), contract version 1.2.0, a documented-but-missing Lab endpoint, and the test count (89).

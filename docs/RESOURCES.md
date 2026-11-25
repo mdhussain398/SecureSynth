@@ -49,3 +49,10 @@ All versions are pinned (`backend/requirements.txt`, `frontend/package-lock.json
 - **Team responsibility:** design decisions, review and the live demonstration are the team's. Every team member is expected to be able to explain the design.
 - **Runtime:** the product itself calls no AI or LLM service.
 - **Tooling:** Homebrew Python 3.12, Node.js, Git/GitHub.
+- **Documentation tooling** (not part of the product; run from a separate scratch environment):
+  - `python-docx` (MIT) for the report DOCX;
+  - `python-pptx` (MIT) for the deck;
+  - matplotlib (PSF-based licence) for report charts;
+  - headless Google Chrome via the DevTools protocol for PDFs, screenshots, PNG exports and FPS measurement.
+- **Brand:** the Synth Core logo is original work for this project, drawn in code (`frontend/src/brand/`). It uses no third-party artwork.
+- **Competition template:** the official AVISHKAR'26 slide template is used for the deck under the organisers' terms. It is never committed to this repository.

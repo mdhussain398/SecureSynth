@@ -1,0 +1,73 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>SecureSynth architecture</title>
+<style>
+  :root { --g:#101828; --g2:#344054; --g3:#4A5466; --s:#C0C7D1; --s2:#E3E7ED; --e:#005BFF; --p:#F5F7FA; --amber:#B54708; --red:#C01048; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#fff; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color:var(--g); }
+  .wrap { width:1600px; height:770px; padding:44px 52px; position:relative; }
+  h1 { font-size:26px; margin:0 0 4px; letter-spacing:-0.01em; }
+  .sub { color:var(--g3); font-size:16px; margin-bottom:30px; }
+  .cols { display:grid; grid-template-columns: 300px 1fr 360px; gap:56px; position:relative; }
+  .lane { border:1.5px solid var(--s2); border-radius:18px; padding:18px; background:var(--p); }
+  .lane h2 { font-size:13px; text-transform:uppercase; letter-spacing:0.08em; color:var(--g3); margin:0 0 12px; font-weight:600; }
+  .box { background:#fff; border:1.5px solid var(--s); border-radius:12px; padding:11px 14px; margin-bottom:10px; font-size:15px; }
+  .box b { display:block; font-size:15.5px; }
+  .box span { color:var(--g3); font-size:13px; }
+  .box.e { border-color:var(--e); }
+  .engine { display:grid; grid-template-columns: 1.05fr 1fr 1fr 1.25fr; gap:10px; margin-top:4px; }
+  .engine .box { margin:0; min-height:92px; }
+  .arrow { color:var(--e); font-weight:700; }
+  .dec { display:flex; gap:6px; margin-top:8px; }
+  .chip { white-space:nowrap; border-radius:999px; padding:3px 9px; font-size:12px; font-weight:600; border:1.5px solid; }
+  .allow { color:#0047CC; border-color:#A9C4FF; background:#E8F0FF; }
+  .step { color:var(--amber); border-color:#F5C9A6; background:#FEF6EE; }
+  .block { color:var(--red); border-color:#F4B3C8; background:#FFF1F5; }
+  .conn { position:absolute; height:2px; background:var(--g2); }
+  .conn::after { content:""; position:absolute; right:-2px; top:-5px; border:6px solid transparent; border-left:9px solid var(--g2); }
+  .lbl { position:absolute; font-size:12.5px; color:var(--g3); background:#fff; padding:0 6px; }
+  .foot { position:absolute; bottom:30px; left:52px; right:52px; color:var(--g3); font-size:13px; display:flex; justify-content:space-between; }
+</style></head>
+<body><div class="wrap">
+  <h1>SecureSynth architecture</h1>
+  <div class="sub">One React app talks to one FastAPI service. Every decision is computed and enforced on the server; the browser only displays it.</div>
+  <div class="cols">
+    <div class="lane">
+      <h2>Browser · React 19 + TypeScript (Vite)</h2>
+      <div class="box"><b>Customer portal</b><span>/bank · sign-in, TOTP, payees, transfers</span></div>
+      <div class="box"><b>Trusted device (simulated)</b><span>/device · X-Device-Key, number match</span></div>
+      <div class="box"><b>Command Centre</b><span>/soc · Digital Twin orb, investigation, evaluation</span></div>
+      <div class="box"><b>Scenario Lab · Judge Mode</b><span>/lab · /judge · demo only</span></div>
+    </div>
+    <div>
+      <div class="lane">
+        <h2>FastAPI service · Python 3.12</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="box"><b>Authentication</b><span>Argon2id · TOTP + replay guard · rotating sessions · CSRF · Origin</span></div>
+          <div class="box"><b>Banking ledger</b><span>idempotent transfers · atomic conditional debit</span></div>
+          <div class="box"><b>Enforcement</b><span>session modes · challenges bound to session, operation and payload hash</span></div>
+        </div>
+      </div>
+      <div class="lane" style="margin-top:18px">
+        <h2>Risk engine · login, payee add, every transfer</h2>
+        <div class="engine">
+          <div class="box"><b>1 · Features</b><span>15 behavioural deviations from this customer's trusted baseline</span></div>
+          <div class="box e"><b>2 · Isolation Forest</b><span>scikit-learn · 300 trees · rarity percentile 0–100</span></div>
+          <div class="box"><b>3 · Policy points</b><span>transparent, additive rules (e.g. impossible travel +30)</span></div>
+          <div class="box"><b>4 · Decision</b><span>0.8 × ML + points vs 77.73 / 89.1</span>
+            <div class="dec"><span class="chip allow">ALLOW</span><span class="chip step">STEP-UP</span><span class="chip block">BLOCK</span></div></div>
+        </div>
+        <div class="box" style="margin-top:10px"><b>Safe baseline adaptation</b><span>trusted vs candidate profile · only verified attributes promoted after clean sessions + 24 h · blocked sessions voided · versioned rollback</span></div>
+      </div>
+    </div>
+    <div class="lane">
+      <h2>Storage and artifacts</h2>
+      <div class="box"><b>SQLite (WAL)</b><span>users · sessions · accounts · transactions · risk assessments · challenges · baselines · audit</span></div>
+      <div class="box e"><b>Frozen model</b><span>model.joblib · iforest-v1-956f432a · SHA-256 manifest</span></div>
+      <div class="box"><b>Evaluation report</b><span>eval_report.json · fresh synthetic population, scored once</span></div>
+      <div class="box"><b>Offline training pipeline</b><span>ml/generate.py → train.py → evaluate.py (not in the request path)</span></div>
+    </div>
+  </div>
+  <div class="conn" style="left:352px;width:50px;top:250px"></div><div class="lbl" style="left:346px;top:262px">/api · JSON</div>
+  <div class="conn" style="left:1130px;width:52px;top:250px"></div><div class="lbl" style="left:1120px;top:262px">SQLAlchemy</div>
+  <div class="foot"><span>Synthetic data only. The risk index is a rarity percentile plus policy points, not a fraud probability.</span><span>AVISHKAR'26 · Problem 24</span></div>
+</div></body></html>

@@ -10,7 +10,7 @@
 | _member 4_ | | | |
 
 ## What the repository history shows
-- All 14 commits so far are authored by **Mohammed Hussain** (GitHub noreply address). They were made on this laptop with AI assistance (Claude Code), as disclosed in [RESOURCES.md](RESOURCES.md).
+- As of 2026-11-25 every commit is authored by **Mohammed Hussain** (GitHub noreply address). They were made on this laptop with AI assistance (Claude Code), as disclosed in [RESOURCES.md](RESOURCES.md).
 - Commits from other members' own laptops will appear under their own Git identities.
 
 ## Work areas (for filling in the table)
