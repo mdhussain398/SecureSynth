@@ -13,7 +13,7 @@ function AuthCard({ title, lede, children }: { title: string; lede?: string; chi
   return (
     <section className="rn-glass w-full max-w-[440px] rounded-[var(--radius-l)] p-7 sm:p-10">
       <h1 className="rn-display text-[clamp(2.5rem,6vw,3.25rem)]">{title}</h1>
-      {lede && <p className="text-[color:var(--ink-2)] mt-3">{lede}</p>}
+      {lede && <p className="text-[color:var(--ink-2)] mt-4">{lede}</p>}
       <div className="mt-7">{children}</div>
     </section>
   );

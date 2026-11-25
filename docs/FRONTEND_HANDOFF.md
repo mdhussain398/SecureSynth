@@ -1,6 +1,6 @@
 # Frontend Renaissance — handoff (Master Prompt #04)
 
-**Status: WIP. Execution approved 2026-11-25; the redesign now covers every page (see "Full redesign"). Customer-portal screens still need a sign-in check in the browser.** Do not extend the redesign to other pages until it is approved.
+**Status: WIP. Execution approved 2026-11-25; the redesign covers every page and every page has now been checked in the browser (see "Full redesign"). Reduced motion still needs a real-OS check.** Do not extend the redesign to other pages until it is approved.
 **Branch:** `feat/frontend-renaissance` (from the stable MVP `313db81` on `feat/mvp-checkpoint`).
 - Push only to this branch.
 - Never merge into `feat/mvp-checkpoint` or `main` without explicit approval.
@@ -220,14 +220,21 @@ Screenshots: `docs/screenshots/renaissance/refine-*.jpg`: landing desktop and mo
 - Browser at 1440 px: Sessions, Evaluation, Lab, trusted device, Sign in and Judge Mode. In Judge Mode the takeover run played through to Blocked 99.1; the protected balance was unchanged; the orb showed the matched assessment's signals.
 - 375 px: no horizontal scroll on `/login`, `/device`, `/soc`, `/soc/evaluation`, `/lab`, `/judge`, `/soc/users`.
 
-**Not verified:**
-- Customer portal pages (`/bank`, transfer, payees) and the step-up overlay in the browser. They need a customer sign-in, which the assistant cannot perform. They type-check and use the shared components.
-- Reduced motion on a real OS setting.
+**Customer portal check (user signed in as Meera, 2026-11-25):**
+- Overview, Transactions, Payees, Transfer and the transfer outcome render in the system at 1440 px.
+- Adding a new payee produced a real STEP_UP; the full-screen focus overlay showed the backend's number to match. The challenge was left unanswered, so it expires and the payee is not added.
+- 375 px: overview, transactions, payees and transfer have no horizontal scroll. Fixed: the decorative glow overflowed (the shells now use `overflow-x-clip`), and the phone nav is tighter so its four items fit.
+- **Demo state changed by testing:**
+  - A ₹45,000 transfer from Meera to her trusted payee was allowed and completed (synthetic money).
+  - Several lab sessions were created.
+  - Use *Reset demo* in the Lab (it restores the pristine snapshot) before presenting.
 
-Screenshots: `docs/screenshots/renaissance/` (`judge-mode-takeover`, `evaluation-desktop`, `sessions-desktop`, plus the earlier `refine-*`).
+**Not verified:** reduced motion with the real OS setting on.
+
+Screenshots: `docs/screenshots/renaissance/` (`judge-mode-takeover`, `evaluation-desktop`, `sessions-desktop`, `bank-overview-desktop`, `bank-overview-mobile`, `bank-step-up-focus`, plus the earlier `refine-*`).
 
 ## Remaining work
-1. Verify the customer portal and the step-up overlay with a real customer sign-in.
+1. Reset the demo data, then check reduced motion with the real OS setting on.
 2. Rehearse Judge Mode on the presentation machine (full screen, projector contrast).
 3. Optional: give the session investigation page (`/soc/sessions/:id`) and Baselines bespoke layouts; they currently inherit the system.
 

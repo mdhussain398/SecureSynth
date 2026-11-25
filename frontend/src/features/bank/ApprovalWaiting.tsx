@@ -29,7 +29,7 @@ export function ApprovalWaiting({ challenge, message, onDone }:
           <Smartphone size={22} aria-hidden />
         </span>
         <h1 id="approve-title" className="rn-display mt-5 text-[clamp(2.25rem,6vw,3rem)]">Approve on your registered device</h1>
-        <p className="mx-auto mt-3 max-w-[38ch] text-[color:var(--ink-2)]">{message || `We sent a request to confirm ${OPERATION_TEXT[challenge.operation]}.`}</p>
+        <p className="mx-auto mt-4 max-w-[38ch] text-[color:var(--ink-2)]">{message || `We sent a request to confirm ${OPERATION_TEXT[challenge.operation]}.`}</p>
         <p className="mt-8 text-[0.9375rem] text-[color:var(--ink-3)]">Choose this number on your device</p>
         <div className="relative mx-auto mt-3 grid h-48 w-48 place-items-center">
           {/* waiting halo: a slow ring of light around the number (static under reduced motion) */}

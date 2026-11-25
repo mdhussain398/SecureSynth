@@ -151,7 +151,7 @@ export function TransactionsPage() {
   return (
     <section>
       <h1 className="rn-display text-[clamp(2.75rem,6vw,4rem)]">Transactions</h1>
-      <p className="text-[var(--ink-2)] mt-1">Your last 50 payments in and out.</p>
+      <p className="text-[color:var(--ink-2)] mt-4">Your last 50 payments in and out.</p>
       <div className="bg-[var(--surface)] border border-[color:var(--hairline)] rounded-[var(--radius-l)] shadow-[var(--shadow-panel)] px-4 sm:px-6 py-2 mt-6">
         {q.isPending ? <div className="py-4"><Skeleton lines={6} /></div> : q.error ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> : <TxnList txns={q.data} />}
       </div>
@@ -193,7 +193,7 @@ export function BeneficiariesPage() {
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       <section>
         <h1 className="rn-display text-[clamp(2.75rem,6vw,4rem)]">Payees</h1>
-        <p className="text-[var(--ink-2)] mt-1">People and accounts you can send money to.</p>
+        <p className="text-[color:var(--ink-2)] mt-4">People and accounts you can send money to.</p>
         <div className="bg-[var(--surface)] border border-[color:var(--hairline)] rounded-[var(--radius-l)] shadow-[var(--shadow-panel)] px-4 sm:px-6 py-2 mt-6">
           {q.isPending ? <div className="py-4"><Skeleton lines={3} /></div> : q.error ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> :
             q.data.length === 0 ? <EmptyState title="No payees yet">Add a payee to start sending money.</EmptyState> : (
@@ -268,7 +268,7 @@ export function TransferPage() {
     return (
       <section className="max-w-lg mx-auto bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-l)] p-6 sm:p-10">
         <h1 className="rn-display text-[clamp(2.5rem,6vw,3.5rem)]">{content.title}</h1>
-        <p className="text-[var(--ink-2)] mt-3 text-[1.0625rem] leading-relaxed">{content.body}</p>
+        <p className="text-[color:var(--ink-2)] mt-4 text-[1.0625rem] leading-relaxed">{content.body}</p>
         <div className="flex flex-wrap gap-3 mt-8">
           {outcome.kind === 'stopped' ? <Button onClick={() => nav('/bank')}>Go to overview</Button> : <><Button onClick={reset}>Make another transfer</Button><Button variant="secondary" onClick={() => nav('/bank')}>Back to overview</Button></>}
         </div>
@@ -280,7 +280,7 @@ export function TransferPage() {
   return (
     <section className="max-w-lg">
       <h1 className="rn-display text-[clamp(2.75rem,6vw,4rem)]">Send money</h1>
-      <p className="text-[var(--ink-2)] mt-1">Transfers to saved payees. Larger or unusual payments may ask you to approve on your registered device.</p>
+      <p className="text-[color:var(--ink-2)] mt-4">Transfers to saved payees. Larger or unusual payments may ask you to approve on your registered device.</p>
       <form onSubmit={submit} className="space-y-5 mt-7 bg-[var(--surface)] border border-[color:var(--hairline)] rounded-[var(--radius-l)] shadow-[var(--shadow-panel)] p-5 sm:p-6" noValidate>
         {fieldErr && <Banner tone="block" title={fieldErr.code === 'INSUFFICIENT_FUNDS' ? 'Not enough balance' : fieldErr.code === 'STEP_UP_REQUIRED' ? 'Approval needed first' : 'Transfer not sent'}>{fieldErr.message}</Banner>}
         <div>

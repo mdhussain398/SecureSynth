@@ -41,7 +41,7 @@ function Footer({ children }: { children?: ReactNode }) {
 /** Minimal shell for the sign-in screens: the behavioural topography behind a single focused panel. */
 export function AuthLayout() {
   return (
-    <div className="relative isolate min-h-screen flex flex-col">
+    <div className="relative isolate min-h-screen flex flex-col overflow-x-clip">
       <Contours className="absolute inset-0 -z-10 h-full w-full opacity-40" seed={1.7} clearAt={[50, 50]} />
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-[45%] -z-10 h-[70vmin] w-[70vmin] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.14), rgba(0,91,255,0.04) 60%, transparent)' }} />
@@ -77,7 +77,7 @@ export function PortalLayout() {
   if (me.data.role === 'admin') return <Navigate to="/soc" replace />;
   const restricted = me.data.mode === 'restricted' || me.data.mode === 'revoked';
   return (
-    <div className="relative isolate min-h-screen flex flex-col">
+    <div className="relative isolate min-h-screen flex flex-col overflow-x-clip">
       <header className="sticky top-0 z-30 px-4 sm:px-8 py-4">
         <div className="mx-auto max-w-6xl flex items-center justify-between gap-4">
           <Link to="/bank" className="no-underline"><Brand sub="Simulated retail banking" /></Link>
@@ -161,7 +161,7 @@ export function PageTitle({ title, sub, actions }: { title: ReactNode; sub?: Rea
     <div className="flex flex-wrap items-end justify-between gap-4 mb-6 mt-2">
       <div className="min-w-0">
         <h1 className="rn-display text-[clamp(2.25rem,4.5vw,3.5rem)]">{title}</h1>
-        {sub && <p className="text-[1rem] text-[color:var(--ink-2)] mt-2 max-w-[60ch]">{sub}</p>}
+        {sub && <p className="text-[1rem] text-[color:var(--ink-2)] mt-3.5 max-w-[60ch]">{sub}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
