@@ -16,6 +16,7 @@ def on_block(db, st, s: models.Session) -> None:
 def on_step_up(db, st, s: models.Session, operation: str, payload: dict, summary: str,
                assessment_id: int) -> models.Challenge:
     s.mode = "step_up"
+    s.context = {**(s.context or {}), "step_up_op": operation}  # login step-up = identity not yet verified
     c = challenges.create(db, st, s, operation, payload, summary, assessment_id)
     audit.log(db, "system", "challenge.created", s.user_id, s.id, challenge_id=c.id, operation=operation)
     return c

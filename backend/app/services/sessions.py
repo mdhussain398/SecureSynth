@@ -70,6 +70,9 @@ def require(*modes: str, roles: tuple[str, ...] = ("customer", "admin")):
             s.mode = "revoked"
             db.commit()
             raise ApiError(401, "UNAUTHENTICATED", "Session expired.")
+        if s.mode == "step_up" and _step_up_expired(db, s, now):
+            s.mode = "restricted"  # spec §8: an unresolved step-up ends in restriction, never in silent access
+            db.commit()
         user = db.get(models.User, s.user_id)
         if user.role not in roles:
             raise ApiError(403, "FORBIDDEN", "Not permitted.")
@@ -135,3 +138,26 @@ def lab_context(request: Request) -> dict | None:
     except ValueError:
         return None
     return {k: ctx[k] for k in ("city", "failed_auth_24h") if k in ctx}
+
+
+def _step_up_expired(db, s, now) -> bool:
+    c = db.scalar(select(models.Challenge).where(models.Challenge.session_id == s.id)
+                  .order_by(models.Challenge.created_at.desc()).limit(1))
+    if c is None or c.status != "pending" or now < _aware(c.expires_at):
+        return False
+    c.status = "expired"
+    return True
+
+
+def require_verified_reader():
+    """Account reads: allowed while a later transfer/payee step-up is pending, but NOT while the login
+    itself awaits independent verification (password + TOTP alone must not grant access)."""
+    base = require("normal", "step_up")
+
+    def dep(ctx=Depends(base)):
+        s = ctx[0]
+        if s.mode == "step_up" and (s.context or {}).get("step_up_op") == "login":
+            raise ApiError(403, "STEP_UP_REQUIRED", "Approve this sign-in on your trusted device first.")
+        return ctx
+
+    return dep

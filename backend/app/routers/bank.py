@@ -6,11 +6,11 @@ from app.errors import ApiError
 from app.risk import engine
 from app.routers.auth import challenge_ref, session_info
 from app.services import audit, enforcement, ledger
-from app.services.sessions import require
+from app.services.sessions import require, require_verified_reader
 from app.state import AppState, get_state
 
 router = APIRouter(prefix="/bank", tags=["bank"])
-READ = require("normal", "step_up")
+READ = require_verified_reader()
 WRITE = require("normal")
 
 

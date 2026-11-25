@@ -124,3 +124,33 @@ def test_tampered_payload_is_not_executed(client, users, app_ctx):
         db.commit()
     r = _respond(client, users["asha"].device_key, c.id, c.number_match)
     assert r.status_code == 400
+
+
+def _login_step_up(client, users):
+    client.cookies.delete("ss_device", domain="127.0.0.1", path="/api")
+    r = login(client, users["asha"]).json()
+    assert r["decision"] == "STEP_UP", r
+    return r
+
+
+def test_unverified_login_step_up_cannot_read_account_data(client, users):
+    _login_step_up(client, users)
+    for path in ("/api/bank/overview", "/api/bank/transactions", "/api/bank/beneficiaries"):
+        r = client.get(path)
+        assert r.status_code == 403 and r.json()["error"]["code"] == "STEP_UP_REQUIRED", path
+    assert client.get("/api/auth/me").status_code == 200  # can still see it is waiting
+
+
+def test_expired_step_up_restricts_session(client, users, clock):
+    _login_step_up(client, users)
+    clock.advance(seconds=121)
+    assert client.get("/api/auth/me").json()["mode"] == "restricted"
+
+
+def test_login_step_up_approval_unlocks_reads(client, users, app_ctx):
+    from app import models
+    r = _login_step_up(client, users)
+    with app_ctx.state.ss.SessionLocal() as db:
+        n = db.get(models.Challenge, r["challenge"]["id"]).number_match
+    _respond(client, users["asha"].device_key, r["challenge"]["id"], n)
+    assert client.get("/api/bank/overview").status_code == 200

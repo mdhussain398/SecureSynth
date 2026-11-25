@@ -53,7 +53,7 @@ Shapes: `frontend/src/api/types.ts` is the source of truth for JSON bodies. Back
 |---|---|---|---|
 | pre_otp | none | no | only `/auth/totp` |
 | normal | yes | yes (risk-checked) | |
-| step_up | yes | no (403 STEP_UP_REQUIRED) until challenge approved | |
+| step_up | yes, **except** when the step-up is for the login itself (403 STEP_UP_REQUIRED until approved) | no (403 STEP_UP_REQUIRED) until challenge approved | an expired challenge moves the session to `restricted` |
 | restricted | masked overview | no | result of BLOCK when Ghost Banking disabled |
 | ghost | ghost ledger only | ghost ledger only | only when `GHOST_BANKING_ENABLED=true` |
 | revoked | none | no | |

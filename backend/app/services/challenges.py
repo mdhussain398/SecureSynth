@@ -102,6 +102,7 @@ def respond(db, st, user, challenge_id: str, selected: int, approve: bool) -> st
                   amount_paise=t.amount_paise)
     _learn_verified(db, user, s, c)
     s.mode = "normal"
+    s.context = {k: v for k, v in (s.context or {}).items() if k != "step_up_op"}
     audit.log(db, "trusted_device", "challenge.approved", user.id, s.id, challenge_id=c.id, operation=c.operation)
     db.commit()
     return "approved"
