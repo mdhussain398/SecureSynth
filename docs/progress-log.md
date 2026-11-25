@@ -201,3 +201,12 @@ After Claude's limit was hit, the user tried edits with Codex and then reverted 
 - Ghost Banking: not implemented and disabled (no mentor approval yet).
 - Still needed: slides in the official template, and the 2-minute fallback video.
 - Verified payees are not learned into the baseline (documented).
+
+## 2026-11-25 ~18:00 IST — compaction checkpoint (before frontend redesign)
+- **Stable checkpoint:** `feat/mvp-checkpoint` @ `50d88ec` (pushed), PR #1 open and not merged.
+- **Verified at checkpoint:**
+  - `make test` 89 passed; `tsc -b` + `npm run build` OK.
+  - 18/18 deterministic Lab runs.
+  - Real-browser quick demo run end to end: customer payment ALLOW → analyst sign-in → takeover BLOCK 99.5 (₹0 moved) → investigation panels → traveller STEP_UP → approve → ALLOW → evaluation dashboard.
+- **Handoff:** `docs/team-handoff.md` rewritten as the authoritative post-compaction reference. It covers state, invariants, the frozen-ML rules, open issues and remaining deliverables.
+- **Next phase:** frontend redesign. Must respect handoff §4 (invariants) and §5 (no retraining or re-tuning).
