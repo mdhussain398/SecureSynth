@@ -28,7 +28,7 @@ Read this first on a fresh machine or in a fresh Claude session. It is self-cont
 - **Ghost Banking:** disabled and unimplemented (needs mentor approval).
 - **Detailed history:** `docs/FRONTEND_HANDOFF.md` (frontend), `docs/team-handoff.md` (MVP invariants, frozen ML), `docs/progress-log.md`.
 
-**Master Prompt #05:** Phases 1 (Synth Core logo) and 2 (documentation and report) are done on Mac 2; see §12. Phases 3–4 remain (§9).
+**Master Prompt #05:** Phases 1 (logo), 2 (documentation and report) and 3 (presentation) are done on Mac 2; see §12. Phase 4 (freeze) remains (§9).
 
 ## 3. Requirements
 - **Python 3.12** (verified 3.12.16). The Makefile calls `python3.12`.
@@ -301,3 +301,60 @@ Work in small phases. After each one: update this file, commit, and push to `fea
 - block FPR drifted to 0.81%.
 
 **Team, mentor and institution details are marked TBD**, not invented.
+
+### Phase 3: competition presentation (done)
+
+**Base:** the official template `~/Downloads/Avishkar26_Design_F_Subtle_Domain.pptx`.
+- It was **never modified**: its SHA-256 is still `5a357159…5db43a`. The build asserts it never overwrites it.
+- All 7 slides, their order, the branding, AVISHKAR logo, header, footer, black-and-red theme, `0N / 07` numbering, section headings and 13.33×7.5 in size are preserved.
+- Content is added inside the template's panels.
+
+**Deliverables:** in `submission/`, which is **gitignored** because it contains the official template.
+
+| File | What it is |
+|---|---|
+| `SecureSynth_AVISHKAR26_Presentation.pptx` | Editable deck with embedded speaker notes for 4 speakers |
+| `SecureSynth_AVISHKAR26_Presentation.pdf` | Backup: 7 pages from 2400 px Quick Look renders |
+
+**Built by:** `docs/presentation/tools/build_deck.py` (`python-pptx`).
+- Every metric is read from the frozen `eval_report.json`, rounded half-up.
+- **Editable content:**
+  - a native architecture diagram (shapes);
+  - a native data-flow chevron row;
+  - a native clustered column chart;
+  - real screenshots.
+- Added text uses Arial for reliable fit. The template's own text stays in Poppins, which this Mac does not have.
+
+**Screenshots** (`docs/screenshots/presentation/`, fresh from the running product with the new logo):
+
+| Screenshot | What it shows |
+|---|---|
+| Command Centre | Ravi BLOCK 99.5 |
+| Judge Mode takeover | Blocked 99.1, ₹96,200 unchanged; 403 on payee add and transfer |
+| Trusted device | A real pending payee step-up with number matching |
+
+They were captured with headless Chrome after a scripted sign-in of the synthetic `analyst` and `asha` through the local API. Credentials were read locally and never printed, and the temporary cookie and device-key files were deleted.
+- Side effect: extra lab sessions and one pending (now expired) payee challenge for asha.
+- **Reset the demo before presenting.**
+- **Security check seen during capture:** Judge Mode correctly refused a run when the injected CSRF cookie was not readable by the page ("Missing or invalid CSRF token").
+
+**Documents:**
+- `docs/presentation/SPEAKER_NOTES.md`: 10-minute running order for speakers A–D, the live-demo walkthrough with fallbacks, a rehearsal checklist.
+- `docs/presentation/JUDGE_QA.md`: questions and answers on the problem, ML, evaluation and money, backend and security, frontend and demo, and team.
+
+**QA:**
+- The skill's `validate.py --original` reports **All validations PASSED**.
+- No leftover stock placeholder text.
+- Every slide was rendered and inspected. Fixed: wrapped members line, chevron wrap, crowded captions, tech-stack wrap, chart number format and rounding (96.3%).
+
+**Rendering limits** (honest):
+- There is no LibreOffice. The Homebrew install was refused by the permission classifier.
+- PowerPoint export via AppleScript is blocked by two **"Grant File Access"** sandbox dialogs that the user must answer.
+- QA therefore used **macOS Quick Look**. Its chart renderer ignores some properties: it shows a white chart frame and labels without "%". The XML is correct (no chart-area line, white labels, `0.0"%"` format).
+
+**TEAM / user actions before submission:**
+1. **Team names:** replace `[Member 2–4]` on slide 1 and in the notes.
+2. **Vector PDF:** in PowerPoint, answer the Grant File Access prompts, then *File → Export → PDF*. This replaces the raster backup.
+3. **Poppins:** confirm the font is installed on the presentation machine, or accept PowerPoint's substitute. The template's look depends on it.
+4. **Time limit:** confirm the official limit; the script assumes 10 minutes plus Q&A.
+5. **Pending check:** one earlier headless Judge Mode capture stayed on "Running against the API". It could not be reproduced: three runs at 1× and 2× completed in about 11 s. Re-check in Phase 4.

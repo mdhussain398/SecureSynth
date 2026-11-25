@@ -220,3 +220,9 @@ After Claude's limit was hit, the user tried edits with Codex and then reverted 
 ## 2026-11-25 ~21:00 IST — Mac 2, Phase 2 (documentation and report)
 - **Added:** `API.md` (from OpenAPI), `KNOWN_LIMITATIONS.md`, `SUBMISSION_CHECKLIST.md`, and the technical report in MD, DOCX and PDF with charts generated from the frozen report.
 - **Corrected:** EVALUATION latency (now matches the artifact), contract version 1.2.0, a documented-but-missing Lab endpoint, and the test count (89).
+
+## 2026-11-25 ~21:00 IST — Mac 2, Phase 3 (presentation)
+- **Deck:** the competition deck is built on the official template, which is untouched (hash verified). PPTX and PDF are in the gitignored `submission/`.
+- **Contents:** speaker notes for 4 speakers, a native chart and diagrams, fresh real screenshots, `SPEAKER_NOTES.md` and `JUDGE_QA.md`.
+- **Validation:** `validate.py` passed.
+- **Open:** vector PDF export needs the user to answer PowerPoint's Grant File Access prompts; team names are still TBD.

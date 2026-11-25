@@ -240,3 +240,6 @@ backend/artifacts/
 # frontend
 node_modules/
 frontend/dist/
+
+# Submission bundle: contains the official competition template; never commit
+submission/
