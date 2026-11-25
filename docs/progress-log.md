@@ -102,3 +102,56 @@
    - README with licences, threat-model doc, slides, fallback video;
    - code review and security review passes.
 6. The frontend bundle is 834 kB; lazy-load the SOC and Lab routes.
+
+## 2026-11-25 — Master Prompt #02 session (≈14:10–14:45 IST)
+
+### Done (all verified)
+- **Git:** repo-local identity set as chosen by the user (Mohammed Hussain, GitHub noreply address).
+  - Branch `feat/mvp-checkpoint` has 11 commits, split by area.
+  - No secrets, databases or private documents are tracked.
+  - MVP model backed up as `artifacts/model-mvp-iforest-v1-1b15b837.joblib` (local only).
+- **Browser walkthrough** (built-in browser, real backend, synthetic accounts):
+  - **Customer:** login → TOTP → device step-up → number-match approval → dashboard → transfer → add payee (step-up, approved) → large transfer to the new payee → BLOCK → restricted screen. A direct API call confirmed the restriction is enforced by the backend (403 SESSION_RESTRICTED).
+  - **Analyst:** wrong TOTP shows an error banner → login → SOC list → session investigation (chart, 4 panels, audit trail) → what-if → Lab takeover run → reset.
+- **Fixed from the walkthrough:**
+  - A verified device is now provisionally recognised. Before this, a normal payment needed a second approval right after login approval.
+  - Seed history now uses realistic hour and amount spread and shows statements. Before this, a verified customer adding a payee was BLOCKed in the afternoon.
+  - Reset keeps the presenter signed in.
+  - Ghost button hidden while disabled; Lab shows simulated-time steps; tests pinned to 09:xx local time.
+- **ML (protocol v2, pre-registered and committed before results):**
+  - Overlapping legit/attack behaviour; frozen manifest.
+  - Fresh final population (seed 9091), evaluated once.
+  - Results in `docs/EVALUATION.md`.
+- **Security review:** 1 candidate, rated 6/10 by the false-positive check, so it didn't make the formal report's ≥8 cutoff. It was fixed anyway: a login awaiting step-up could read account data, and expired step-ups were never restricted.
+  - Also fixed: a denied challenge now voids that session's baseline contributions.
+- **Code review (medium):** 6 findings. 3 important ones fixed:
+  - clock advance logged the presenter out;
+  - replaying a blocked transfer reported "pending";
+  - a funds failure lost audit rows.
+
+  3 nits skipped.
+
+### Test results
+- Backend: **87 passed**, 0 failed.
+- Frontend: `npm run build` OK.
+- Live lab: all 6 scenarios behave as documented.
+
+### Final evaluation (seed 9091; 4,665 sessions; 367 takeovers)
+- **SecureSynth:**
+  - P 0.601, R 0.913, F1 0.725, FPR 5.2%;
+  - block R 0.619 at FPR 0.81%;
+  - travellers restricted 16.7%, new-device sessions restricted 8.7%;
+  - ₹2.96 cr of ₹3.10 cr prevented, ₹57 lakh legitimate value delayed;
+  - p95 latency 5.6 ms.
+- **Static rules:** P 0.186, R 0.766, FPR 28.6%, travellers restricted 98.6%, ₹2.98 cr prevented, ₹2.89 cr legitimate value delayed.
+- **Weakness:** familiar-device hijack (family C) recall 0.59.
+
+### Open
+- Ghost Banking still not started (mentor approval).
+- Skipped nits:
+  - rejected_count inflation;
+  - verified-payee learning;
+  - admin list filtering after LIMIT.
+- "Suspicious after login" margin is thin (79.5 vs 77.7).
+- Bundle-size warning.
+- Still to do: README with licences, threat-model doc, slides, fallback video.
