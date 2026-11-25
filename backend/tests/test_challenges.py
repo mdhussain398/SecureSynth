@@ -154,3 +154,21 @@ def test_login_step_up_approval_unlocks_reads(client, users, app_ctx):
         n = db.get(models.Challenge, r["challenge"]["id"]).number_match
     _respond(client, users["asha"].device_key, r["challenge"]["id"], n)
     assert client.get("/api/bank/overview").status_code == 200
+
+
+def test_denied_challenge_voids_that_sessions_baseline_contributions(client, users, app_ctx):
+    from app import models
+    from app.services import baseline as B
+    login(client, users["asha"])
+    c = _create(app_ctx, users)
+    with app_ctx.state.ss.SessionLocal() as db:
+        s = db.get(models.Session, c.session_id)
+        dref = "dev-candidate-77"  # a verified-but-unpromoted device used earlier in this session
+        B.record_verified(db, users["asha"].id, "device", dref, "earlier", s.id)
+        B.observe_session(db, users["asha"].id, s.id, device_ref=dref, city="Bengaluru", clean=True)
+        db.commit()
+    wrong = next(o for o in c.options if o != c.number_match)
+    _respond(client, users["asha"].device_key, c.id, wrong)
+    with app_ctx.state.ss.SessionLocal() as db:
+        item = next(i for i in db.get(models.Baseline, users["asha"].id).candidate if i["value"] == dref)
+        assert item["status"] == "rejected"

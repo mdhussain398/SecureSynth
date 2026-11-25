@@ -82,6 +82,9 @@ def respond(db, st, user, challenge_id: str, selected: int, approve: bool) -> st
             t = db.get(models.Transaction, c.payload.get("transaction_id"))
             if t is not None and t.status == "pending_verification":
                 t.status = "restricted"
+        from app.services import baseline
+        if db.get(models.Baseline, user.id) is not None:
+            baseline.reject_session(db, user.id, s.id, device_ref=f"dev-{s.device_id}" if s.device_id else None)
         audit.log(db, "trusted_device", "challenge.denied", user.id, s.id, challenge_id=c.id, operation=c.operation)
         db.commit()
         return "denied"
