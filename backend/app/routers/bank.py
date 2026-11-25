@@ -88,6 +88,8 @@ def transfer(body: schemas.TransferRequest, response: Response, ctx=Depends(WRIT
     acct = _account(db, user.id)
     existing = ledger.find_by_idempotency(db, acct.id, body.idempotency_key)
     if existing is not None:
+        if existing.status == "restricted":
+            raise ApiError(403, "RISK_BLOCKED", "This transfer was stopped for your protection.")
         response.status_code = 201 if existing.status == "completed" else 202
         return schemas.SensitiveActionResponse(result="completed" if existing.status == "completed" else
                                                "pending_verification", decision="ALLOW",

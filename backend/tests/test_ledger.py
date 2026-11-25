@@ -77,3 +77,19 @@ def test_atomic_debit_refuses_overdraft_at_service_level(app_ctx, users):
             ledger.debit(db, acct.id, before + 1)
         db.expire_all()
         assert db.get(models.Account, acct.id).balance_paise == before
+
+
+def test_replaying_a_blocked_transfer_still_reports_restricted(client, users, app_ctx):
+    from app import models
+    login(client, users["asha"])
+    payee = _established_payee(app_ctx, users["asha"])
+    key = str(uuid.uuid4())
+    with app_ctx.state.ss.SessionLocal() as db:
+        acct = db.query(models.Account).filter_by(user_id=users["asha"].id).one()
+        from app.services import clock
+        db.add(models.Transaction(account_id=acct.id, beneficiary_id=payee["id"], amount_paise=500, direction="debit",
+                                  counterparty="x", status="restricted", idempotency_key=key, created_at=clock.now()))
+        db.commit()
+    r = client.post("/api/bank/transfers", json={"beneficiary_id": payee["id"], "amount_paise": 500,
+                    "idempotency_key": key}, headers=csrf(client))
+    assert r.status_code == 403 and r.json()["error"]["code"] == "RISK_BLOCKED"

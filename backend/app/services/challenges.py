@@ -99,6 +99,12 @@ def respond(db, st, user, challenge_id: str, selected: int, approve: bool) -> st
             c.status = "denied"
             db.commit()
             raise invalid
+        acct = db.get(models.Account, t.account_id)
+        if acct.balance_paise < t.amount_paise:  # funds changed since the request: fail cleanly and record it
+            c.status, t.status, s.mode = "denied", "restricted", "normal"
+            audit.log(db, "system", "transfer.failed_funds", user.id, s.id, transaction_id=t.id)
+            db.commit()
+            raise ApiError(422, "INSUFFICIENT_FUNDS", "Insufficient balance for this transfer.")
         ledger.debit(db, t.account_id, t.amount_paise)
         t.status = "completed"
         audit.log(db, "trusted_device", "transfer.completed", user.id, s.id, transaction_id=t.id,

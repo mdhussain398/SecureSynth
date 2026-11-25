@@ -92,3 +92,10 @@ def test_reset_restores_snapshot_keeps_presenter_and_invalidates_others(client, 
         assert r.status_code == 200 and r.json()["ok"] is True
         assert client.get("/api/auth/me").status_code == 200   # presenter keeps working
         assert other.get("/api/auth/me").status_code == 401    # everyone else is signed out
+
+
+def test_advancing_clock_keeps_presenter_signed_in(client, users):
+    _admin(client, users)
+    r = client.post("/api/lab/clock", json={"advance_hours": 24}, headers=csrf(client))
+    assert r.status_code == 200
+    assert client.get("/api/auth/me").status_code == 200

@@ -90,7 +90,13 @@ def get_clock(ctx=Depends(lab_guard)):
 
 
 @router.post("/clock")
-def advance_clock(body: ClockBody, ctx=Depends(lab_guard)):
+def advance_clock(body: ClockBody, ctx=Depends(lab_guard), st: AppState = Depends(get_state)):
     if not 0 < body.advance_hours <= 24 * 30:
         raise ApiError(422, "VALIDATION_ERROR", "advance_hours must be between 0 and 720.")
-    return {"now": clock.advance(hours=body.advance_hours)}
+    presenter, _, db = ctx
+    now = clock.advance(hours=body.advance_hours)
+    from datetime import timedelta
+    presenter.last_seen = now  # the presenter's own session travels with the simulated clock
+    presenter.expires_at = now + timedelta(minutes=st.settings.session_abs_min)
+    db.commit()
+    return {"now": now}

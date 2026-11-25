@@ -172,3 +172,25 @@ def test_denied_challenge_voids_that_sessions_baseline_contributions(client, use
     with app_ctx.state.ss.SessionLocal() as db:
         item = next(i for i in db.get(models.Baseline, users["asha"].id).candidate if i["value"] == dref)
         assert item["status"] == "rejected"
+
+
+def test_approval_with_insufficient_funds_fails_cleanly_and_is_recorded(client, users, app_ctx):
+    from app import models, seed
+    from app.services import clock as clk
+    login(client, users["asha"])
+    with app_ctx.state.ss.SessionLocal() as db:
+        ben = seed.established_payee(db, users["asha"].id)
+        acct = db.query(models.Account).filter_by(user_id=users["asha"].id).one()
+        t = models.Transaction(account_id=acct.id, beneficiary_id=ben.id, amount_paise=acct.balance_paise + 1,
+                               direction="debit", counterparty=ben.name, status="pending_verification",
+                               idempotency_key=str(uuid.uuid4()), created_at=clk.now())
+        db.add(t)
+        db.commit()
+        payload = {"beneficiary_id": ben.id, "amount_paise": t.amount_paise, "idempotency_key": t.idempotency_key,
+                   "transaction_id": t.id}
+    c = _create(app_ctx, users, "transfer", payload)
+    r = _respond(client, users["asha"].device_key, c.id, c.number_match)
+    assert r.status_code == 422
+    with app_ctx.state.ss.SessionLocal() as db:
+        assert db.get(models.Challenge, c.id).status == "denied"
+        assert db.get(models.Transaction, t.id).status == "restricted"

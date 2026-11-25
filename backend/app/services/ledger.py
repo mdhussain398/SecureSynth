@@ -33,8 +33,7 @@ def debit(db, account_id: int, amount_paise: int) -> None:
     res = db.execute(update(models.Account)
                      .where(models.Account.id == account_id, models.Account.balance_paise >= amount_paise)
                      .values(balance_paise=models.Account.balance_paise - amount_paise))
-    if res.rowcount != 1:
-        db.rollback()
+    if res.rowcount != 1:  # nothing was changed; leave the caller's transaction intact
         raise ApiError(422, "INSUFFICIENT_FUNDS", "Insufficient balance for this transfer.")
 
 
