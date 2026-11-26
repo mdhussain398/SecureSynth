@@ -25,13 +25,13 @@
 .rn a.rn-btn { text-decoration: none; }
 
 /* Display type: condensed, heavy, tight — the type is the composition. */
+/* Display titles follow Apple's Large Title style: SF Pro Display, bold, slightly tightened tracking and enough
+ * line height that a title never crowds the text beneath it. */
 .rn-display {
   font-family: var(--display);
-  font-variation-settings: "wdth" 66;
-  font-weight: 760;
-  letter-spacing: -0.022em;
-  word-spacing: 0.04em;
-  line-height: 0.88;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.07;
   margin: 0;
 }
 .rn-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
@@ -83,6 +83,16 @@
 .rn-muted { color: var(--graphite-3); }
 .rn-hair { border-color: var(--silver-2); }
 
+/* Toolbar icon buttons (Apple nav-bar pattern): one 44 × 44 round target, one 18 px glyph, one hover wash. */
+.rn-icon-btn {
+  display: inline-grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 999px; border: 0;
+  background: transparent; color: var(--ink-2); cursor: pointer;
+  transition: background-color 180ms var(--ease-out), color 180ms var(--ease-out), transform 120ms var(--ease-out);
+}
+.rn-icon-btn:hover { background: rgba(16, 24, 40, 0.06); color: var(--ink); }
+.rn-icon-btn:active { transform: scale(0.94); }
+:root[data-theme="dark"] .console .rn-icon-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
 /* Decision words carry text + colour + shape; never colour alone. */
 .rn-state { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; }
 .rn-state::before { content: ""; width: 0.6rem; height: 0.6rem; flex: none; }
@@ -92,6 +102,19 @@
 .rn-state[data-d="STEP_UP"]::before { background: var(--stepup); transform: rotate(45deg); border-radius: 2px; }
 .rn-state[data-d="BLOCK"] { color: var(--block); }
 .rn-state[data-d="BLOCK"]::before { background: var(--block); border-radius: 2px; }
+
+
+/* Apple HIG: every control gets at least a 44 × 44 pt hit target. Compact controls keep their visual size and
+ * get an invisible, centred hit area instead, so the dense console layout does not change. Zero specificity
+ * (:where) inside the components layer: any utility (absolute, fixed, sticky…) still wins. Inline text links
+ * inside paragraphs are excluded so their hit area cannot spill onto neighbouring lines. */
+:where(button, [role="button"], [role="tab"], [role="switch"], [role="radio"], summary,
+       a.rn-btn, nav a, header a, a[class*="flex"], a[class*="rounded"]):not(.no-hit) { position: relative; }
+:where(button, [role="button"], [role="tab"], [role="switch"], [role="radio"], summary,
+       a.rn-btn, nav a, header a, a[class*="flex"], a[class*="rounded"]):not(.no-hit)::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .rn *, .rn *::before, .rn *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; animation-iteration-count: 1 !important; }

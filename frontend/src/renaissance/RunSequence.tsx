@@ -104,7 +104,7 @@ export function RunOutcome({ run, large }: { run: ScenarioRun; large?: boolean }
         <p className="text-[0.9375rem] text-[color:var(--ink-3)]">Final decision</p>
         {d ? <p className={`rn-display mt-1 ${large ? 'text-[clamp(3rem,6vw,5rem)]' : 'text-[2.75rem]'}`} style={{ color: d === 'BLOCK' ? 'var(--block)' : d === 'STEP_UP' ? 'var(--stepup)' : 'var(--electric-ink)' }}>{DECISION_WORD[d]}</p>
           : <p className="mt-1 text-[color:var(--ink-2)]">No risk decision recorded.</p>}
-        {d && <p className="mt-1 text-[color:var(--ink-2)]">{OUTCOME_LINE[d]}</p>}
+        {d && <p className="mt-1 text-[color:var(--ink-2)]">{run.contained_in_ghost ? 'Blocked; the session is contained in Ghost Banking (synthetic ledger only).' : OUTCOME_LINE[d]}</p>}
       </div>
       <div>
         <p className="text-[0.9375rem] text-[color:var(--ink-3)]">Protected balance ({run.username})</p>

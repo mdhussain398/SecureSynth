@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import "@fontsource-variable/archivo/wdth.css";
-@import "@fontsource-variable/geist";
 @import "./design/tokens.css";
 @import "./renaissance/rn.css";
 
@@ -34,10 +32,13 @@ body {
 :root[data-theme="dark"] .console { background: var(--canvas); }
 @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .console { background: var(--canvas); } }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
-h1, h2, h3 { text-wrap: balance; margin: 0; }
-p { margin: 0; }
-/* Legacy ".serif" headings now render in the condensed display face. */
-.serif { font-family: var(--display); font-variation-settings: "wdth" 70; letter-spacing: -0.012em; font-weight: 720 !important; }
+/* Element resets live in the base layer so Tailwind spacing utilities (mt-*, mb-*) on headings and paragraphs win. */
+@layer base {
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+}
+/* Legacy ".serif" headings render as Apple-style titles (SF Pro Display, bold, tight tracking). */
+.serif { font-family: var(--display); letter-spacing: -0.02em; font-weight: 700 !important; }
 
 .field-label { display: block; font-size: var(--text-sm); font-weight: 500; color: var(--ink-2); margin-bottom: 6px; }
 .input {
@@ -48,7 +49,7 @@ p { margin: 0; }
   transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 .input:hover { border-color: #A7B0BE; }
-.console .input { min-height: 40px; padding: 7px 12px; }
+.console .input { min-height: 44px; padding: 8px 12px; } /* HIG minimum touch target */
 .input:focus-visible { outline: none; border-color: var(--electric); box-shadow: 0 0 0 4px rgba(0, 91, 255, 0.16); }
 .input[aria-invalid="true"] { border-color: var(--block); }
 
@@ -58,3 +59,39 @@ p { margin: 0; }
   .skeleton { animation: none; }
   * { transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Apple HIG minimum touch targets for form controls (pseudo-element hit areas cannot be added to inputs).
+ * min-height wins over any smaller fixed height, so compact filters grow to 44px without changing their width. */
+select,
+input:where([type="text"], [type="search"], [type="number"], [type="email"], [type="password"], [type="date"], [type="datetime-local"], [type="time"], [type="tel"], [type="url"], :not([type])) {
+  min-height: 44px;
+}
+input:where([type="checkbox"], [type="radio"]) { width: 20px; height: 20px; accent-color: var(--electric); }
+
+/* One icon weight everywhere (SF Symbols "regular" feel): CSS beats lucide's stroke-width attribute. */
+.lucide { stroke-width: 1.75; flex: none; }
+
+/* ---- Apple HIG polish -------------------------------------------------------------------------------------- */
+html { text-rendering: optimizeLegibility; -webkit-tap-highlight-color: transparent; }
+body { -moz-osx-font-smoothing: grayscale; font-synthesis: none; }
+/* No 300 ms tap delay and no accidental text selection on controls. */
+:where(a, button, [role="button"], [role="tab"], [role="switch"], label, summary, select) { touch-action: manipulation; }
+:where(button, [role="button"], [role="tab"], [role="switch"], summary) { -webkit-user-select: none; user-select: none; }
+/* Overlays keep scrolling to themselves. */
+[role="dialog"] { overscroll-behavior: contain; }
+/* Selection and caret use the brand blue, like system controls tinted with an accent colour. */
+::selection { background: rgba(0, 91, 255, 0.18); }
+input, textarea { caret-color: var(--electric); }
+/* Floating bottom bars clear the iPhone home indicator. */
+.safe-bottom { bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.5rem)); }
+
+/* Accessibility settings (System Settings → Accessibility → Display). */
+@media (prefers-reduced-transparency: reduce) {
+  .rn-glass { background: rgba(255, 255, 255, 0.97) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+@media (prefers-contrast: more) {
+  :root { --graphite-2: #1D2939; --graphite-3: #344054; --silver-2: #98A2B3; --silver: #667085; --ink-2: #1D2939; --ink-3: #344054; --hairline: #98A2B3; --hairline-strong: #667085; }
+  .rn-glass { background: rgba(255, 255, 255, 0.98) !important; }
+}
+/* While a modal sheet or alert is open, the page behind it does not scroll. */
+html:has([aria-modal="true"]) { overflow: hidden; }

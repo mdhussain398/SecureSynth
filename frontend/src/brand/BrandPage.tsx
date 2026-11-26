@@ -43,11 +43,11 @@ export function BrandPage() {
 
       <section className="mx-auto mt-10 grid max-w-6xl gap-4 px-5 pb-12 sm:grid-cols-3 sm:px-8">
         <figure className="flex flex-col items-center gap-4 rounded-[28px] bg-[var(--crystal)] p-8 shadow-[0_20px_50px_-30px_rgba(16,24,40,0.35)]">
-          <SynthMark size={128} title="Synth Core, light" />
+          <SynthMark size={128} square title="Synth Core, light" />
           <figcaption className="text-[length:var(--t-sm)] text-[color:var(--graphite-3)]">Static mark · light</figcaption>
         </figure>
         <figure className="flex flex-col items-center gap-4 rounded-[28px] p-8" style={{ background: '#101828' }}>
-          <SynthMark size={128} tone="dark" title="Synth Core, dark" />
+          <SynthMark size={128} square tone="dark" title="Synth Core, dark" />
           <figcaption className="text-[length:var(--t-sm)] text-[#BAC2CE]">Static mark · dark</figcaption>
         </figure>
         <figure className="flex flex-col items-center justify-center gap-5 rounded-[28px] bg-[var(--crystal)] p-8 shadow-[0_20px_50px_-30px_rgba(16,24,40,0.35)]">

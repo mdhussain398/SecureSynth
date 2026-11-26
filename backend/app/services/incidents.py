@@ -46,14 +46,17 @@ def severity(score: float | None, trigger: str) -> str:
     return "high"
 
 
-def open_incident_for(db, user_id: int) -> models.SecurityIncident | None:
-    return db.scalar(select(models.SecurityIncident).where(models.SecurityIncident.user_id == user_id,
-                                                           models.SecurityIncident.status.in_(OPEN))
+def open_incident_for(db, user_id: int, is_lab: bool | None = None) -> models.SecurityIncident | None:
+    q = select(models.SecurityIncident).where(models.SecurityIncident.user_id == user_id,
+                                              models.SecurityIncident.status.in_(OPEN))
+    if is_lab is not None:  # Scenario Lab and genuine activity never share an incident
+        q = q.where(models.SecurityIncident.is_lab.is_(bool(is_lab)))
+    return db.scalar(q
                      .order_by(models.SecurityIncident.id.desc()).limit(1))
 
 
 def on_restriction(db, s: models.Session, *, trigger: str, assessment: models.RiskAssessment | None = None,
-                   transaction: models.Transaction | None = None) -> models.SecurityIncident:
+                   transaction: models.Transaction | None = None, ghost: bool = False) -> models.SecurityIncident:
     """Open an incident, or attach this restriction to the customer's unresolved one (no duplicate alert)."""
     now = clock.now()
     a = assessment
@@ -63,7 +66,7 @@ def on_restriction(db, s: models.Session, *, trigger: str, assessment: models.Ri
         reason = (f"Risk index {a.risk_score:.1f} at {a.checkpoint.replace('_', ' ')} "
                   f"(block threshold {a.thresholds.get('block')}). " + ("; ".join(labels) or "Behavioural anomaly")).strip()
     amount = transaction.amount_paise if transaction is not None else None
-    inc = open_incident_for(db, s.user_id)
+    inc = open_incident_for(db, s.user_id, bool(s.is_lab))
     if inc is not None:
         ids = list(inc.session_ids or [])
         if s.id not in ids:
@@ -75,19 +78,21 @@ def on_restriction(db, s: models.Session, *, trigger: str, assessment: models.Ri
             severity="critical" if severity(a.risk_score if a else None, trigger) == "critical" else inc.severity,
             amount_paise=amount if amount is not None else inc.amount_paise,
             transaction_id=transaction.id if transaction is not None else inc.transaction_id,
+            ghost=inc.ghost or ghost,
             last_activity_at=now, analyst_read_at=None, version=models.SecurityIncident.version + 1))
         db.expire(inc)
         audit.log(db, "system", "incident.updated", s.user_id, s.id, incident_id=inc.id, trigger=trigger,
                   risk_score=a.risk_score if a is not None else None)
         return inc
+    import secrets as _secrets
     inc = models.SecurityIncident(
-        user_id=s.user_id, session_id=s.id, session_ids=[s.id], assessment_id=a.id if a is not None else None,
+        ref="INC-" + _secrets.token_hex(5).upper(), user_id=s.user_id, session_id=s.id, session_ids=[s.id], assessment_id=a.id if a is not None else None,
         last_assessment_id=a.id if a is not None else None, transaction_id=transaction.id if transaction else None,
         trigger=trigger, checkpoint=a.checkpoint if a is not None else "verification",
         risk_score=a.risk_score if a is not None else None, severity=severity(a.risk_score if a else None, trigger),
         amount_paise=amount, city=s.city or "", device_ref=f"dev-{s.device_id}" if s.device_id else None,
         device_recognised=bool((s.context or {}).get("device_recognised")), reason=reason[:300],
-        status="pending_review", is_lab=bool(s.is_lab), created_at=now, last_activity_at=now)
+        status="pending_review", is_lab=bool(s.is_lab), ghost=ghost, created_at=now, last_activity_at=now)
     db.add(inc)
     db.flush()
     audit.log(db, "system", "incident.opened", s.user_id, s.id, incident_id=inc.id, trigger=trigger,
@@ -156,6 +161,9 @@ def login_verified(db, s: models.Session) -> bool:
 def session_eligibility(db, st, s: models.Session | None) -> tuple[bool, str]:
     if s is None:
         return False, "Session not found."
+    if s.mode == "ghost":
+        return False, ("Ghost sessions are never restored: their banking view was synthetic. Clear the customer "
+                       "so they sign in afresh to protected banking.")
     if s.mode != "restricted":
         return False, f"Session is {s.mode.replace('_', '-')}, not restricted."
     if _session_expired(st, s):
@@ -240,6 +248,13 @@ def act(db, st, inc: models.SecurityIncident, analyst: models.User, action: str,
               reviewed_attempts=reviewed, role="admin")
     db.commit()
     db.refresh(inc)
+    from app.evidence import collect
+    if inc.ghost:
+        for gsid in inc.session_ids or []:
+            collect.ghost_snapshot(st, inc, gsid, analyst.username)
+    collect.record(st, inc, "analyst_decision", {"action": action, "reason": reason, "previous_state": previous,
+                   "resulting_state": target, "sessions": changed, "reviewed_attempts": reviewed, "analyst": analyst.username,
+                   "at": clock.now()}, analyst.username, provenance="Analyst decision recorded by the incident service")
     return {"incident_id": inc.id, "status": inc.status, "idempotent": False, "sessions": changed,
             "reviewed_attempts": reviewed}
 
@@ -251,7 +266,7 @@ def _request_verification(db, st, inc, analyst, reason) -> dict:
     if inc.status == "verification_requested":
         return {"incident_id": inc.id, "status": inc.status, "idempotent": True}
     s = db.get(models.Session, inc.session_id)
-    if s is None or s.mode != "restricted" or _session_expired(st, s):
+    if s is None or s.mode not in ("restricted", "ghost") or _session_expired(st, s):
         raise ApiError(409, "SESSION_NOT_ELIGIBLE",
                        "The customer's restricted session has ended, so there is no screen to show the number on. "
                        "Clear or retain the restriction instead.")
@@ -280,13 +295,14 @@ def _request_verification(db, st, inc, analyst, reason) -> dict:
 
 def summary_row(db, inc: models.SecurityIncident) -> dict:
     u = db.get(models.User, inc.user_id)
-    return {"id": inc.id, "user_id": inc.user_id, "username": u.username, "display_name": u.display_name,
+    return {"id": inc.id, "ref": inc.ref, "user_id": inc.user_id, "username": u.username, "display_name": u.display_name,
             "session_id": inc.session_id, "session_ids": inc.session_ids or [], "assessment_id": inc.assessment_id,
             "trigger": inc.trigger, "checkpoint": inc.checkpoint, "risk_score": inc.risk_score,
             "severity": inc.severity, "amount_paise": inc.amount_paise, "city": inc.city,
             "device_ref": inc.device_ref, "device_recognised": inc.device_recognised, "reason": inc.reason,
             "block_count": inc.block_count, "status": inc.status, "open": inc.status in OPEN,
-            "verification": inc.verification, "is_lab": inc.is_lab, "unread": inc.analyst_read_at is None,
+            "verification": inc.verification, "is_lab": inc.is_lab, "ghost": bool(inc.ghost),
+            "unread": inc.analyst_read_at is None,
             "created_at": inc.created_at, "last_activity_at": inc.last_activity_at, "resolved_at": inc.resolved_at,
             "resolved_by": inc.resolved_by, "resolution_action": inc.resolution_action,
             "resolution_reason": inc.resolution_reason}

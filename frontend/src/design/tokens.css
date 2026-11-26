@@ -9,8 +9,10 @@
   --graphite-2: #344054; --graphite-3: #4A5466; --silver-2: #E3E7ED; --electric-ink: #0047CC;
   --electric-wash: rgba(0, 91, 255, 0.08);
   --stepup-wash: rgba(247, 144, 9, 0.12); --block-wash: rgba(240, 68, 56, 0.10);
-  --display: "Archivo Variable", "Archivo", system-ui, sans-serif;
-  --ui: "Geist Variable", "Geist", system-ui, -apple-system, sans-serif;
+  /* Apple's system font: SF Pro on macOS, iOS and iPadOS (SF Pro Display at large sizes, SF Pro Text below), the
+     platform's native UI font elsewhere. SF Pro cannot be bundled with a website, so it is never downloaded. */
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, system-ui, sans-serif;
+  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, system-ui, sans-serif;
   --t-xs: 0.8125rem; --t-sm: 0.9375rem; --t-base: 1.0625rem; --t-md: 1.1875rem; --t-lg: 1.5rem;
   --t-xl: 2rem; --t-2xl: clamp(2.5rem, 5vw, 4rem); --t-hero: clamp(3.4rem, 10.5vw, 10.5rem);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -57,6 +59,7 @@
   --series-3: #6E9BFF;
   --seq-light: #A9C4FF;
   --series-line: #101828;
+  --series-aqua: #1baf7a; /* second categorical hue (validated with electric, light + dark) */
 }
 
 /* Console surfaces share the light system; denser type only. */
@@ -74,7 +77,7 @@
     --block: #F48AA6; --block-tint: #33161F; --block-line: #6E2F40;
     --info: #BAC2CE; --info-tint: #1C222C; --info-line: #3A4350;
     --chart-surface: #161B23; --chart-grid: #262D38; --chart-axis: #3A4350; --chart-muted: #7C8696;
-    --series-1: #4D8BFF; --series-2: #BAC2CE; --series-3: #8FB2FF; --seq-light: #2E4470; --series-line: #E8ECF2;
+    --series-1: #4D8BFF; --series-2: #BAC2CE; --series-3: #8FB2FF; --seq-light: #2E4470; --series-line: #E8ECF2; --series-aqua: #199e70;
   }
 }
 :root[data-theme="dark"] .console {
@@ -88,7 +91,7 @@
   --block: #F48AA6; --block-tint: #33161F; --block-line: #6E2F40;
   --info: #BAC2CE; --info-tint: #1C222C; --info-line: #3A4350;
   --chart-surface: #161B23; --chart-grid: #262D38; --chart-axis: #3A4350; --chart-muted: #7C8696;
-  --series-1: #4D8BFF; --series-2: #BAC2CE; --series-3: #8FB2FF; --seq-light: #2E4470; --series-line: #E8ECF2;
+  --series-1: #4D8BFF; --series-2: #BAC2CE; --series-3: #8FB2FF; --seq-light: #2E4470; --series-line: #E8ECF2; --series-aqua: #199e70;
 }
 
 /* Dark console: smoked glass instead of frosted white. */

@@ -233,6 +233,27 @@ export interface BaselineView {
 
 export interface AppConfig { ghost_banking_enabled: boolean; demo_mode: boolean; model_version: string }
 
+/** Analyst Ghost Banking monitor for one contained session (GET /admin/ghost/{session_id}). */
+export interface GhostTxn extends Transaction { origin?: 'seeded' | 'session' }
+export interface GhostMonitor {
+  session: AdminSessionRow;
+  incident: IncidentRow | null;
+  trigger_assessment: RiskAssessment | null;
+  ghost: {
+    label: string;
+    account: { account_ref: string; balance_paise: number; opening_balance_paise: number; created_at: string; reason: string };
+    transactions: GhostTxn[];
+    beneficiaries: (Beneficiary & { origin: 'seeded' | 'session' })[];
+    events: { id: number; ts: string; kind: string; details: Record<string, string | number | null> }[];
+    totals: { simulated_transfers: number; simulated_value_paise: number; rejected_attempts: number; attempted_value_paise: number; payees_added: number };
+  };
+  protected_status: { completed_transfers_by_session_since_entry: number; payees_added_since_entry: number; balance_unchanged_since_entry: boolean | null; entered_at: string };
+  comparison: null | {
+    protected: { label: string; account_ref: string | null; balance_paise: number | null; balance_at_entry_paise: number | null; transactions: Transaction[] };
+    ghost: { label: string; account_ref: string; balance_paise: number; opening_balance_paise: number; transactions: GhostTxn[] };
+  };
+}
+/** @deprecated older contract shape; kept for the mock API. */
 export interface GhostCompare {
   protected: { account: AccountSummary; transactions: Transaction[] };
   ghost: { account: AccountSummary; transactions: Transaction[]; label: string };
@@ -305,6 +326,8 @@ export interface ScenarioRun {
   final_decision: Decision | null;
   protected_balance_before_paise: number;
   protected_balance_after_paise: number;
+  /** true when the session ended contained in Ghost Banking (feature flag on) */
+  contained_in_ghost?: boolean;
 }
 export interface ResetResponse { ok: true; seed_hash: string; now: string }
 export interface ClockResponse { now: string }
@@ -317,6 +340,7 @@ export type IncidentAction = "unblock_session" | "clear_user" | "keep_restricted
 
 export interface IncidentRow {
   id: number;
+  ref: string | null;
   user_id: number;
   username: string;
   display_name: string;
@@ -337,6 +361,7 @@ export interface IncidentRow {
   open: boolean;
   verification: "requested" | "approved" | "denied" | "expired" | null;
   is_lab: boolean;
+  ghost: boolean;
   unread: boolean;
   created_at: string;
   last_activity_at: string;

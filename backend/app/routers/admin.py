@@ -12,7 +12,8 @@ ADMIN = require("normal", roles=("admin",))
 
 @router.get("/config", response_model=schemas.AppConfig)
 def config(ctx=Depends(ADMIN), st: AppState = Depends(get_state)):
-    return schemas.AppConfig(ghost_banking_enabled=st.settings.ghost_banking_enabled,
+    from app.services import ghost_control
+    return schemas.AppConfig(ghost_banking_enabled=ghost_control.is_active(ctx[2], st),
                              demo_mode=st.settings.demo_mode, model_version=engine.MODEL_VERSION)
 
 
@@ -163,10 +164,64 @@ def evaluation(ctx=Depends(ADMIN), st: AppState = Depends(get_state)):
 
 
 @router.get("/ghost/{session_id}")
-def ghost_compare(session_id: str, ctx=Depends(ADMIN), st: AppState = Depends(get_state)):
-    if not st.settings.ghost_banking_enabled:
+def ghost_monitor(session_id: str, compare: bool = False, ctx=Depends(ADMIN), st: AppState = Depends(get_state)):
+    """Ghost Banking monitor for one contained session (admin only).
+
+    Always: the incident, the triggering assessment, and the session's synthetic activity from the ghost database.
+    Protected state is limited to integrity facts (protected writes by this session since containment) unless the
+    analyst explicitly asks for the side-by-side comparison (`compare=true`), which is audited."""
+    if st.GhostSessionLocal is None:  # the gate is off: no ghost database exists at all
         raise ApiError(404, "FEATURE_DISABLED", "Ghost Banking is disabled pending mentor approval.")
-    raise ApiError(404, "NOT_FOUND", "Ghost module not implemented yet.")
+    _, admin, db = ctx
+    s = db.get(models.Session, session_id)
+    if s is None:
+        raise ApiError(404, "NOT_FOUND", "Session not found.")
+    from app.ghost import service as ghost
+    with st.GhostSessionLocal() as gdb:
+        g = ghost.monitor(gdb, s.id)
+    if g is None:
+        raise ApiError(404, "NOT_FOUND", "This session was never contained in Ghost Banking.")
+    from app.services import incidents
+    inc = next((i for i in db.scalars(select(models.SecurityIncident).where(models.SecurityIncident.user_id == s.user_id)
+                                      .order_by(models.SecurityIncident.id.desc())).all() if s.id in (i.session_ids or [])), None)
+    if inc is not None:
+        incidents.refresh_verification(db, inc)
+    entered = db.scalar(select(models.AuditEvent).where(models.AuditEvent.session_id == s.id,
+                                                        models.AuditEvent.event_type == "ghost.entered")
+                        .order_by(models.AuditEvent.id).limit(1))
+    acct = db.scalar(select(models.Account).where(models.Account.user_id == s.user_id))
+    since = entered.ts if entered else g["account"]["created_at"]
+    writes = db.scalar(select(func.count()).select_from(models.Transaction).where(
+        models.Transaction.session_id == s.id, models.Transaction.status == "completed",
+        models.Transaction.created_at >= since)) or 0
+    bens = db.scalar(select(func.count()).select_from(models.Beneficiary).where(
+        models.Beneficiary.user_id == s.user_id, models.Beneficiary.created_at >= since)) or 0
+    at_entry = (entered.details or {}).get("protected_balance_paise") if entered else None
+    out = {"session": _row(db, s), "incident": incidents.summary_row(db, inc) if inc else None,
+           "trigger_assessment": assessment_out(db.get(models.RiskAssessment, inc.assessment_id))
+           if inc and inc.assessment_id else None,
+           "ghost": {**g, "label": "SYNTHETIC · Ghost Banking"},
+           "protected_status": {"completed_transfers_by_session_since_entry": writes,
+                                "payees_added_since_entry": bens,
+                                "balance_unchanged_since_entry": (acct.balance_paise == at_entry) if (acct and at_entry is not None) else None,
+                                "entered_at": since},
+           "comparison": None}
+    if compare:
+        recent = db.scalars(select(models.Transaction).where(models.Transaction.account_id == acct.id)
+                            .order_by(models.Transaction.id.desc()).limit(8)).all() if acct else []
+        out["comparison"] = {
+            "protected": {"label": "PROTECTED · real ledger", "account_ref": acct.account_ref if acct else None,
+                          "balance_paise": acct.balance_paise if acct else None, "balance_at_entry_paise": at_entry,
+                          "transactions": [{"id": t.id, "created_at": t.created_at, "amount_paise": t.amount_paise,
+                                            "direction": t.direction, "counterparty": t.counterparty, "status": t.status,
+                                            "description": t.description} for t in recent]},
+            "ghost": {"label": "SYNTHETIC · Ghost Banking", "account_ref": g["account"]["account_ref"],
+                      "balance_paise": g["account"]["balance_paise"], "opening_balance_paise": g["account"]["opening_balance_paise"],
+                      "transactions": g["transactions"][:8]}}
+        audit.log(db, admin.username, "ghost.compare_viewed", s.user_id, s.id,
+                  incident_id=inc.id if inc else None, role="admin")
+        db.commit()
+    return out
 
 
 class RollbackBody(BaseModel):
@@ -309,18 +364,31 @@ def incident_action(incident_id: int, body: IncidentAction, ctx=Depends(ADMIN), 
     if len(reason) < 8:
         raise ApiError(422, "VALIDATION_ERROR", "Give a reason of at least 8 characters.")
     if body.action in incidents.CLEARANCES:
-        key = f"totp:{admin.id}"
-        if not st.totp_limiter.allowed(key):
-            raise ApiError(429, "RATE_LIMITED", "Too many attempts. Try again later.")
-        if not body.totp_code:
-            raise ApiError(403, "REAUTH_REQUIRED", "Enter a current code from your authenticator to confirm.")
-        step = totp_mod.verify(st.box.decrypt(admin.totp_secret_enc), body.totp_code, last_step=admin.totp_last_step)
-        if step is None:
-            st.totp_limiter.record_failure(key)
-            audit.log(db, admin.username, "incident.reauth_failed", inc.user_id, inc.session_id, incident_id=inc.id,
-                      action=body.action)
-            db.commit()
-            raise ApiError(403, "REAUTH_FAILED", "That code is not valid, or was already used. Wait for the next one.")
-        admin.totp_last_step = step
-        db.flush()
+        from app.services.reauth import require_fresh_totp
+        require_fresh_totp(db, st, admin, body.totp_code, body.action, incident_id=inc.id)
     return incidents.act(db, st, inc, admin, body.action, reason, body.session_id)
+
+
+# ---------------------------------------------------------------- Ghost Banking runtime control
+class GhostConfigBody(BaseModel):
+    enabled: bool
+    reason: str = Field(min_length=8, max_length=300)
+    totp_code: str | None = Field(default=None, pattern=r"^\d{6}$")
+    expected_version: int = Field(ge=0)
+
+
+@router.get("/ghost-config")
+def ghost_config(ctx=Depends(ADMIN), st: AppState = Depends(get_state)):
+    from app.services import ghost_control
+    return ghost_control.status(ctx[2], st)
+
+
+@router.put("/ghost-config")
+def set_ghost_config(body: GhostConfigBody, ctx=Depends(ADMIN), st: AppState = Depends(get_state)):
+    """Switch Ghost Banking on/off at runtime. Needs a reason and a fresh analyst TOTP code; refused outside the gate."""
+    from app.services import ghost_control
+    from app.services.reauth import require_fresh_totp
+    _, admin, db = ctx
+    reason = " ".join(body.reason.split())
+    require_fresh_totp(db, st, admin, body.totp_code, "ghost_config")
+    return ghost_control.set_runtime(db, st, admin, body.enabled, reason, body.expected_version)

@@ -36,8 +36,7 @@ All versions are pinned (`backend/requirements.txt`, `frontend/package-lock.json
 | three | 0.187.0 | MIT | WebGL glass identity orb (lazy-loaded) |
 | @react-three/fiber | 9.8.2 | MIT | React renderer for the orb scene |
 | motion | 14.14.0 | MIT | Interface motion (springs, entrances), reduced-motion aware |
-| Archivo (via @fontsource-variable, wdth axis) | 5.3.0 | SIL OFL 1.1 | Condensed display typeface, bundled locally |
-| Geist (via @fontsource-variable) | 5.3.0 | SIL OFL 1.1 | Interface typeface, bundled locally |
+| Apple system font (SF Pro via `-apple-system`) | n/a | Supplied by the operating system; not bundled or downloaded | Display and interface text. SF Pro is used through the platform font stack only, because Apple's licence does not allow embedding it in a website; other platforms fall back to their native UI font. |
 | @types/three (dev) | 0.187.0 | MIT | Types |
 
 ## Data

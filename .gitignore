@@ -243,3 +243,6 @@ frontend/dist/
 
 # Submission bundle: contains the official competition template; never commit
 submission/
+
+# SecureSynth 3.0 local evidence vault files (encrypted; never commit)
+backend/evidence_store/

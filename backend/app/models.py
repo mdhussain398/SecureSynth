@@ -223,6 +223,8 @@ class SecurityIncident(Base):
     later BLOCKs attach to it instead of raising duplicate alerts. Resolution is an explicit analyst decision."""
     __tablename__ = "security_incidents"
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Stable reference used by evidence, reports and summaries (ids restart after a demo reset; refs never repeat).
+    ref: Mapped[str | None] = mapped_column(String(20), nullable=True, unique=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     session_id: Mapped[str] = mapped_column(String(32), index=True)   # primary (latest) restricted session
     session_ids: Mapped[list] = mapped_column(JSON, default=list)     # every session restricted under it
@@ -243,6 +245,7 @@ class SecurityIncident(Base):
     verification: Mapped[str | None] = mapped_column(String(12), nullable=True)
     verification_challenge_id: Mapped[str | None] = mapped_column(String(24), nullable=True)
     is_lab: Mapped[bool] = mapped_column(Boolean, default=False)
+    ghost: Mapped[bool] = mapped_column(Boolean, default=False)  # the session was contained in Ghost Banking
     version: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime())
     last_activity_at: Mapped[datetime] = mapped_column(UTCDateTime())
@@ -254,6 +257,30 @@ class SecurityIncident(Base):
     __table_args__ = (CheckConstraint(
         "status in ('pending_review','verification_requested','session_restored','user_cleared',"
         "'restriction_retained','session_revoked')"),)
+
+
+class RuntimeSetting(Base):
+    """Persistent operational settings changed by analysts at runtime (e.g. Ghost Banking on/off)."""
+    __tablename__ = "runtime_settings"
+    key: Mapped[str] = mapped_column(String(40), primary_key=True)
+    value: Mapped[str] = mapped_column(String(40))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    updated_by: Mapped[str] = mapped_column(String(40))
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    reason: Mapped[str] = mapped_column(String(300))
+
+
+class ConfigChange(Base):
+    """Append-only history of runtime setting changes."""
+    __tablename__ = "config_changes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String(40), index=True)
+    old_value: Mapped[str] = mapped_column(String(40))
+    new_value: Mapped[str] = mapped_column(String(40))
+    actor: Mapped[str] = mapped_column(String(40))
+    reason: Mapped[str] = mapped_column(String(300))
+    effect: Mapped[dict] = mapped_column(JSON, default=dict)
+    ts: Mapped[datetime] = mapped_column(UTCDateTime())
 
 
 class ScenarioLabel(Base):

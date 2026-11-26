@@ -15,8 +15,8 @@ class GlBoundary extends Component<{ children: ReactNode }, { failed: boolean }>
 function Fallback() {
   return (
     <div className="absolute inset-0 grid place-items-center" data-synth="fallback">
-      <div className="absolute inset-[18%] rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.22), rgba(0,91,255,0.06) 60%, transparent)' }} />
-      <SynthMark size={512} className="relative h-[64%] w-[64%]" />
+      <div className="absolute inset-[18%] rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.14), rgba(0,91,255,0.06) 60%, transparent)' }} />
+      <SynthMark size={512} square className="relative h-[64%] w-[64%]" />
     </div>
   );
 }

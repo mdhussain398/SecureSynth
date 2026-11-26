@@ -15,3 +15,9 @@ class SecretBox:
 
     def decrypt(self, ciphertext: str) -> str:
         return self._f.decrypt(ciphertext.encode()).decode()
+
+    def encrypt_bytes(self, data: bytes) -> bytes:
+        return self._f.encrypt(data)
+
+    def decrypt_bytes(self, token: bytes) -> bytes:
+        return self._f.decrypt(token)

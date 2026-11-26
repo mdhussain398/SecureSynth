@@ -60,7 +60,7 @@ export function CursorLight() {
     <motion.div aria-hidden style={{ left, top }}
       className="pointer-events-none absolute h-[70vmin] w-[70vmin] -translate-x-1/2 -translate-y-1/2 rounded-full"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.6 }}>
-      <div className="h-full w-full rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.14), rgba(0,91,255,0.04) 55%, transparent)' }} />
+      <div className="h-full w-full rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.08), rgba(0,91,255,0.04) 55%, transparent)' }} />
     </motion.div>
   );
 }
@@ -113,7 +113,7 @@ export function GlassNav({ items, label, className }: { items: { to: string; lab
     <nav aria-label={label} className={`rn-glass flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full p-1.5 [scrollbar-width:none] ${className ?? ''}`}>
       {items.map((it) => (
         <NavLink key={it.to} to={it.to} end={it.end}
-          className="relative flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full px-2.5 text-[0.875rem] sm:px-4 sm:text-[length:var(--t-sm)] font-medium text-[color:var(--graphite-2)] transition-colors hover:text-[color:var(--graphite)] aria-[current=page]:text-[color:var(--graphite)]">
+          className="relative flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full px-2.5 text-[0.875rem] sm:px-3 2xl:px-4 sm:text-[length:var(--t-sm)] font-medium text-[color:var(--graphite-2)] transition-colors hover:text-[color:var(--graphite)] aria-[current=page]:text-[color:var(--graphite)]">
           {({ isActive: exact }) => { const isActive = exact || (!!it.match && pathname.startsWith(it.match)); return (
             <>
               {isActive && <motion.span layoutId={`${label}-pill`} transition={spring} className="rn-lens absolute inset-0 rounded-full" />}

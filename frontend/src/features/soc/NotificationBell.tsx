@@ -47,13 +47,13 @@ export function NotificationBell() {
     <div ref={root} className="relative">
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="dialog"
         aria-label={unread ? `Security notifications, ${unread} unread` : 'Security notifications'}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--ink-2)] hover:bg-[rgba(16,24,40,0.05)] hover:text-[color:var(--ink)] cursor-pointer">
-        <Bell size={16} aria-hidden />
+        className="rn-icon-btn relative">
+        <Bell size={18} strokeWidth={1.75} aria-hidden />
         <AnimatePresence>
           {unread > 0 && (
             <motion.span key="n" initial={reduce ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.4, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-              className="absolute -right-0.5 -top-0.5 min-w-[18px] h-[18px] rounded-full bg-[var(--block)] px-1 text-[0.6875rem] font-semibold leading-[18px] text-white tnum text-center shadow-[0_0_0_2px_var(--canvas)]">
+              className="absolute right-1 top-1 min-w-[18px] h-[18px] rounded-full bg-[var(--block)] px-1 text-[0.75rem] font-semibold leading-[18px] text-white tnum text-center shadow-[0_0_0_2px_var(--canvas)]">
               {unread > 99 ? '99+' : unread}
             </motion.span>
           )}
@@ -82,7 +82,7 @@ export function NotificationBell() {
                         <span className="min-w-0 flex-1">
                           <span className="flex items-baseline justify-between gap-2"><span className="font-medium truncate">{i.display_name}</span><span className="text-[0.75rem] text-[var(--ink-3)] whitespace-nowrap">{fmtTime(i.last_activity_at)}</span></span>
                           <span className="block text-[0.8125rem] text-[var(--ink-2)]">
-                            {i.severity === 'critical' ? 'Critical' : 'High'} · risk {i.risk_score?.toFixed(1) ?? '—'}{i.amount_paise != null ? ` · ${formatPaise(i.amount_paise, true)}` : ''}{i.is_lab ? ' · lab' : ''}
+                            {i.severity === 'critical' ? 'Critical' : 'High'} · risk {i.risk_score?.toFixed(1) ?? '—'}{i.amount_paise != null ? ` · ${formatPaise(i.amount_paise, true)}` : ''}{i.ghost ? ' · ghost' : ''}{i.is_lab ? ' · lab' : ''}
                           </span>
                           <span className="block text-[0.75rem] text-[var(--ink-3)]">{STATUS_TEXT[i.status]}{i.block_count > 1 ? ` · ${i.block_count} restrictions` : ''}</span>
                         </span>
@@ -105,7 +105,7 @@ export function NotificationBell() {
             <div className="flex items-start gap-3">
               <ShieldAlert size={18} className="mt-0.5 shrink-0 text-[var(--block)]" aria-hidden />
               <div className="min-w-0 flex-1">
-                <p className="font-semibold">New security incident</p>
+                <p className="font-semibold">{toast.ghost ? 'Session contained in Ghost Banking' : 'New security incident'}</p>
                 <p className="text-[0.875rem] text-[var(--ink-2)] mt-0.5">{toast.display_name} restricted · risk index {toast.risk_score?.toFixed(1) ?? '—'}{toast.amount_paise != null ? ` · ${formatPaise(toast.amount_paise, true)}` : ''}</p>
                 <button type="button" className="mt-2 text-[0.8125rem] font-medium underline underline-offset-4 cursor-pointer" onClick={() => { setToast(null); nav(`/soc/incidents/${toast.id}`); }}>Review incident</button>
               </div>

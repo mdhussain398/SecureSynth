@@ -8,6 +8,7 @@ ALLOWED_KEYS = {
     "version", "to_version", "scenario", "count", "username", "ip", "role", "feature",
     "incident_id", "action", "previous_state", "resulting_state", "severity", "trigger", "session_ids",
     "previous_session_mode", "resulting_session_mode", "verification", "reviewed_attempts",
+    "protected_balance_paise", "ghost_account_ref", "payee",
 }
 
 

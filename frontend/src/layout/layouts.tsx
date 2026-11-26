@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Moon, Sun, Smartphone } from 'lucide-react';
-import { useLogout, useMe } from '../api/queries';
+import { useLogout, useMe, useSecurityCheck } from '../api/queries';
 import { ApiError, USE_MOCKS } from '../api/client';
 import { Button, ErrorState, Skeleton, SyntheticMarker } from '../design/components';
 import { RestrictedNotice } from '../features/bank/RestrictedNotice';
+import { PhotoRequestBanner } from '../features/bank/PhotoVerification';
 import { motion, useReducedMotion } from 'motion/react';
 import { Contours, GlassNav, ScrollBrand, useHideOnScroll } from '../renaissance/primitives';
 import { NotificationBell } from '../features/soc/NotificationBell';
@@ -26,9 +27,10 @@ function Brand({ sub }: { sub: string }) {
   );
 }
 
-function Footer({ children }: { children?: ReactNode }) {
+/** `clear` keeps the footer visible above a floating bottom navigation bar at the widths where that bar is shown. */
+function Footer({ children, clear = '' }: { children?: ReactNode; clear?: string }) {
   return (
-    <footer className="mt-auto px-5 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-2 text-[0.8125rem] text-[color:var(--ink-3)]">
+    <footer className={`mt-auto px-5 sm:px-8 pt-4 pb-4 ${clear} flex flex-wrap items-center justify-between gap-2 text-[0.8125rem] text-[color:var(--ink-3)]`}>
       <SyntheticMarker />
       <span>{children ?? 'Prototype for AVISHKAR’26. Not a real bank.'}{USE_MOCKS && ' Mock API.'}</span>
     </footer>
@@ -41,7 +43,7 @@ export function AuthLayout() {
     <div className="relative isolate min-h-screen flex flex-col overflow-x-clip">
       <Contours className="absolute inset-0 -z-10 h-full w-full opacity-40" seed={1.7} clearAt={[50, 50]} />
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-[45%] -z-10 h-[70vmin] w-[70vmin] -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.14), rgba(0,91,255,0.04) 60%, transparent)' }} />
+        style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.08), rgba(0,91,255,0.04) 60%, transparent)' }} />
       <header className="px-5 sm:px-8 py-5"><Link to="/" className="no-underline"><Brand sub="Simulated retail banking" /></Link></header>
       <main className="flex-1 flex items-start sm:items-center justify-center px-4 py-6"><Outlet /></main>
       <Footer />
@@ -62,8 +64,23 @@ const portalNav = [
   { to: '/bank/transfer', label: 'Transfer' },
 ];
 
+/** A bank security check requested by an analyst: shows the number to pick on the registered trusted device. */
+function SecurityCheckBanner() {
+  const q = useSecurityCheck(true);
+  const c = q.data?.check;
+  if (!c) return null;
+  return (
+    <div className="mb-4 rn-glass rounded-[var(--radius-l)] p-5 flex flex-wrap items-center justify-between gap-4" role="status">
+      <div className="flex items-start gap-3"><Smartphone size={20} className="mt-0.5 text-[var(--stepup)]" aria-hidden />
+        <div><p className="font-semibold">Security check from your bank</p><p className="text-[0.9375rem] text-[var(--ink-2)]">Open your registered device and pick this number. Only approve if you are using this sign-in.</p></div></div>
+      <span className="rn-display tnum text-[3rem] leading-none" aria-label={`Number ${c.number_match}`}>{c.number_match}</span>
+    </div>
+  );
+}
+
 export function PortalLayout() {
-  const me = useMe();
+  // Re-checked periodically so a session ended by the bank (revoke, recovery) returns to sign-in on its own.
+  const me = useMe({ refetchInterval: 10_000 });
   const brandHidden = useHideOnScroll();
   const signOut = useSignOut();
   const loc = useLocation();
@@ -76,21 +93,23 @@ export function PortalLayout() {
   const restricted = me.data.mode === 'restricted' || me.data.mode === 'revoked';
   return (
     <div className="relative isolate min-h-screen flex flex-col overflow-x-clip">
-      <header className="sticky top-0 z-30 px-4 sm:px-8 py-4">
-        <div className="mx-auto max-w-6xl flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-30 py-4">
+        {/* padding inside the 6xl column, exactly like <main>, so the logo and the balance share one left edge */}
+        <div className="mx-auto max-w-6xl px-4 sm:px-8 flex items-center justify-between gap-4">
           <ScrollBrand hidden={brandHidden}><Link to="/bank" className="no-underline"><Brand sub="Simulated retail banking" /></Link></ScrollBrand>
           {!restricted && <div className="hidden md:block"><GlassNav label="Banking" items={portalNav} /></div>}
           <div className="flex items-center gap-2">
             <span className="hidden lg:block text-[0.9375rem] text-[color:var(--ink-2)]">{me.data.display_name}</span>
-            <Button variant="ghost" size="sm" onClick={signOut}><LogOut size={15} aria-hidden />Sign out</Button>
+            <Button variant="ghost" onClick={signOut}><LogOut size={18} aria-hidden />Sign out</Button>
           </div>
         </div>
       </header>
-      {!restricted && <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-3 md:hidden"><GlassNav label="Banking (mobile)" items={portalNav} /></div>}
+      {!restricted && <div className="fixed inset-x-0 safe-bottom z-40 flex justify-center px-3 md:hidden"><GlassNav label="Banking (mobile)" items={portalNav} /></div>}
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-8 pt-4 pb-28 md:pb-12">
-        {restricted ? <RestrictedNotice name={me.data.display_name} onSignOut={signOut} /> : <Outlet />}
+        <PhotoRequestBanner />
+        {restricted ? <RestrictedNotice name={me.data.display_name} onSignOut={signOut} /> : <><SecurityCheckBanner /><Outlet /></>}
       </main>
-      <Footer />
+      <Footer clear={restricted ? '' : 'pb-28 md:pb-4'} />
     </div>
   );
 }
@@ -110,8 +129,11 @@ function useConsoleTheme(): [string, () => void] {
 
 export const consoleNav = [
   { to: '/soc/intelligence', label: 'Intelligence' },
+  { to: '/soc/dashboard', label: 'SOC' },
   { to: '/soc', label: 'Sessions', end: true, match: '/soc/sessions' },
-  { to: '/soc/incidents', label: 'Incidents' },
+  { to: '/soc/incidents', label: 'Incidents', match: '/soc/investigations' },
+  { to: '/soc/intel', label: 'Fraud intel' },
+  { to: '/soc/reports', label: 'Reports' },
   { to: '/soc/users', label: 'Baselines' },
   { to: '/soc/evaluation', label: 'Evaluation' },
   { to: '/lab', label: 'Lab' },
@@ -121,7 +143,7 @@ export const consoleNav = [
 /** Warm the console's route chunks while idle so switching sections never flashes a loading state. */
 function usePreloadConsole() {
   useEffect(() => {
-    const go = () => { void import('../renaissance/Intelligence'); void import('../features/soc/SocOverview'); void import('../features/soc/IncidentsPage'); };
+    const go = () => { void import('../renaissance/Intelligence'); void import('../features/soc/SocOverview'); void import('../features/soc/IncidentsPage'); void import('../features/investigation/SocDashboard'); };
     const w = window as Window & { requestIdleCallback?: (cb: () => void) => number };
     if (w.requestIdleCallback) w.requestIdleCallback(go); else setTimeout(go, 400);
   }, []);
@@ -169,27 +191,28 @@ export function ConsoleLayout() {
   );
   return (
     <div className="console flex flex-col" style={{ ['--console-header-h' as string]: `${headerH}px` }}>
-      <header ref={headerRef} className="sticky top-0 z-30 px-4 lg:px-8 py-3.5">
-        <div className="flex items-center gap-4">
+      <header ref={headerRef} className="sticky top-0 z-30 py-3.5">
+        {/* same 1400px column and padding as <main>, so the logo and the page content share one left edge */}
+        <div className="mx-auto flex max-w-[1400px] items-center gap-4 px-4 lg:px-8">
           <div className="shrink-0"><ScrollBrand hidden={brandHidden}><Link to="/soc/intelligence" className="no-underline"><Brand sub="Command Centre" /></Link></ScrollBrand></div>
-          <div className="hidden lg:flex flex-1 justify-center min-w-0"><GlassNav label="Command Centre" items={consoleNav} /></div>
-          <div className="flex items-center gap-1 shrink-0 ml-auto lg:ml-0">
+          <div className="hidden min-[1400px]:flex flex-1 justify-center min-w-0"><GlassNav label="Command Centre" items={consoleNav} /></div>
+          <div className="flex items-center gap-0.5 shrink-0 ml-auto min-[1400px]:ml-0">
             {isAdmin && <NotificationBell />}
-            <Link to="/device" target="_blank" className="hidden md:inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.875rem] text-[color:var(--ink-2)] hover:text-[color:var(--ink)] hover:bg-[rgba(16,24,40,0.05)] no-underline" title="Open the trusted device simulator in a new tab">
-              <Smartphone size={15} aria-hidden />Device
+            <Link to="/device" target="_blank" className="hidden md:inline-flex h-11 items-center gap-1.5 rounded-full pl-3 pr-3.5 text-[0.9375rem] text-[color:var(--ink-2)] hover:text-[color:var(--ink)] hover:bg-[rgba(16,24,40,0.06)] no-underline transition-colors" title="Open the trusted device simulator in a new tab">
+              <Smartphone size={18} strokeWidth={1.75} aria-hidden />Device
             </Link>
-            <Button variant="ghost" size="sm" onClick={toggle} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
-              {theme === 'dark' ? <Sun size={15} aria-hidden /> : <Moon size={15} aria-hidden />}
-            </Button>
-            {me.data && <Button variant="ghost" size="sm" onClick={signOut} aria-label="Sign out"><LogOut size={15} aria-hidden /></Button>}
+            <button type="button" className="rn-icon-btn" onClick={toggle} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
+              {theme === 'dark' ? <Sun size={18} strokeWidth={1.75} aria-hidden /> : <Moon size={18} strokeWidth={1.75} aria-hidden />}
+            </button>
+            {me.data && <button type="button" className="rn-icon-btn" onClick={signOut} aria-label="Sign out" title="Sign out"><LogOut size={18} strokeWidth={1.75} aria-hidden /></button>}
           </div>
         </div>
       </header>
-      <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-3 lg:hidden"><GlassNav label="Command Centre (mobile)" items={consoleNav} /></div>
+      <div className="fixed inset-x-0 safe-bottom z-40 flex justify-center px-3 min-[1400px]:hidden"><GlassNav label="Command Centre (mobile)" items={consoleNav} /></div>
       {fullBleed
         ? <div className="flex-1 w-full -mt-[var(--console-header-h)]">{content}</div>
-        : <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 lg:px-8 pt-3 pb-28 lg:pb-8">{content}</main>}
-      {!fullBleed && <Footer>Analyst view. Scores are a 0–100 risk index, not a probability.</Footer>}
+        : <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 lg:px-8 pt-3 pb-28 min-[1400px]:pb-8">{content}</main>}
+      {!fullBleed && <Footer clear="pb-28 min-[1400px]:pb-4">Analyst view. Scores are a 0–100 risk index, not a probability.</Footer>}
     </div>
   );
 }

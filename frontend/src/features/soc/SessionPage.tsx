@@ -8,7 +8,7 @@ import { Badge, Banner, Button, ButtonLink, Card, DataTable, DecisionPill, Error
 import { PageTitle } from '../../layout/layouts';
 
 const CHECKPOINT: Record<RiskAssessment['checkpoint'], string> = { login: 'Login', beneficiary_add: 'Payee add', transfer: 'Transfer', profile_change: 'Profile change' };
-const axisTick = { fill: 'var(--chart-muted)', fontSize: 11 };
+const axisTick = { fill: 'var(--chart-muted)', fontSize: 12 };
 
 function ScoreTimeline({ items }: { items: RiskAssessment[] }) {
   const data = items.map((a) => ({ id: a.id, label: `${CHECKPOINT[a.checkpoint]} ${fmtTime(a.ts)}`, short: CHECKPOINT[a.checkpoint], score: a.risk_score, decision: a.decision }));
@@ -22,8 +22,8 @@ function ScoreTimeline({ items }: { items: RiskAssessment[] }) {
           <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
           <XAxis dataKey="short" tick={axisTick} tickLine={false} axisLine={{ stroke: 'var(--chart-axis)' }} />
           <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={axisTick} tickLine={false} axisLine={false} />
-          <ReferenceLine y={t.block} stroke="var(--block)" strokeDasharray="4 3" label={{ value: `Block ${t.block}`, position: 'right', fill: 'var(--ink-2)', fontSize: 11 }} />
-          <ReferenceLine y={t.step_up} stroke="var(--stepup)" strokeDasharray="4 3" label={{ value: `Step-up ${t.step_up}`, position: 'right', fill: 'var(--ink-2)', fontSize: 11 }} />
+          <ReferenceLine y={t.block} stroke="var(--block)" strokeDasharray="4 3" label={{ value: `Block ${t.block}`, position: 'right', fill: 'var(--ink-2)', fontSize: 12 }} />
+          <ReferenceLine y={t.step_up} stroke="var(--stepup)" strokeDasharray="4 3" label={{ value: `Step-up ${t.step_up}`, position: 'right', fill: 'var(--ink-2)', fontSize: 12 }} />
           <Tooltip cursor={{ stroke: 'var(--chart-axis)' }}
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
@@ -208,7 +208,7 @@ export function SessionPage() {
         <div className="space-y-4">
           <Card title="Risk index over the session" description="Each point is a checkpoint, coloured by its decision. Shaded bands are the step-up and block zones from the validation-tuned thresholds."
             actions={<label className="text-[0.8125rem] text-[var(--ink-2)] flex items-center gap-2">Checkpoint
-              <select className="input !min-h-8 !py-1 !w-auto" value={current.id} onChange={(e) => setSelected(Number(e.target.value))}>
+              <select className="input !min-h-11 !py-1 !w-auto" value={current.id} onChange={(e) => setSelected(Number(e.target.value))}>
                 {assessments.map((a) => <option key={a.id} value={a.id}>{CHECKPOINT[a.checkpoint]} · {a.risk_score.toFixed(1)}</option>)}
               </select></label>}>
             <ScoreTimeline items={assessments} />

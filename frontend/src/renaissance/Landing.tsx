@@ -40,7 +40,7 @@ export function Landing() {
       <Contours className="absolute inset-0 -z-10 h-full w-full opacity-45" seed={0.9} clearAt={[72, 44]} />
       {/* stage: electric light behind the sculpture and a soft contact shadow beneath it give the page depth */}
       <div aria-hidden className="pointer-events-none absolute -z-10 right-[-10vw] top-[2%] h-[min(90vw,560px)] w-[min(90vw,560px)] rounded-full md:right-[2vw] md:top-[44%] md:h-[min(70vw,100vh)] md:w-[min(70vw,100vh)] md:-translate-y-1/2"
-        style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.20), rgba(0,91,255,0.07) 55%, transparent)' }} />
+        style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.12), rgba(0,91,255,0.07) 55%, transparent)' }} />
       <CursorLight />
 
       <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-4 px-5 pt-5 sm:px-8 sm:pt-7">
@@ -58,14 +58,14 @@ export function Landing() {
 
       {/* The one focal subject. */}
       <motion.div aria-hidden
-        className="absolute right-[-14vw] top-[7%] z-0 w-[min(80vw,420px)] md:left-auto md:right-[-2vw] md:top-[44%] md:w-[min(54vw,84vh)] md:-translate-x-0 md:-translate-y-1/2"
+        className="absolute right-[-12vw] top-[1%] z-0 w-[min(60vw,300px)] sm:top-[76px] sm:right-[-6vw] sm:w-[min(46vw,320px)] md:left-auto md:right-[-2vw] md:top-[44%] md:w-[min(54vw,84vh)] md:-translate-x-0 md:-translate-y-1/2"
         initial={reduce ? false : { opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}>
         <IdentityOrb hero signals={WATCHED} state="idle" />
       </motion.div>
 
       <section className="absolute inset-x-0 bottom-0 z-10 px-5 pb-6 sm:px-8 sm:pb-9">
-        <h1 className="rn-display text-[clamp(3.4rem,min(10.5vw,15vh),10.5rem)] text-[color:var(--graphite)]">
+        <h1 className="rn-display text-[clamp(2.75rem,min(8.2vw,13vh),8.5rem)] text-[color:var(--graphite)]">
           <span className="block overflow-hidden pb-[0.04em]"><motion.span className="block" {...rise(0.15)}>Your identity.</motion.span></span>
           <span className="block overflow-hidden pb-[0.06em]"><motion.span className="block" {...rise(0.27)}>Beyond passwords.</motion.span></span>
         </h1>
@@ -82,7 +82,7 @@ export function Landing() {
             <Link to="/soc/intelligence" className="rn-btn rn-btn-ghost">Open the Command Centre</Link>
           </div>
         </motion.div>
-        <div className="mt-6 flex flex-col gap-1 border-t border-[color:var(--silver-2)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-6 flex flex-col gap-1 border-t border-[color:var(--silver-2)] pt-4 md:flex-row md:items-center md:justify-between md:gap-6">
           <EngineStatus />
           <p className="text-[length:var(--t-xs)] text-[color:var(--graphite-3)]">Prototype on synthetic data for AVISHKAR’26, problem 24. Not a real bank.</p>
         </div>

@@ -46,7 +46,7 @@ export function DevicePage() {
 
   return (
     <div className="relative isolate min-h-screen flex flex-col items-center px-4 py-8">
-      <div aria-hidden className="pointer-events-none absolute left-1/2 top-[52%] -z-10 h-[80vmin] w-[80vmin] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.16), rgba(0,91,255,0.04) 60%, transparent)' }} />
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-[52%] -z-10 h-[80vmin] w-[80vmin] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.09), rgba(0,91,255,0.04) 60%, transparent)' }} />
       <p className="text-[0.9375rem] text-[color:var(--ink-2)] mb-4 flex items-center gap-2"><Smartphone size={16} aria-hidden />Trusted device (simulated)</p>
       <div className="w-full max-w-[390px] rounded-[44px] bg-[linear-gradient(160deg,#2A3344,#101828_45%,#0B1220)] p-2.5 shadow-[0_2px_0_rgba(255,255,255,0.25)_inset,0_40px_80px_-30px_rgba(16,24,40,0.55),0_60px_120px_-60px_rgba(0,61,170,0.45)]">
         <div className="rounded-[36px] bg-[var(--canvas)] min-h-[680px] overflow-hidden flex flex-col">

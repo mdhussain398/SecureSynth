@@ -73,7 +73,7 @@ def respond(db, st, user, challenge_id: str, selected: int, approve: bool) -> st
         raise invalid
     s = db.get(models.Session, c.session_id)
     if c.operation == "incident_verify":  # analyst-requested identity check: evidence only, never unlocks
-        return _respond_incident(db, user, c, s, selected, approve)
+        return _respond_incident(db, user, c, s, selected, approve, st)
     if s is None or s.mode != "step_up" or operation_hash(s.id, c.operation, c.payload) != c.operation_hash:
         c.status = "denied"
         db.commit()
@@ -91,9 +91,11 @@ def respond(db, st, user, challenge_id: str, selected: int, approve: bool) -> st
         if db.get(models.Baseline, user.id) is not None:
             baseline.reject_session(db, user.id, s.id, device_ref=f"dev-{s.device_id}" if s.device_id else None)
         audit.log(db, "trusted_device", "challenge.denied", user.id, s.id, challenge_id=c.id, operation=c.operation)
-        incidents.on_restriction(db, s, trigger="verification_denied",
-                                 assessment=db.get(models.RiskAssessment, c.assessment_id) if c.assessment_id else None,
-                                 transaction=t)
+        a = db.get(models.RiskAssessment, c.assessment_id) if c.assessment_id else None
+        inc = incidents.on_restriction(db, s, trigger="verification_denied", assessment=a, transaction=t)
+        db.flush()
+        from app.evidence import collect
+        collect.on_restriction(st, db, db.get(models.SecurityIncident, inc.id), s, a, t)
         db.commit()
         return "denied"
     c.status = "approved"
@@ -140,7 +142,7 @@ def _learn_verified(db, user, s, c) -> None:
             baseline.record_verified(db, user.id, "city", s.city, c.id, s.id)
 
 
-def _respond_incident(db, user, c, s, selected: int, approve: bool) -> str:
+def _respond_incident(db, user, c, s, selected: int, approve: bool, st=None) -> str:
     """Answer to an analyst's verification request. The session stays restricted either way: the analyst
     still decides. A correct number proves the customer holds the registered device AND sees the restricted
     screen; a wrong number or a decline is recorded as evidence."""
@@ -153,6 +155,11 @@ def _respond_incident(db, user, c, s, selected: int, approve: bool) -> str:
     ok = approve and selected == c.number_match
     c.status = "approved" if ok else "denied"
     incidents.on_verification_result(db, c, ok)
+    inc = db.get(models.SecurityIncident, (c.payload or {}).get("incident_id"))
+    from app.evidence import collect
+    collect.record(st, inc, "verification_outcome", {"challenge_id": c.id, "method": "trusted-device number match",
+                   "result": "approved" if ok else "denied", "responded_at": clock.now()}, "trusted_device",
+                   source="trusted device", provenance="Answer from the customer's registered trusted device", session_id=s.id)
     audit.log(db, "trusted_device", "challenge.approved" if ok else "challenge.denied", user.id, s.id,
               challenge_id=c.id, operation=c.operation)
     db.commit()

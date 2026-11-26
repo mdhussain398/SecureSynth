@@ -13,6 +13,10 @@ const BaselineIndex = lazy(() => import('./features/soc/BaselinePage').then((m) 
 const BaselinePage = lazy(() => import('./features/soc/BaselinePage').then((m) => ({ default: m.BaselinePage })));
 const EvaluationPage = lazy(() => import('./features/soc/EvaluationPage').then((m) => ({ default: m.EvaluationPage })));
 const IncidentsPage = lazy(() => import('./features/soc/IncidentsPage').then((m) => ({ default: m.IncidentsPage })));
+const SocDashboard = lazy(() => import('./features/investigation/SocDashboard').then((m) => ({ default: m.SocDashboard })));
+const FraudIntel = lazy(() => import('./features/investigation/FraudIntel').then((m) => ({ default: m.FraudIntel })));
+const InvestigationPage = lazy(() => import('./features/investigation/InvestigationPage').then((m) => ({ default: m.InvestigationPage })));
+const ReportsPage = lazy(() => import('./features/investigation/ReportsPage').then((m) => ({ default: m.ReportsPage })));
 const GhostPage = lazy(() => import('./features/soc/GhostPage').then((m) => ({ default: m.GhostPage })));
 // Renaissance full-screen views: code-split so three.js loads only where the orb is shown.
 const Landing = lazy(() => import('./renaissance/Landing').then((m) => ({ default: m.Landing })));
@@ -45,6 +49,11 @@ export default function App() {
         <Route path="/soc/sessions/:id" element={L(<SessionPage />)} />
         <Route path="/soc/incidents" element={L(<IncidentsPage />)} />
         <Route path="/soc/incidents/:id" element={L(<IncidentsPage />)} />
+        <Route path="/soc/dashboard" element={L(<SocDashboard />)} />
+        <Route path="/soc/intel" element={L(<FraudIntel />)} />
+        <Route path="/soc/investigations/:id" element={L(<InvestigationPage />)} />
+        <Route path="/soc/reports" element={L(<ReportsPage />)} />
+        <Route path="/soc/reports/:id" element={L(<ReportsPage />)} />
         <Route path="/soc/intelligence" element={<Suspense fallback={null}><Intelligence /></Suspense>} />
         <Route path="/soc/users" element={L(<BaselineIndex />)} />
         <Route path="/soc/users/:id/baseline" element={L(<BaselinePage />)} />

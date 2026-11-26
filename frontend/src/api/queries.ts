@@ -3,7 +3,7 @@ import { api, ApiError } from './client';
 import type {
   AddBeneficiaryRequest, AdminSessionRow, AppConfig, BaselineView, Beneficiary, ChallengeStatusResponse,
   ClockResponse, CounterfactualRequest, CounterfactualResponse, Decision, DeviceChallenge,
-  DeviceRespondRequest, DeviceRespondResponse, EvaluationReport, GhostCompare, IncidentActionRequest, IncidentActionResponse, IncidentDetail,
+  DeviceRespondRequest, DeviceRespondResponse, EvaluationReport, GhostMonitor, IncidentActionRequest, IncidentActionResponse, IncidentDetail,
   IncidentRow, IncidentSummary, LoginRequest, LoginResponse, MyIncident,
   OverviewResponse, ResetResponse, Scenario, ScenarioRun, SensitiveActionResponse, SessionDetail,
   SessionInfo, TotpRequest, TotpResponse, Transaction, TransferRequest, UserRow,
@@ -141,8 +141,14 @@ export const useRollback = (id: string) => {
 };
 export const useEvaluation = () =>
   useQuery({ queryKey: qk.evaluation, queryFn: () => api.get<EvaluationReport>('/admin/evaluation'), retry: false });
-export const useGhost = (sessionId: string) =>
-  useQuery({ queryKey: qk.ghost(sessionId), queryFn: () => api.get<GhostCompare>(`/admin/ghost/${encodeURIComponent(sessionId)}`), retry: false });
+export const useGhost = (sessionId: string, compare = false) =>
+  useQuery({ queryKey: [...qk.ghost(sessionId), compare] as const,
+    queryFn: () => api.get<GhostMonitor>(`/admin/ghost/${encodeURIComponent(sessionId)}${compare ? '?compare=true' : ''}`),
+    retry: false, refetchInterval: (q) => (compare || q.state.error ? false : 3000), enabled: !!sessionId });  // compare views are audited: fetched once, never polled
+/** A pending bank security check for this session (analyst-requested trusted-device verification). */
+export const useSecurityCheck = (enabled: boolean) =>
+  useQuery({ queryKey: ['me', 'security-check'] as const, queryFn: () => api.get<{ check: { number_match: number; expires_at: string } | null }>('/auth/security-check'),
+    enabled, refetchInterval: 4000, retry: false });
 
 // ---------- security incidents ----------
 /** Analyst notification feed: polled, so new alerts appear without a page refresh. */

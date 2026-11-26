@@ -1,5 +1,5 @@
 import { useReducedMotion } from 'motion/react';
-import { Component, lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { LEVEL_COLOR, STATE_COLOR, spherePoints, webglAvailable, type OrbProps } from './types';
 
 const OrbScene = lazy(() => import('./OrbScene'));
@@ -61,16 +61,31 @@ export function IdentityOrb(props: OrbProps) {
     }, 420);
     return () => { clearTimeout(t); if (idle && w.cancelIdleCallback) w.cancelIdleCallback(idle); };
   }, [gl]);
+  // Render only while the orb is on screen and the tab is visible: no GPU work in the background.
+  const box = useRef<HTMLDivElement>(null);
+  const [onscreen, setOnscreen] = useState(true);
+  const [visible, setVisible] = useState(() => typeof document === 'undefined' || document.visibilityState === 'visible');
+  useEffect(() => {
+    const node = box.current;
+    const vis = () => setVisible(document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', vis);
+    let io: IntersectionObserver | undefined;
+    if (node && typeof IntersectionObserver !== 'undefined') {
+      io = new IntersectionObserver(([e]) => setOnscreen(e.isIntersecting), { threshold: 0.01 });
+      io.observe(node);
+    }
+    return () => { io?.disconnect(); document.removeEventListener('visibilitychange', vis); };
+  }, [gl]);
   const fb = <OrbFallback {...props} />;
   if (!gl) return fb;
   // The CSS orb stays visible until the WebGL scene has drawn a real frame, then crossfades: never an empty hero.
   return (
-    <div className="relative aspect-square w-full" data-orb="webgl" data-ready={ready || undefined}>
+    <div ref={box} className="relative aspect-square w-full" data-orb="webgl" data-ready={ready || undefined} data-active={(onscreen && visible) || undefined}>
       <div className="absolute inset-0 transition-opacity duration-700" style={{ opacity: ready ? 0 : 1 }} aria-hidden={ready} inert={ready}>{fb}</div>
       <div className="absolute inset-0 transition-opacity duration-700" style={{ opacity: ready ? 1 : 0 }}>
         <GlBoundary fallback={null}>
           <Suspense fallback={null}>
-            {mountGl && <OrbScene {...props} reduce={reduce} onReady={() => setReady(true)} />}
+            {mountGl && <OrbScene {...props} reduce={reduce} active={onscreen && visible} onReady={() => setReady(true)} />}
           </Suspense>
         </GlBoundary>
       </div>

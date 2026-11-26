@@ -47,9 +47,7 @@ make dev-frontend
 
   Amber and red are used only for security states.
 - **Type:**
-  - Archivo Variable, condensed (`wdth` 66, weight 760), sentence case, for display.
-  - Geist Variable for UI, with tabular numerals.
-  - Both OFL, bundled locally via @fontsource.
+  - *Superseded 2026-11-26:* Apple's system font (SF Pro through `-apple-system`), in the Large Title style (bold 700, tracking −0.025em, line height 1.07). Archivo and Geist were removed. See `SECURESYNTH_3_HANDOFF.md` §9.
 - **Glass:** only on floating navigation and focused overlays (`.rn-glass`), never as a generic card.
 - **Motion:**
   - one orchestrated entrance per page;

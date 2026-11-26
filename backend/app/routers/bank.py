@@ -11,7 +11,26 @@ from app.state import AppState, get_state
 
 router = APIRouter(prefix="/bank", tags=["bank"])
 READ = require_verified_reader()
-WRITE = require("normal")
+WRITE = require("normal", "ghost")
+
+
+def _ghost(st: AppState, s) -> bool:
+    """Backend enforcement of Ghost Banking: a ghost session is served ONLY from the isolated ghost ledger, on every
+    route. If the feature has since been disabled, the session is refused rather than shown protected data."""
+    if s.mode != "ghost":
+        return False
+    if st.GhostSessionLocal is None:
+        raise ApiError(403, "SESSION_RESTRICTED", "This session is restricted for your protection.")
+    return True
+
+
+def _gdb(st: AppState):
+    return st.GhostSessionLocal()
+
+
+def _audit_ghost(db, s, event: str, **details) -> None:
+    audit.log(db, "ghost_session", event, s.user_id, s.id, **details)
+    db.commit()
 
 
 def txn_out(t: models.Transaction) -> schemas.Transaction:
@@ -28,8 +47,14 @@ def _account(db, user_id) -> models.Account:
 
 
 @router.get("/overview", response_model=schemas.OverviewResponse)
-def overview(ctx=Depends(READ)):
+def overview(ctx=Depends(READ), st: AppState = Depends(get_state)):
     s, user, db = ctx
+    if _ghost(st, s):
+        with _gdb(st) as gdb:
+            from app.ghost import service as ghost
+            o = ghost.overview(gdb, s.id)
+        return schemas.OverviewResponse(account=schemas.AccountSummary(**o["account"]),
+                                        recent=[schemas.Transaction(**t) for t in o["recent"]], session=session_info(s, user))
     acct = _account(db, user.id)
     recent = db.scalars(select(models.Transaction).where(models.Transaction.account_id == acct.id)
                         .order_by(models.Transaction.id.desc()).limit(5)).all()
@@ -39,8 +64,12 @@ def overview(ctx=Depends(READ)):
 
 
 @router.get("/transactions", response_model=list[schemas.Transaction])
-def transactions(limit: int = 50, ctx=Depends(READ)):
-    _, user, db = ctx
+def transactions(limit: int = 50, ctx=Depends(READ), st: AppState = Depends(get_state)):
+    s, user, db = ctx
+    if _ghost(st, s):
+        with _gdb(st) as gdb:
+            from app.ghost import service as ghost
+            return [schemas.Transaction(**t) for t in ghost.transactions(gdb, s.id, max(1, min(limit, 200)))]
     acct = _account(db, user.id)
     rows = db.scalars(select(models.Transaction).where(models.Transaction.account_id == acct.id)
                       .order_by(models.Transaction.id.desc()).limit(max(1, min(limit, 200)))).all()
@@ -48,8 +77,12 @@ def transactions(limit: int = 50, ctx=Depends(READ)):
 
 
 @router.get("/beneficiaries", response_model=list[schemas.Beneficiary])
-def beneficiaries(ctx=Depends(READ)):
-    _, user, db = ctx
+def beneficiaries(ctx=Depends(READ), st: AppState = Depends(get_state)):
+    s, user, db = ctx
+    if _ghost(st, s):
+        with _gdb(st) as gdb:
+            from app.ghost import service as ghost
+            return [schemas.Beneficiary(**b) for b in ghost.beneficiaries(gdb, s.id)]
     rows = db.scalars(select(models.Beneficiary).where(models.Beneficiary.user_id == user.id,
                                                        models.Beneficiary.trust != "blocked")).all()
     return [ben_out(b) for b in rows]
@@ -59,6 +92,13 @@ def beneficiaries(ctx=Depends(READ)):
 def add_beneficiary(body: schemas.AddBeneficiaryRequest, response: Response, ctx=Depends(WRITE),
                     st: AppState = Depends(get_state)):
     s, user, db = ctx
+    if _ghost(st, s):  # simulated on the ghost ledger; never risk-assessed, so the baseline cannot be poisoned
+        with _gdb(st) as gdb:
+            from app.ghost import service as ghost
+            b = ghost.add_beneficiary(gdb, s.id, body.name, body.account_ref)
+        _audit_ghost(db, s, "ghost.beneficiary_added", beneficiary_id=b["id"])
+        return schemas.SensitiveActionResponse(result="completed", decision="ALLOW", customer_message="Payee added.",
+                                               beneficiary=schemas.Beneficiary(**b))
     payload = {"name": body.name, "account_ref": body.account_ref}
     a = engine.assess(db, st, s, user, "beneficiary_add", payload)
     if a.decision == "BLOCK":
@@ -85,6 +125,15 @@ def add_beneficiary(body: schemas.AddBeneficiaryRequest, response: Response, ctx
 def transfer(body: schemas.TransferRequest, response: Response, ctx=Depends(WRITE),
              st: AppState = Depends(get_state)):
     s, user, db = ctx
+    if _ghost(st, s):  # simulated on the ghost ledger only: no protected read, debit, record or history event
+        with _gdb(st) as gdb:
+            from app.ghost import service as ghost
+            t, replayed = ghost.transfer(gdb, s.id, body.beneficiary_id, body.amount_paise, body.idempotency_key, body.note)
+        if not replayed:
+            _audit_ghost(db, s, "ghost.transfer_simulated", transaction_id=t["id"], amount_paise=t["amount_paise"])
+        return schemas.SensitiveActionResponse(result="completed", decision="ALLOW",
+                                               customer_message="Already processed." if replayed else "Transfer complete.",
+                                               transaction=schemas.Transaction(**t))
     acct = _account(db, user.id)
     existing = ledger.find_by_idempotency(db, acct.id, body.idempotency_key)
     if existing is not None:

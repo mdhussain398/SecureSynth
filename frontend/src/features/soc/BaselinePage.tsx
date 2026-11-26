@@ -17,8 +17,8 @@ function HourProfile({ profile }: { profile: number[] }) {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: -22 }} barCategoryGap={2}>
           <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-          <XAxis dataKey="h" tick={{ fill: 'var(--chart-muted)', fontSize: 10 }} tickLine={false} axisLine={{ stroke: 'var(--chart-axis)' }} interval={2} />
-          <YAxis tick={{ fill: 'var(--chart-muted)', fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} />
+          <XAxis dataKey="h" tick={{ fill: 'var(--chart-muted)', fontSize: 12 }} tickLine={false} axisLine={{ stroke: 'var(--chart-axis)' }} interval={2} />
+          <YAxis tick={{ fill: 'var(--chart-muted)', fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} />
           <Tooltip cursor={{ fill: 'var(--surface-2)' }} content={({ active, payload }) => active && payload?.length ? (
             <div className="bg-[var(--surface)] border border-[var(--hairline)] rounded-[var(--radius-s)] px-2.5 py-1.5 text-[0.8125rem] tnum">{(payload[0].payload as { h: string }).h}:00 · {(payload[0].value as number).toFixed(1)}%</div>) : null} />
           <Bar dataKey="pct" fill="var(--series-1)" radius={[3, 3, 0, 0]} isAnimationActive={false} />

@@ -301,7 +301,7 @@ function Confusion({ a, basis }: { a: ApproachResult; basis: Basis }) {
   const cell = (n: number, of: number, label: string, good: boolean) => (
     <td className={`px-2.5 py-2 align-top border border-[var(--hairline)] ${good ? 'bg-[var(--surface-2)]' : 'bg-[var(--surface)]'}`}>
       <span className="block text-[1.125rem] font-semibold leading-tight">{n.toLocaleString('en-IN')}</span>
-      <span className="block text-[0.6875rem] text-[var(--ink-3)]">{label} · {of ? pct(n / of, 0) : '—'}</span>
+      <span className="block text-[0.75rem] text-[var(--ink-3)]">{label} · {of ? pct(n / of, 0) : '—'}</span>
     </td>
   );
   return (

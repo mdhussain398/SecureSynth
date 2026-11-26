@@ -118,7 +118,7 @@ export function OverviewPage() {
       {/* The balance is the composition: one large figure, quiet context, two clear actions. */}
       <section aria-label="Savings account" className="relative pt-4 sm:pt-8">
         <div aria-hidden className="pointer-events-none absolute -right-[10%] -top-[30%] -z-10 h-[520px] w-[520px] max-w-[90vw] rounded-full"
-          style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.16), rgba(0,91,255,0.04) 60%, transparent)' }} />
+          style={{ background: 'radial-gradient(closest-side, rgba(0,91,255,0.09), rgba(0,91,255,0.04) 60%, transparent)' }} />
         <p className="text-[1.0625rem] text-[color:var(--ink-2)]">{first ? `Good to see you, ${first}.` : 'Your account'}</p>
         <div className="mt-6 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[0.9375rem] text-[color:var(--ink-3)]">
           <span>Available balance</span>
@@ -126,7 +126,7 @@ export function OverviewPage() {
           <span className="rounded-full border border-[color:var(--hairline)] bg-[var(--surface)] px-2.5 py-0.5 text-[0.8125rem]">Synthetic account</span>
         </div>
         {q.isPending ? <div className="skeleton mt-3 h-24 w-[min(520px,90%)]" aria-label="Loading balance" /> : q.error ? <p className="mt-3 text-[color:var(--ink-2)]">Balance unavailable right now.</p> : (
-          <p className="rn-display rn-num mt-2 text-[clamp(3.75rem,11vw,8.5rem)] leading-[0.9]"><Money paise={q.data.account.balance_paise} /></p>
+          <p className="rn-display rn-num mt-2 text-[clamp(2.75rem,8.5vw,6.5rem)] leading-[1]"><Money paise={q.data.account.balance_paise} /></p>
         )}
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <ButtonLink to="/bank/transfer" size="lg">Send money</ButtonLink>

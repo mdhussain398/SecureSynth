@@ -16,8 +16,11 @@ _DUMMY_HASH = passwords.hash_password("timing-equaliser")
 
 
 def session_info(s: models.Session, u: models.User) -> schemas.SessionInfo:
+    # A contained (ghost) session is shown as an ordinary one: the backend enforces containment on every route, and
+    # telling the session holder would defeat it. Analyst views read the real mode from the admin API.
     return schemas.SessionInfo(
-        username=u.username, display_name=u.display_name, role=u.role, mode=s.mode, expires_at=s.expires_at,
+        username=u.username, display_name=u.display_name, role=u.role, mode="normal" if s.mode == "ghost" else s.mode,
+        expires_at=s.expires_at,
         simulated_context=schemas.SimContext(city=s.city, device_recognised=bool(s.context.get("device_recognised"))))
 
 
@@ -30,7 +33,8 @@ def challenge_ref(c: models.Challenge | None):
 @router.post("/login", response_model=schemas.LoginResponse)
 def login(body: schemas.LoginRequest, request: Request, response: Response,
           db=Depends(get_db), st: AppState = Depends(get_state)):
-    ip = request.client.host if request.client else ""
+    from app.evidence.netinfo import client_ip
+    ip, _ = client_ip(request, st.settings.trusted_proxies)
     keys = (f"user:{body.username.lower()}", f"ip:{ip}")
     if not all(st.login_limiter.allowed(k) for k in keys):
         raise ApiError(429, "RATE_LIMITED", "Too many attempts. Try again later.")
@@ -69,13 +73,21 @@ def verify_totp(body: schemas.TotpRequest, request: Request, response: Response,
     user.totp_last_step = step
     device, recognised = sessions.resolve_device(db, request, response, user)
     s.device_id, s.city = device.id, sessions.resolve_city(request, user)
-    s.context = {**(s.context or {}), "device_recognised": recognised}
+    from app.evidence.netinfo import client_ip
+    obs_ip, ip_how = client_ip(request, st.settings.trusted_proxies)
+    s.ip = obs_ip
+    s.context = {**(s.context or {}), "device_recognised": recognised,
+                 "ua": request.headers.get("user-agent", "")[:300], "ip_how": ip_how, "auth_at": clock.now().isoformat()}
     lab = sessions.lab_context(request)
     if lab is not None:
         from app.risk.features import CITY_COORDS
         if lab.get("city") in CITY_COORDS:
             s.city = lab["city"]
         s.context = {**s.context, "failed_auth_24h": int(lab.get("failed_auth_24h", 0))}
+        if lab.get("ip"):  # Scenario Lab: a simulated address, always labelled synthetic in evidence
+            s.context = {**s.context, "sim_ip": str(lab["ip"])[:45]}
+        if lab.get("ua"):
+            s.context = {**s.context, "ua": str(lab["ua"])[:300]}
         s.is_lab = True
     s.mode = "normal"
     raw, csrf_raw = sessions.rotate(db, s, st.settings.session_abs_min)  # no session fixation
@@ -90,6 +102,9 @@ def verify_totp(body: schemas.TotpRequest, request: Request, response: Response,
               device_recognised=recognised)
     db.commit()
     sessions.set_auth_cookies(response, raw, csrf_raw, st.settings.session_abs_min * 60)
+    if s.mode == "ghost":  # BLOCK with Ghost Banking on: answer like an ordinary sign-in (decision is in the audit log)
+        return schemas.TotpResponse(decision="ALLOW", session=session_info(s, user), challenge=None,
+                                    customer_message="Welcome back.")
     return schemas.TotpResponse(decision=a.decision, session=session_info(s, user), challenge=challenge_ref(challenge),
                                 customer_message=a.customer_message)
 
@@ -134,6 +149,10 @@ def my_incident(request: Request, response: Response, db=Depends(get_db), st: Ap
     s = db.scalar(select(models.Session).where(models.Session.token_hash == tokens.hash_token(raw or "")))
     if s is None or s.mode == "pre_otp":
         raise ApiError(401, "UNAUTHENTICATED", "Sign in required.")
+    if s.mode == "ghost":
+        s.last_seen = clock.now()
+        db.commit()
+        return {"incident": None, "session_mode": "normal", "next_step": "continue"}
     closed = s.mode == "revoked" and (s.context or {}).get("closed_by_incident")
     if s.mode == "revoked" and not closed:
         raise ApiError(401, "UNAUTHENTICATED", "Sign in required.")
@@ -153,3 +172,81 @@ def my_incident(request: Request, response: Response, db=Depends(get_db), st: Ap
     if closed:
         sessions.clear_auth_cookies(response)  # the old token is finished; the customer signs in afresh
     return out
+
+
+@router.get("/security-check")
+def security_check(ctx=Depends(require("normal", "step_up", "ghost"))):
+    """A pending bank security check (analyst-requested trusted-device verification) for this session, if any:
+    the number the customer must pick on their registered device. Generic wording, works in any active mode."""
+    s, _, db = ctx
+    c = db.scalar(select(models.Challenge).where(models.Challenge.session_id == s.id,
+                                                 models.Challenge.operation == "incident_verify",
+                                                 models.Challenge.status == "pending")
+                  .order_by(models.Challenge.created_at.desc()).limit(1))
+    if c is None or clock.now() >= sessions._aware(c.expires_at):
+        return {"check": None}
+    return {"check": {"number_match": c.number_match, "expires_at": c.expires_at}}
+
+
+# ---------------------------------------------------------------- consented verification photograph (customer side)
+@router.get("/photo-request")
+def my_photo_request(ctx=Depends(require("normal", "step_up", "restricted", "ghost")), st: AppState = Depends(get_state)):
+    """A pending analyst request for a verification photograph from THIS session (never another session's)."""
+    from app.evidence.models import PhotoRequest
+    s, _, _ = ctx
+    with st.EvidenceSessionLocal() as edb:
+        p = edb.scalar(select(PhotoRequest).where(PhotoRequest.session_id == s.id, PhotoRequest.status == "pending")
+                       .order_by(PhotoRequest.created_at.desc()).limit(1))
+        if p is None or clock.now() >= p.expires_at:
+            return {"request": None}
+        return {"request": {"id": p.id, "reason": "Your bank's security team asks for a verification photograph to help "
+                            "confirm this sign-in. It is optional; you can decline.", "expires_at": p.expires_at}}
+
+
+class PhotoSubmit(schemas.BaseModel):
+    consent: bool
+    image_base64: str = schemas.Field(min_length=100, max_length=4_200_000)
+    mime: str = schemas.Field(pattern=r"^image/(jpeg|png)$")
+    captured_at: str | None = schemas.Field(default=None, max_length=40)
+
+
+def _own_pending(st, s, request_id):
+    from app.evidence.models import PhotoRequest
+    with st.EvidenceSessionLocal() as edb:
+        p = edb.get(PhotoRequest, request_id)
+    if p is None or p.session_id != s.id:  # another session's request is invisible
+        raise ApiError(404, "NOT_FOUND", "Request not found.")
+    if p.status != "pending" or clock.now() >= p.expires_at:
+        raise ApiError(409, "REQUEST_CLOSED", "This verification request is no longer open.")
+    return p
+
+
+@router.post("/photo-request/{request_id}/submit")
+def submit_photo(request_id: str, body: PhotoSubmit, ctx=Depends(require("normal", "step_up", "restricted", "ghost")),
+                 st: AppState = Depends(get_state)):
+    from app.routers.investigation import accept_photo, decode_image
+    s, user, db = ctx
+    if body.consent is not True:
+        raise ApiError(422, "CONSENT_REQUIRED", "A photograph is only accepted with your explicit consent.")
+    p = _own_pending(st, s, request_id)
+    data = decode_image(body.image_base64, body.mime, st.settings.evidence_max_upload_bytes)
+    item = accept_photo(st, db, p, data, body.mime, body.captured_at, "session_holder")
+    return {"status": "submitted", "received_at": item.collected_at}
+
+
+@router.post("/photo-request/{request_id}/decline")
+def decline_photo(request_id: str, ctx=Depends(require("normal", "step_up", "restricted", "ghost")),
+                  st: AppState = Depends(get_state)):
+    from app.evidence import vault
+    from app.evidence.models import PhotoRequest
+    s, _, db = ctx
+    p = _own_pending(st, s, request_id)
+    with st.EvidenceSessionLocal() as edb:
+        pr = edb.get(PhotoRequest, p.id)
+        pr.status, pr.responded_at, pr.consent = "declined", clock.now(), False
+        edb.commit()
+        vault.append(edb, chain=vault.chain_for(pr.is_lab), event_type="photo_declined", actor="session_holder",
+                     incident_ref=pr.incident_ref, meta={"request_id": pr.id})
+    audit.log(db, "session_holder", "incident.photo_declined", s.user_id, s.id)
+    db.commit()
+    return {"status": "declined"}

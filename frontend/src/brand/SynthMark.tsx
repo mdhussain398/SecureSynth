@@ -8,13 +8,19 @@ export type MarkTone = 'light' | 'dark';
  * `tone="light"` is for porcelain and crystal backgrounds; `tone="dark"` for graphite.
  * Ribbons read as optical glass (dark lensing edge, bright inner caustic); the shield carries the blue-white light.
  */
-export function SynthMark({ size = 28, tone = 'light', title, className }: { size?: number; tone?: MarkTone; title?: string; className?: string }) {
+/** The artwork occupies x 16–48, y 5.4–58 of the 64-unit square. Inline marks are framed tightly around it, so the
+ *  visible S aligns with the text column and fills the slot height (optical alignment); `square` keeps the full frame
+ *  for app icons and centred hero placements. */
+const TIGHT = { x: 13, y: 3, w: 38, h: 58 };
+
+export function SynthMark({ size = 28, tone = 'light', title, className, square = false }: { size?: number; tone?: MarkTone; title?: string; className?: string; square?: boolean }) {
   const id = useId().replace(/:/g, '');
   const detail = size >= 24; // inner highlights only where they resolve
   const edge = tone === 'light' ? ['#3A4A66', '#101828'] : ['#E8EEF7', '#AEB8C8'];
   const caustic = tone === 'light' ? '#FFFFFF' : '#FFFFFF';
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${VIEW} ${VIEW}`} className={className}
+    <svg width={square ? size : Math.round((size * TIGHT.w) / TIGHT.h)} height={size}
+      viewBox={square ? `0 0 ${VIEW} ${VIEW}` : `${TIGHT.x} ${TIGHT.y} ${TIGHT.w} ${TIGHT.h}`} className={className}
       role={title ? 'img' : undefined} aria-hidden={title ? undefined : true} aria-label={title}>
       <defs>
         <linearGradient id={`${id}r`} x1="12" y1="6" x2="52" y2="58" gradientUnits="userSpaceOnUse">

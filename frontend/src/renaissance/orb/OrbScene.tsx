@@ -173,11 +173,11 @@ function Sculpture({ signals, state, selected, onSelect, hero, reduce, onReady }
   );
 }
 
-export default function OrbScene(props: OrbProps & { reduce: boolean; onReady?: () => void }) {
+export default function OrbScene(props: OrbProps & { reduce: boolean; onReady?: () => void; active?: boolean }) {
   // Feather the square canvas into the page: the sculpture (radius ≈ 74% of half-width) stays fully opaque.
   const mask = 'radial-gradient(closest-side, #000 79%, transparent 99%)';
   return (
-    <Canvas dpr={[1, 2]} frameloop={props.reduce ? 'demand' : 'always'} camera={{ position: [0, 0, 6.2], fov: 36 }}
+    <Canvas dpr={[1, 1.75]} frameloop={props.reduce ? 'demand' : props.active === false ? 'never' : 'always'} camera={{ position: [0, 0, 6.2], fov: 36 }}
       style={{ maskImage: mask, WebkitMaskImage: mask }}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => { gl.toneMapping = THREE.NeutralToneMapping; gl.toneMappingExposure = 1.0; }}>

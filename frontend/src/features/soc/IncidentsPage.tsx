@@ -11,7 +11,7 @@ import { Badge, Banner, Button, Card, DataTable, DecisionPill, EmptyState, Error
 import { PageTitle } from '../../layout/layouts';
 
 type Filter = 'open' | 'resolved' | 'all';
-const STATUS: Record<IncidentStatus, { label: string; tone: 'block' | 'stepup' | 'allow' | 'neutral' | 'info' }> = {
+export const STATUS: Record<IncidentStatus, { label: string; tone: 'block' | 'stepup' | 'allow' | 'neutral' | 'info' }> = {
   pending_review: { label: 'Pending review', tone: 'block' },
   verification_requested: { label: 'Verification requested', tone: 'stepup' },
   session_restored: { label: 'Session restored', tone: 'allow' },
@@ -42,12 +42,12 @@ const ACTION_COPY: Record<IncidentAction, { title: string; verb: string; scope: 
   },
 };
 
-function SeverityBadge({ s }: { s: IncidentRow['severity'] }) {
+export function SeverityBadge({ s }: { s: IncidentRow['severity'] }) {
   return <Badge tone={s === 'critical' ? 'block' : 'stepup'}><ShieldAlert size={12} aria-hidden />{s === 'critical' ? 'Critical' : 'High'}</Badge>;
 }
 
 /** Modal confirmation with a mandatory reason (and a fresh TOTP code when a restriction is lifted). */
-function ConfirmAction({ incident, action, sessionId, onClose }: { incident: IncidentRow; action: IncidentAction; sessionId?: string; onClose: () => void }) {
+export function ConfirmAction({ incident, action, sessionId, onClose }: { incident: IncidentRow; action: IncidentAction; sessionId?: string; onClose: () => void }) {
   const m = useIncidentAction(incident.id);
   const copy = ACTION_COPY[action];
   const [reason, setReason] = useState('');
@@ -127,7 +127,7 @@ function IncidentPanel({ d }: { d: IncidentDetail }) {
             <h2 className="rn-display text-[clamp(1.75rem,3vw,2.375rem)] mt-1">{inc.display_name}</h2>
             <p className="text-[var(--ink-2)] mt-1">{inc.username} · session <Link className="font-mono text-[0.8125rem] underline underline-offset-2" to={`/soc/sessions/${encodeURIComponent(inc.session_id)}`}>{inc.session_id}</Link></p>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5"><SeverityBadge s={inc.severity} /><Badge tone={st.tone}>{st.label}</Badge></div>
+          <div className="flex flex-wrap items-center gap-1.5"><Link to={`/soc/investigations/${inc.id}`} className="rn-btn rn-btn-primary !min-h-11 !px-3.5 text-[0.875rem]">Open investigation workspace</Link>{inc.ghost && <Badge tone="info">Ghost Banking</Badge>}<SeverityBadge s={inc.severity} /><Badge tone={st.tone}>{st.label}</Badge></div>
         </div>
         <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5 pt-4 border-t border-[var(--hairline)]">
           <Fact label="Risk index (not a probability)"><span className="inline-flex items-center gap-2"><span className="tnum">{inc.risk_score?.toFixed(1) ?? '—'}</span><RiskGauge size="sm" value={inc.risk_score} thresholds={a?.thresholds} /></span></Fact>
@@ -140,6 +140,11 @@ function IncidentPanel({ d }: { d: IncidentDetail }) {
           <Fact label="Trusted-device check">{inc.verification ? inc.verification.replace('_', ' ') : 'Not requested'}</Fact>
         </dl>
         <p className="mt-4 text-[0.9375rem] text-[var(--ink-2)]"><span className="font-medium text-[var(--ink)]">Reason for restriction: </span>{inc.reason}</p>
+        {inc.ghost && (
+          <div className="mt-4"><Banner tone="info" title="Contained in Ghost Banking" action={<Link to={`/soc/ghost/${encodeURIComponent(inc.session_id)}`} className="font-medium underline underline-offset-4 whitespace-nowrap">Open ghost monitor</Link>}>
+            This session is being served an isolated, synthetic bank. Nothing it does reaches the protected ledger.
+          </Banner></div>
+        )}
         {inc.resolution_action && (
           <div className="mt-4"><Banner tone={inc.status === 'session_restored' || inc.status === 'user_cleared' ? 'allow' : 'info'} title={`${STATUS[inc.status].label} by ${inc.resolved_by} · ${inc.resolved_at ? fmtTime(inc.resolved_at, true) : ''}`}>{inc.resolution_reason}</Banner></div>
         )}
@@ -255,7 +260,7 @@ export function IncidentsPage() {
   const rows = useMemo(() => list.data ?? [], [list.data]);
 
   const cols: Column<IncidentRow>[] = [
-    { key: 'who', header: 'Customer', cell: (r) => <div className="flex items-start gap-2">{r.unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--electric)]" aria-label="Unread" />}<div><div className="font-medium">{r.display_name}</div><div className="text-[0.75rem] text-[var(--ink-3)]">{r.username} · #{r.id}{r.is_lab && ' · lab'}</div></div></div> },
+    { key: 'who', header: 'Customer', cell: (r) => <div className="flex items-start gap-2">{r.unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--electric)]" aria-label="Unread" />}<div className="min-w-0"><div className="font-medium whitespace-nowrap">{r.display_name}</div><div className="text-[0.75rem] text-[var(--ink-3)]">{r.username} · #{r.id}{r.is_lab && ' · lab'}{r.ghost && ' · ghost'}</div></div></div> },
     { key: 'sev', header: 'Severity', cell: (r) => <SeverityBadge s={r.severity} /> },
     { key: 'score', header: 'Risk', align: 'right', cell: (r) => <span className="tnum font-medium">{r.risk_score?.toFixed(1) ?? '—'}</span> },
     { key: 'amt', header: 'Amount', align: 'right', cell: (r) => <span className="tnum">{r.amount_paise != null ? formatPaise(r.amount_paise, true) : '—'}</span> },
@@ -267,7 +272,7 @@ export function IncidentsPage() {
     <>
       <PageTitle title="Security incidents" sub="Customers restricted by the risk engine, with the evidence and the decisions that resolve them. Updates every 4 seconds."
         actions={<span className="inline-flex items-center gap-2 text-[0.8125rem] text-[var(--ink-3)]"><span className={`h-2 w-2 rounded-full ${list.isError ? 'bg-[var(--block)]' : 'bg-[var(--allow)]'}`} aria-hidden />{list.isError ? 'Feed interrupted' : 'Live'}</span>} />
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.35fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <Card padded={false} title="Incidents" className="self-start xl:sticky xl:top-[76px]" actions={
           <div role="group" aria-label="Filter incidents" className="flex gap-1">
             {(['open', 'resolved', 'all'] as const).map((f) => (

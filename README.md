@@ -99,7 +99,7 @@ Details, request flow and trust boundaries: [docs/ARCHITECTURE.md](docs/ARCHITEC
 
 ## Tech stack
 - **Backend:** Python 3.12, FastAPI, SQLAlchemy 2, Pydantic 2, SQLite (WAL), PyOTP, argon2-cffi, cryptography (Fernet), scikit-learn, NumPy, pandas (offline data generation only), pytest.
-- **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS v4, TanStack Query, Recharts, Lucide; three.js + React Three Fiber for the lazy-loaded glass identity orb and the Synth Core logo; Motion for reduced-motion-aware interface motion; Archivo and Geist fonts bundled locally.
+- **Frontend:** React 19 + TypeScript, Vite, Tailwind CSS v4, TanStack Query, Recharts, Lucide; three.js + React Three Fiber for the lazy-loaded glass identity orb and the Synth Core logo; Motion for reduced-motion-aware interface motion; Apple's system font (SF Pro on Apple devices), nothing downloaded.
 - **Runs fully offline** after install. No Docker, no external APIs, no paid services.
 
 ## Install and run

@@ -93,7 +93,12 @@ Added after the 28 paths above; see `docs/INCIDENT_RECOVERY.md` for semantics.
 | POST | `/admin/incidents/{id}/read` | admin | Mark read (audited once as `incident.reviewed`) |
 | POST | `/admin/incidents/read-all` | admin | Mark all read |
 | POST | `/admin/incidents/{id}/actions` | admin | `{action, reason, totp_code?, session_id?}`; `unblock_session` and `clear_user` need `totp_code`. Errors: `REAUTH_REQUIRED`, `REAUTH_FAILED` (403), `SESSION_NOT_ELIGIBLE`, `INCIDENT_RESOLVED` (409) |
+| GET | `/auth/security-check` | any active session | Pending analyst-requested trusted-device number (`{check: null}` when none) |
+| GET | `/admin/ghost/{session_id}?compare=` | admin | Ghost Banking monitor (404 `FEATURE_DISABLED` while the flag is off); `compare=true` adds the audited protected-vs-synthetic comparison. See `docs/GHOST_BANKING.md` |
 | GET | `/auth/incident` | customer (own session) | Read-only incident status for the restricted screen: `next_step` = continue \| wait \| verify \| sign_in_again \| contact_bank |
+
+## SecureSynth 3.0 routes
+These are listed in `docs/SECURESYNTH_3.md` → *New API routes*.
 
 ## Session modes
 | Mode | Reads | Payee add / transfer | Entered by |

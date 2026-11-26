@@ -137,7 +137,7 @@ def lab_context(request: Request) -> dict | None:
         ctx = json.loads(request.headers.get("x-sim-context", "{}"))
     except ValueError:
         return None
-    return {k: ctx[k] for k in ("city", "failed_auth_24h") if k in ctx}
+    return {k: ctx[k] for k in ("city", "failed_auth_24h", "ip", "ua") if k in ctx}
 
 
 def _step_up_expired(db, s, now) -> bool:
@@ -152,7 +152,7 @@ def _step_up_expired(db, s, now) -> bool:
 def require_verified_reader():
     """Account reads: allowed while a later transfer/payee step-up is pending, but NOT while the login
     itself awaits independent verification (password + TOTP alone must not grant access)."""
-    base = require("normal", "step_up")
+    base = require("normal", "step_up", "ghost")
 
     def dep(ctx=Depends(base)):
         s = ctx[0]

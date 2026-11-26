@@ -121,7 +121,7 @@ export function RiskGauge({ value, thresholds, size = 'md' }: { value: number | 
         )}
       </div>
       {thresholds && (
-        <div className="relative h-9 mt-1 text-[0.6875rem] text-[var(--ink-3)] tnum" aria-hidden>
+        <div className="relative h-9 mt-1 text-[0.75rem] text-[var(--ink-3)] tnum" aria-hidden>
           {bands.map((b) => (
             <span key={b.label} className="absolute top-0 truncate px-1" style={{ left: `${b.from}%`, width: `${b.to - b.from}%` }}>
               <span className="block font-medium text-[var(--ink-2)]">{b.label}</span>
