@@ -4,7 +4,7 @@
 - `frontend/src/api/types.ts` (`CONTRACT_VERSION`) holds the JSON shapes and is the source of truth.
 - `backend/app/schemas.py` mirrors it in Pydantic.
 
-**This reference was generated from the running backend's OpenAPI schema** (`GET /openapi.json`, 2026-11-25) and reconciled with `docs/api-contract.md`.
+**This reference was generated from the running backend's OpenAPI schema** (`GET /openapi.json`, 2026-11-25) and reconciled with `docs/architecture/API_CONTRACT.md`.
 - The interactive docs are at http://127.0.0.1:8000/docs while `make dev-backend` runs.
 - The OpenAPI `info.version` string still reads `1.1.0`. The 1.2.0 changes are additive fields on the evaluation report, so the paths are identical.
 
@@ -83,7 +83,7 @@ All admin routes require an admin session and return 403 `FORBIDDEN` otherwise.
 - Origin and CSRF checks.
 
 ## Security incidents (analyst-assisted recovery)
-Added after the 28 paths above; see `docs/INCIDENT_RECOVERY.md` for semantics.
+Added after the 28 paths above; see `docs/features/INCIDENT_RECOVERY.md` for semantics.
 
 | Method | Path | Who | Purpose |
 |---|---|---|---|
@@ -94,11 +94,11 @@ Added after the 28 paths above; see `docs/INCIDENT_RECOVERY.md` for semantics.
 | POST | `/admin/incidents/read-all` | admin | Mark all read |
 | POST | `/admin/incidents/{id}/actions` | admin | `{action, reason, totp_code?, session_id?}`; `unblock_session` and `clear_user` need `totp_code`. Errors: `REAUTH_REQUIRED`, `REAUTH_FAILED` (403), `SESSION_NOT_ELIGIBLE`, `INCIDENT_RESOLVED` (409) |
 | GET | `/auth/security-check` | any active session | Pending analyst-requested trusted-device number (`{check: null}` when none) |
-| GET | `/admin/ghost/{session_id}?compare=` | admin | Ghost Banking monitor (404 `FEATURE_DISABLED` while the flag is off); `compare=true` adds the audited protected-vs-synthetic comparison. See `docs/GHOST_BANKING.md` |
+| GET | `/admin/ghost/{session_id}?compare=` | admin | Ghost Banking monitor (404 `FEATURE_DISABLED` while the flag is off); `compare=true` adds the audited protected-vs-synthetic comparison. See `docs/features/GHOST_BANKING.md` |
 | GET | `/auth/incident` | customer (own session) | Read-only incident status for the restricted screen: `next_step` = continue \| wait \| verify \| sign_in_again \| contact_bank |
 
 ## SecureSynth 3.0 routes
-These are listed in `docs/SECURESYNTH_3.md` → *New API routes*.
+These are listed in `docs/architecture/SECURESYNTH_3.md` → *New API routes*.
 
 ## Session modes
 | Mode | Reads | Payee add / transfer | Entered by |

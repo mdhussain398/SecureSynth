@@ -1,0 +1,9 @@
+{
+  "tool": "humanize-ppt (method applied by hand; the installed plugin ships only SKILL.md, no scripts)",
+  "renderer": "pptxgenjs via docs/presentation/tools/build_hig_deck.js (native, editable PowerPoint)",
+  "brief": ["deck_brief.md", "ast_outline.md", "slide_plan.json", "speaker_intent.md", "asset_manifest.md", "style_brief.md"],
+  "outputs": ["../SecureSynth_Deck.pptx", "../SecureSynth_Deck.pdf"],
+  "qa": {"report": "qa/qa_report.md", "rounds": 2, "status": "pass"},
+  "slides": 15,
+  "date": "2026-11-26"
+}

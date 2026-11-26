@@ -1,220 +1,200 @@
-# SecureSynth: Risk-Based Authentication and Account Takeover Detection
+# SecureSynth: risk-based authentication and account takeover detection
 
-**Technical report** · AVISHKAR'26 · Problem Statement 24 · Domain: AI in Cyber Security and FinTech
+Technical report for AVISHKAR'26, problem statement 24 (AI in Cyber Security and FinTech).
 
 | | |
 |---|---|
-| Team | The_Terminators · Team ID AV26-50F33FD4DE |
-| Members | Mohammed Hussain; members 2–4 **TBD** (to be completed by the team, see `docs/TEAM.md`) |
-| Mentor / institution | **TBD** |
+| Team | The_Terminators, team ID AV26-50F33FD4DE |
+| Members | Mohammed Hussain; the other members' names and roles are still to be added in `docs/project/TEAM.md` |
 | Repository | https://github.com/mdhussain398/SecureSynth (branch `feat/frontend-renaissance`) |
 | Model | Isolation Forest `iforest-v1-956f432a`, frozen; evaluation protocol v2 |
-| Date | 25 November 2026 |
+| Version | SecureSynth 3.0 |
+| Date | 26 November 2026 |
 
-> **Scope and honesty statement.** SecureSynth is a working prototype on **synthetic data only**. Every customer, account, device, location and attack is fictional and authored by the team. The results below demonstrate the method on that data; **they are not real-world validation**. The risk index is a rarity percentile plus transparent policy points. **It is not a fraud probability.**
+> SecureSynth is a working prototype that runs on synthetic data. We wrote every customer, account, device, location and attack ourselves. The results show the method working on that data; they are not evidence of how it would perform in a real bank. The risk index is a rarity percentile plus written policy points. It is not a fraud probability.
 
----
+![The SecureSynth Command Centre](../screenshots/app/console-01-intelligence.jpg)
 
 ## 1. Summary
-Attackers now routinely get past passwords and one-time codes through phishing, real-time OTP relay and SIM swaps. To the bank, a session opened that way looks authenticated. Static rules such as "new device → challenge" catch some of these attacks, but they punish genuine customers who travel or change phones.
 
-SecureSynth treats authentication as a **continuous** decision.
-- **Where it assesses:** at sign-in, when a payee is added and on every transfer.
-- **How it assesses:** it compares the action with *this* customer's own trusted behaviour, scores the deviations with a shared Isolation Forest, adds transparent policy points, and returns **ALLOW**, **STEP-UP** or **BLOCK**.
-- **Who enforces:** the backend enforces every decision.
-- **Step-up:** goes to a separately enrolled trusted device with number matching.
-- **Learning:** the system learns new behaviour only after independent verification, so an attacker cannot train it.
+Phishing kits relay one-time codes in real time and SIM swaps redirect SMS codes, so attackers now get past the password and the OTP routinely. Once they're in, the bank sees a session that looks properly authenticated. Static rules ("new device, so challenge") catch some of these attacks, but they also challenge almost every customer who travels or changes phone.
 
-On a fresh synthetic test population scored once with a frozen model (4,665 sessions, 367 takeovers), SecureSynth compares with static global rules as follows:
+SecureSynth treats authentication as a decision that keeps being made for the whole session. At sign-in, when a payee is added and on every transfer, it compares what is happening with this particular customer's trusted behaviour. A shared Isolation Forest scores the deviations, a short list of written policy rules adds points, and the backend enforces the result: ALLOW, STEP-UP or BLOCK. A step-up goes to a separately enrolled trusted device with number matching. The baseline only learns behaviour the customer has verified, so an attacker can't teach it that they belong.
+
+Version 3.0 adds what happens after a block. A blocked session can be contained in an isolated synthetic bank (Ghost Banking, off by default). Evidence is collected into an encrypted, hash-chained vault. Analysts work the case in an incident queue, an investigation workspace and a correlation graph, can prepare a cybercrime complaint, and can restore a genuine customer through a fresh verified sign-in.
+
+We froze the model and scored a fresh synthetic population once: 4,665 sessions, 367 of them takeovers. Against static global rules:
 
 | | Static rules | SecureSynth |
 |---|---|---|
-| Takeovers intervened (recall) | 76.6% | **91.3%** |
+| Takeovers flagged (recall) | 76.6% | **91.3%** |
 | Genuine sessions interrupted | 28.6% | **5.2%** |
 | Precision | 18.6% | 60.1% |
 | F1 | 29.9% | 72.5% |
 
-Two results cut the other way:
-- **It does not prevent more money overall.** Static rules prevent slightly more attack value (₹2.98 cr against ₹2.96 cr of ₹3.10 cr) by challenging almost everyone.
-- **Its weakest case** is a hijack on the customer's own familiar device (recall 58.6%).
+Two results go the other way. SecureSynth doesn't prevent more money overall: static rules stop slightly more attack value (₹2.98 cr against ₹2.96 cr, out of ₹3.10 cr attempted) because they challenge almost everyone. And our weakest case is a hijack on the customer's own familiar device, where recall drops to 58.6%.
 
-## 2. Problem understanding
-### 2.1 Why password + TOTP is not enough
-- **Phishing kits** relay the one-time code in real time.
-- **SIM swaps** redirect SMS codes.
-- **Session hijacking** takes over a session after a legitimate sign-in.
+## 2. The problem
 
-In each case the bank sees correct credentials. In our evaluation, password + TOTP alone intervened in **0 of 367** takeovers and let the full ₹3.10 cr of attempted attack transfers complete.
+### 2.1 Why a password and an OTP aren't enough
 
-### 2.2 Why static rules are not the answer
-Global rules judge every customer by the same yardstick. On the same population they intervened in 76.6% of takeovers, but they also interrupted:
-- **28.6%** of all genuine sessions;
-- **98.6%** of genuine travellers;
-- **27.8%** of genuine new-device sessions.
+A phishing kit can forward the one-time code to the real site while the customer is still typing it. A SIM swap sends the SMS code to the attacker's phone. Session hijacking skips sign-in altogether and takes over a session the customer opened legitimately. In all three cases the bank sees correct credentials. In our evaluation, password plus TOTP on its own stepped in on 0 of 367 takeovers and let the full ₹3.10 cr of attempted attack transfers go through.
 
-Their precision was 18.6%: about four of every five interventions hit a genuine customer.
+### 2.2 Why static rules aren't the answer either
 
-### 2.3 Stakeholders
-| Stakeholder | Need |
+Global rules hold every customer to the same yardstick. On the same population they caught 76.6% of takeovers, but they also interrupted 28.6% of all genuine sessions, 98.6% of genuine travellers and 27.8% of genuine new-device sessions. Their precision was 18.6%, so roughly four out of five interventions landed on a genuine customer.
+
+### 2.3 Who cares
+
+| Stakeholder | What they need |
 |---|---|
-| Customers | Not to lose money to a takeover; not to be blocked when they travel or change phone |
-| Fraud and security analysts | Decisions they can explain, investigate and override |
-| The bank | Lower fraud loss *and* lower friction, with an audit trail |
+| Customers | Not to lose money to a takeover, and not to be locked out when they travel or get a new phone |
+| Fraud and security analysts | Decisions they can explain, investigate and overturn |
+| The bank | Less fraud loss and less friction, with an audit trail behind both |
 
-### 2.4 Success criteria (fixed before results; see `EVALUATION_PROTOCOL.md`)
-- Higher takeover recall than static rules.
-- Much lower interruption of genuine customers.
-- Validation targets: intervention FPR ≤ 5%; block FPR ≤ 0.5%.
-- Every decision explainable and enforced by the backend.
-- A model frozen before a single scoring of a fresh test population.
+### 2.4 Success criteria
 
-## 3. Approach and innovation
-### 3.1 Four-stage workflow
-1. **Authenticate.** Password (Argon2id) and a genuine TOTP with replay protection. The session token rotates after TOTP.
-2. **Assess.** At login, payee add and every transfer:
-   - compute 15 behavioural deviations against the customer's trusted baseline;
-   - score them with the Isolation Forest;
-   - add policy points.
-3. **Decide and enforce.** `score = clip(0.8 × ML index + Σ policy points, 0, 100)`.
-   - BLOCK at ≥ 89.1, or on the hard rule: impossible travel + unrecognised browser + sensitive action.
-   - STEP-UP at ≥ 77.73.
-   - Otherwise ALLOW.
-   - The backend moves the session into the matching mode. A restricted session cannot read or move money.
-4. **Verify and adapt.** A step-up goes to the trusted device. The challenge is:
-   - single use;
-   - valid for 120 s;
-   - bound to the session, the operation and a SHA-256 hash of the payload.
-   - Only verified behaviour can become part of the baseline.
+We wrote these down before seeing results (see `docs/evaluation/EVALUATION_PROTOCOL.md`): higher takeover recall than static rules; far fewer genuine customers interrupted; validation targets of at most 5% intervention false-positive rate and at most 0.5% block false-positive rate; every decision explainable and enforced on the server; and a model frozen before a single scoring of a fresh test population.
 
-### 3.2 Personalised behavioural intelligence
-The features are deviations *from this customer*, not absolute values. A 02:00 sign-in is normal for a night-shift worker and rare for a 9-to-5 customer. Because the deviations are personal, one shared model serves every customer.
+## 3. How it works
 
-The 15 features (`backend/app/risk/features.py`):
-- recognised browser;
-- hour rarity;
-- familiar city;
-- distance from home;
-- implied travel speed;
-- amount against usual (robust z-score);
-- transfer frequency against usual;
-- new payee;
-- payee added minutes ago;
-- speed from sign-in to action;
-- add-payee-then-transfer sequence;
-- failed sign-ins in the last 24 h;
-- transfer flag;
-- payee-add flag;
-- verified travel window.
+### 3.1 The decision loop
+
+1. **Authenticate.** Password hashed with Argon2id, then a real TOTP code with replay protection. The session token rotates after the TOTP step.
+2. **Assess.** At login, payee creation and every transfer, the backend computes 15 behavioural deviations against the customer's trusted baseline, scores them with the Isolation Forest and adds policy points.
+3. **Decide and enforce.** `score = clip(0.8 × ML index + sum of policy points, 0, 100)`. BLOCK at 89.1 or above, or on the hard rule of impossible travel plus an unrecognised browser plus a sensitive action. STEP-UP at 77.73 or above. Anything lower is allowed. The backend switches the session into the matching mode, and a restricted session can't read or move money.
+4. **Verify and adapt.** A step-up goes to the trusted device. The challenge works once, lasts 120 seconds and is bound to the session, the operation and a SHA-256 hash of the payload. Only verified behaviour can become part of the baseline.
+
+### 3.2 Personal behaviour, one shared model
+
+The features describe how far an action is from this customer's normal, not absolute values. A sign-in at 2 a.m. is ordinary for a night-shift worker and strange for someone who works nine to five. Because each feature is already personal, one shared model can serve every customer.
+
+The 15 features in `backend/app/risk/features.py` are: recognised browser, hour rarity, familiar city, distance from home, implied travel speed, amount against usual (robust z-score), transfer frequency against usual, new payee, minutes since the payee was added, time from sign-in to action, the add-payee-then-pay sequence, failed sign-ins in the last 24 hours, a transfer flag, a payee-add flag and the verified travel window.
 
 ### 3.3 Why an Isolation Forest
-Labelled takeovers are rare, change constantly and are unavailable at the start. An unsupervised rarity model learns what *legitimate* deviation looks like and flags the unusual.
-- **Configuration:** 300 trees, 512 samples per tree.
-- **Output:** converted to a percentile against legitimate validation events (0–100).
-- **Labels:** used **only** for evaluation. A test proves the inference code never reads them.
 
-### 3.4 Transparent policy points
+At the start of a deployment there are hardly any labelled takeovers, and the ones that exist change constantly. An unsupervised rarity model learns what genuine variation looks like and flags whatever falls outside it. We use 300 trees with 512 samples each, and convert the raw score into a percentile (0 to 100) against genuine validation events. Labels are used only for evaluation, and a test checks that the inference code never reads them.
+
+### 3.4 Policy points
+
 | Rule | Points |
 |---|---|
 | Unrecognised browser | +12 |
 | Unfamiliar location | +8 |
 | Impossible travel | +30 |
-| Payee added < 10 min before transfer | +20 |
+| Payee added less than 10 minutes before the transfer | +20 |
 | Amount far above usual | +15 |
-| ≥ 2 failed sign-ins | +8 |
-| Verified travel window | −15 |
+| Two or more failed sign-ins | +8 |
+| Inside a verified travel window | −15 |
 
-### 3.5 Safe baseline adaptation
-The baseline is a security control, so poisoning it would make an attacker "normal". SecureSynth keeps two profiles:
-- **trusted**, which is used for scoring;
-- **candidate**, which collects new behaviour.
+### 3.5 Learning without being poisoned
 
-**Promotion rules:**
-- Only the attribute verified on the trusted device can be promoted.
-- Promotion needs two clean sessions and 24 h.
-- Verified travel becomes a 7-day window, not permanent trust.
-- Blocked or denied sessions void their contributions.
-- Every change is versioned, and an analyst can roll it back.
+If an attacker could get their own behaviour into the baseline, they would become "normal". So SecureSynth keeps two profiles per customer: a trusted one used for scoring and a candidate one that collects new behaviour. Only the attribute the customer verified on the trusted device can move from candidate to trusted, and only after two clean sessions and 24 hours. Verified travel becomes a 7-day window rather than permanent trust. Blocked or denied sessions lose everything they contributed, and every change is versioned so an analyst can roll it back.
 
-### 3.6 Explainability
-Analysts see four separate panels:
-1. the ML index;
-2. the observed deviations from the baseline;
-3. the exact policy points;
-4. the decision formula with its thresholds.
+### 3.6 Explaining decisions
 
-They also get a **counterfactual** ("what if this one feature were normal?") that re-runs the real scoring path. It is labelled hypothetical and never stored. Customers see only calm, category-level messages; scores are never sent to them (test-enforced).
+Analysts see four separate panels: the ML index, the observed deviations from the baseline, the exact policy points, and the decision formula with its thresholds. They can also ask a counterfactual question ("what if this one feature had been normal?"), which re-runs the real scoring path, is labelled as hypothetical and is never stored. Customers only ever see short, calm messages. A test makes sure no score or feature name reaches them.
 
-## 4. Architecture and technology
+## 4. After a block: SecureSynth 3.0
+
+The original prototype stopped at BLOCK. In practice that's where an analyst's work starts, so 3.0 follows the incident through containment, evidence, investigation, reporting and recovery.
+
+### 4.1 Containment and Ghost Banking
+
+A blocked session is normally restricted. With Ghost Banking enabled, it's moved into an isolated synthetic bank instead: the attacker can keep browsing, add payees and "send" money, and all of it happens on a separate ledger in its own database. The ghost code never imports the protected tables (a test scans the source to check), and startup refuses to run if the two databases would share a file. Turning Ghost Banking off restricts every live ghost session; none of them is ever moved back into protected banking.
+
+Ghost Banking deliberately deceives the person holding the session, which the competition rule book (§12) treats with caution. It is therefore off by default and gated twice: a deployment flag plus a mentor approval reference, then a runtime switch on the SOC dashboard that needs a reason, a fresh TOTP code and the current version number, with every change kept in a history.
+
+### 4.2 The evidence vault
+
+Every restriction collects the server-observed IP address and its scope, the registered device record, the parsed browser and operating system (for display only), the risk assessment and the transfer attempt. Analyst decisions, verification outcomes, notes and consented photographs are added as they happen. Each item is labelled observed, derived or synthetic.
+
+Files are encrypted with Fernet. Each ledger entry stores a SHA-256 hash of the item and of the previous entry, on two separate chains for genuine and Lab data. Verification detects modified content, missing files and broken links, raises an alert and marks the incident unread. It never repairs anything. This makes the vault tamper-evident, not immutable: someone who controls the whole store could rewrite the data and its hashes together, and stronger guarantees would need checkpoints anchored outside the system.
+
+We don't collect MAC addresses (browsers don't expose them) and we don't fingerprint devices. A photograph is only taken with the customer's explicit consent in their own browser, and it is never used for facial recognition or treated as proof of identity.
+
+![The incident queue](../screenshots/app/console-04-incidents.jpg)
+
+### 4.3 Investigation
+
+Analysts get an incident queue with the decisions they can take (unblock one session, clear the customer, request trusted-device verification, keep restricted, revoke), and a workspace per incident with overview, evidence, timeline, summary and report tabs. Every action needs a reason and is written to the audit log.
+
+The fraud intelligence graph links incidents that share an IP address (weak, or moderate within 24 hours), a registered device cookie or a payee reference (moderate across different customers). Two or more independent links count as strong. Each link comes with its explanation and provenance. The graph presents leads: nothing in it blocks a user, blacklists a payee or files a report on its own.
+
+![The fraud intelligence graph](../screenshots/app/console-05-fraud-intel.jpg)
+
+An investigation summary is generated deterministically from the evidence. Each section is marked as fact, interpretation or recommendation and cites the evidence it rests on. It goes stale when the evidence changes, and approval needs a fresh one. An optional language-model rewrite exists behind several explicit switches, with identifiers redacted from its input; it's off unless configured.
+
+### 4.4 Reporting and recovery
+
+An analyst can prepare a cybercrime complaint in five stages: draft, review, a checklist confirmation, a final confirmation with a reason, a fresh TOTP and a typed phrase, and then submission. By default the destination is a local demo service, and every screen and file says no real complaint will be filed. The official route to the National Cyber Crime Reporting Portal is a guided hand-off: there's no public submission API, so the authorised person files on the portal themselves and the analyst records the acknowledgement afterwards.
+
+A genuine customer who was restricted is restored by an analyst decision, never automatically, and always through a fresh, verified sign-in.
+
+## 5. Architecture
+
 ![SecureSynth architecture](figures/fig-architecture.png)
 
-| Technology | Why it was chosen |
+The protected bank, Ghost Banking, the evidence vault and the demo complaint service each have their own SQLite database, and the backend refuses to start if any two share a file.
+
+| Technology | Why we used it |
 |---|---|
-| **React 19 + TypeScript (Vite)** | Shared typed API contract (`types.ts`, v1.2.0) between frontend and backend; fast offline builds |
-| **Tailwind CSS v4, Motion, three.js + React Three Fiber** | One design system across every screen; reduced-motion-aware motion; a lazy-loaded WebGL Digital Twin orb with a CSS fallback |
-| **FastAPI (Python 3.12) + Pydantic 2** | Validation and dependency-based authorisation on every route; OpenAPI generated from the code |
-| **SQLAlchemy 2 + SQLite (WAL)** | Zero-setup, offline, transactional. A transfer is one atomic conditional debit with an idempotency key. |
-| **argon2-cffi, PyOTP, cryptography (Fernet)** | Argon2id passwords; RFC 6238 TOTP with replay protection; encrypted TOTP seeds |
-| **scikit-learn Isolation Forest** | Unsupervised: needs no takeover labels, trains in seconds, scores in milliseconds |
-| **pytest** | 89 backend tests covering security, ledger, challenges, baseline, engine, Lab and ML hygiene |
+| React 19 and TypeScript (Vite) | A typed API contract shared with the backend, and fast offline builds |
+| Tailwind CSS v4, Motion, three.js with React Three Fiber | One design system across every screen, motion that respects reduced-motion settings, and a lazy-loaded 3D orb with a CSS fallback |
+| FastAPI (Python 3.12) and Pydantic 2 | Validation and authorisation on every route, with OpenAPI generated from the code |
+| SQLAlchemy 2 and SQLite (WAL) | No setup, works offline, transactional. A transfer is one atomic conditional debit with an idempotency key |
+| argon2-cffi, PyOTP, cryptography (Fernet) | Argon2id passwords, RFC 6238 TOTP with replay protection, encrypted TOTP seeds and evidence files |
+| scikit-learn Isolation Forest | Needs no takeover labels, trains in seconds and scores in milliseconds |
+| pytest | 165 backend tests covering security, the ledger, challenges, baselines, the engine, Ghost Banking, incidents, investigation, the Lab and ML hygiene |
 
-The product runs fully offline after installation. It needs no Docker, external API or paid service, and it calls no AI service at runtime.
+Once installed, everything runs offline. There's no Docker, no external API and no paid service, and the product calls no AI service at runtime unless someone explicitly configures the optional summary rewrite.
 
-## 5. Implementation and working logic
-### 5.1 Real data flow for one transfer
-1. The browser sends `POST /api/bank/transfers` with the session cookie, `X-CSRF-Token` and an idempotency key.
-2. The backend checks the session mode, CSRF, Origin and payee ownership.
-3. The risk engine builds features from history **before** the event, scores them and applies policy. The assessment, with features, deviations, ML index, points, decision, thresholds and latency, is stored.
-4. The outcome depends on the decision:
-   - **ALLOW:** the debit executes atomically.
-   - **STEP-UP:** 202 with a challenge. The trusted device shows the number to match, and on approval the *bound* payload executes.
-   - **BLOCK:** the session becomes restricted and further requests get 403.
-5. Every step is written to the audit log, which holds allow-listed fields only and never secrets.
+## 6. Implementation
 
-### 5.2 Backend enforcement
-| Control | Evidence (`backend/tests`) |
+### 6.1 One transfer, end to end
+
+1. The browser sends `POST /api/bank/transfers` with the session cookie, an `X-CSRF-Token` header and an idempotency key.
+2. The backend checks the session mode, CSRF token, Origin and that the payee belongs to this customer.
+3. The risk engine builds features from history before the event, scores them and applies policy. It stores the whole assessment: features, deviations, ML index, points, decision, thresholds and latency.
+4. On ALLOW the debit runs atomically. On STEP-UP the response is 202 with a challenge; the trusted device shows the number to match, and on approval the bound payload runs. On BLOCK the session is restricted (or contained in Ghost Banking), an incident opens and evidence is collected.
+5. Each step goes to the audit log, which keeps an allow-list of fields and never stores secrets.
+
+### 6.2 Controls the tests enforce
+
+| Control | Test (`backend/tests`) |
 |---|---|
-| Correct password + OTP but wrong person is still assessed | `test_continuous_risk_*` |
-| Account data unreadable until a login step-up is approved | `test_unverified_login_step_up_cannot_read_account_data` |
-| TOTP replay rejected | `test_totp_replay_rejected` |
-| Another user's device cannot approve a challenge | `test_other_users_device_cannot_approve` |
-| CSRF and foreign-origin mutations rejected | `test_totp_without_csrf_header_rejected`, `test_foreign_origin_rejected_on_mutation` |
-| No scores or feature names reach customers | `test_customer_message_reveals_no_scores_or_feature_names` |
+| A correct password and OTP from the wrong person is still assessed | `test_continuous_risk_*` |
+| Account data stays unreadable until a login step-up is approved | `test_unverified_login_step_up_cannot_read_account_data` |
+| A replayed TOTP code is rejected | `test_totp_replay_rejected` |
+| Another user's device can't approve a challenge | `test_other_users_device_cannot_approve` |
+| Mutations without CSRF or from a foreign origin are rejected | `test_totp_without_csrf_header_rejected`, `test_foreign_origin_rejected_on_mutation` |
+| No score or feature name reaches a customer | `test_customer_message_reveals_no_scores_or_feature_names` |
 
-### 5.3 The product
-![Command Centre, blocked takeover](../screenshots/renaissance/refine-intelligence-block-desktop.jpg)
+### 6.3 Scenario Lab
 
-*Command Centre on a real blocked takeover (ravi, risk index 99.5).*
-- The Digital Twin orb visualises the backend's signals; it is not the model.
-- The bezel arc is the risk index, with the real step-up and block thresholds marked.
+The Lab drives 11 scripted scenarios through the real API, with simulated time that applies only to its own requests and data kept separate from genuine incidents. The first six were verified live:
 
-![Customer step-up focus](../screenshots/renaissance/bank-step-up-focus.jpg)
-
-*Customer view of a step-up.* Only the number to match is shown, never a score.
-
-![Judge Mode](../screenshots/renaissance/judge-mode-takeover.jpg)
-
-*Judge Mode replaying the takeover scenario live through the real Lab API.* Result: blocked at 99.1, protected balance unchanged.
-
-### 5.4 Scenario verification (live, real API)
-| # | Scenario | Expected | Verified result |
+| # | Scenario | Expected | What happened |
 |---|---|---|---|
 | 1 | Normal customer | ALLOW | Allowed; asha pays ₹2,500 |
-| 2 | Takeover despite password + TOTP | STEP-UP or BLOCK; balance unchanged | Blocked; session restricted; ravi's ₹96,200 unchanged |
-| 3 | Suspicious activity after a legitimate login | Login ALLOW, then intervention | Step-up and restriction; balance unchanged |
-| 4 | Genuine traveller | STEP-UP, approved, completes | Approved on the trusted device; ₹2,500 completes |
-| 5 | Customer on a new device | STEP-UP, approved | Approved; transfer completes |
-| 6 | Unusual but legitimate transfer | Friction grows with amount | Allowed at the ₹1,50,000 default |
+| 2 | Takeover despite password and TOTP | STEP-UP or BLOCK, balance unchanged | Blocked and restricted; ravi's ₹96,200 untouched |
+| 3 | Suspicious activity after a genuine login | Login allowed, then an intervention | Step-up, then restriction; balance unchanged |
+| 4 | Genuine traveller | STEP-UP, approved, completes | Approved on the trusted device; ₹2,500 goes through |
+| 5 | Customer on a new device | STEP-UP, approved | Approved; the transfer completes |
+| 6 | Unusual but genuine transfer | Friction grows with the amount | Allowed at the ₹1,50,000 default |
 
-## 6. Results
-### 6.1 Method
-The protocol was pre-registered before any v2 result was seen (`docs/EVALUATION_PROTOCOL.md`).
-- **Development data:** seed 2026; training days 0–60, validation days 60–75. Thresholds and the ML weight were chosen on validation data only.
-- **Freezing:** the model and every scoring file were frozen with SHA-256 hashes.
-- **Test data:** a **fresh** population (seed 9091; 240 customers) was generated, and its days 75–90 were scored **once**: 4,665 sessions, 367 takeovers in five families. Family D was held out of validation.
-- **Fairness of comparison:** all three approaches ran on identical sessions with one outcome function.
-- **Positive outcome:** an intervention (STEP-UP or BLOCK).
+Scenarios 7 to 11 cover Ghost Banking containment, escalation through evidence and reporting, a correlated fraud ring, evidence tamper detection and the live SOC.
 
-### 6.2 Detection
+![The Scenario Lab](../screenshots/app/console-11-scenario-lab.jpg)
+
+## 7. Results
+
+### 7.1 Method
+
+We wrote the protocol down before any v2 result was visible (`docs/evaluation/EVALUATION_PROTOCOL.md`). Development data used seed 2026, with days 0 to 60 for training and days 60 to 75 for validation; thresholds and the ML weight were chosen on validation data only. We then froze the model and every scoring file with SHA-256 hashes, generated a new population (seed 9091, 240 customers) and scored its days 75 to 90 once: 4,665 sessions and 367 takeovers across five attack families, one of which (family D) was kept out of validation. All three approaches ran on the same sessions with the same outcome function, and a "positive" means any intervention, STEP-UP or BLOCK.
+
+### 7.2 Detection
+
 ![Detection](figures/fig-detection.png)
 
 | Approach | TP | FP | FN | TN | Precision | Recall | F1 | Genuine sessions interrupted |
@@ -223,14 +203,15 @@ The protocol was pre-registered before any v2 result was seen (`docs/EVALUATION_
 | Static global rules | 281 | 1,230 | 86 | 3,068 | 18.6% | 76.6% | 29.9% | 28.6% |
 | **SecureSynth** | **335** | **222** | **32** | **4,076** | **60.1%** | **91.3%** | **72.5%** | **5.2%** |
 
-**Counting blocks only:**
+Counting blocks only:
 
-| Approach | Precision | Recall | Block FPR |
+| Approach | Precision | Recall | Block false-positive rate |
 |---|---|---|---|
 | Static global rules | 98.2% | 43.3% | 0.07% |
 | SecureSynth | 86.6% | 61.9% | 0.81% |
 
-### 6.3 Genuine-customer friction
+### 7.3 Friction for genuine customers
+
 ![Friction](figures/fig-friction.png)
 
 | Who was interrupted | Static rules | SecureSynth |
@@ -239,13 +220,14 @@ The protocol was pre-registered before any v2 result was seen (`docs/EVALUATION_
 | New-device sessions | 27.8% | 8.7% |
 | Genuine sessions blocked outright | 0.07% | 0.81% |
 
-### 6.4 By attack family
+### 7.4 By attack family
+
 ![Families](figures/fig-families.png)
 
-- **SecureSynth:** recall 100% on SIM swap (A), OTP relay (B) and remote access (E); 96.3% on the held-out low-and-slow family (D); **58.6%** on familiar-device hijack (C).
-- **Static rules:** 60.0% on family C.
+SecureSynth caught every takeover in the SIM swap (A), OTP relay (B) and remote access (E) families, and 96.3% of the held-out low-and-slow family (D). On familiar-device hijack (C) it caught 58.6%, slightly below static rules at 60.0%.
 
-### 6.5 Money (simulated)
+### 7.5 Money (simulated)
+
 ![Money](figures/fig-money.png)
 
 | Approach | Attempted | Prevented | Lost | Genuine value delayed |
@@ -254,71 +236,74 @@ The protocol was pre-registered before any v2 result was seen (`docs/EVALUATION_
 | Static global rules | ₹3.10 cr | ₹2.98 cr | ₹12.2 lakh | ₹2.89 cr |
 | SecureSynth | ₹3.10 cr | ₹2.96 cr | ₹14.6 lakh | ₹57.0 lakh |
 
-**How "prevented" splits.** BLOCK is permanent. Step-up prevention assumes the attacker cannot pass trusted-device verification.
+A BLOCK stops money for good. Money stopped by a step-up only counts as prevented if the attacker can't pass trusted-device verification.
 
 | Approach | Stopped by BLOCK | Stopped by step-up |
 |---|---|---|
 | SecureSynth | ₹2.61 cr | ₹34.8 lakh |
 | Static global rules | ₹2.38 cr | ₹59.9 lakh |
 
-SecureSynth also **blocks more genuine value outright**: ₹25.0 lakh against ₹0.3 lakh.
+SecureSynth also blocks more genuine money outright: ₹25.0 lakh against ₹0.3 lakh.
 
-### 6.6 Engineering evidence
+### 7.6 Engineering checks
+
 | Check | Result |
 |---|---|
-| Decision latency (in-process, one laptop, excludes network and database) | p50 5.48 ms · p95 5.61 ms |
-| Backend tests | `make test`: **89 passed** |
+| Decision latency (in process, one laptop, no network or database time) | p50 5.48 ms, p95 5.61 ms |
+| Backend tests | `make test`: 165 passed |
 | Frontend | `tsc -b` and `npm run build` pass |
-| Frozen manifest | 6/6 SHA-256 hashes match |
-| Synth Core logo (measured in Chrome on Apple M1) | 60 FPS at 1440×900@2x, 390×844@3x and 1920×1080@2x |
+| Frozen manifest | all 6 SHA-256 hashes match |
+| Fraud intel graph (production build, headless Chrome) | load, zoom, pan and node drag hold 60 fps with no long tasks |
 
-### 6.7 Honest reading
-- **The main gain is lower friction, not more money saved.** SecureSynth catches more takeovers while interrupting about one-fifth as many genuine sessions, and delaying about one-fifth as much genuine money.
-- **It prevents slightly less money in total than static rules.** It stops more attack money outright, and it blocks more genuine money outright.
-- **The block FPR drifted** from the 0.5% validation target to 0.81% on the fresh population.
-- **An earlier protocol (v1) was withdrawn.** It reported 100% recall because its synthetic attacks were too easy to separate. Its numbers are marked superseded.
+### 7.7 How to read these numbers
 
-## 7. Limitations
-- **Synthetic data only.** No real-world validation has been carried out. Real attacker behaviour is more varied.
-- **Familiar-device hijack** (family C, 58.6%) needs signals beyond a personal baseline, such as payee-risk or transaction-intent signals.
-- **Simulated signals:** location comes from a synthetic IP-to-city table; the trusted device is a web page with its own credential; device recognition is a cookie, which is a signal, not identity.
-- **Prototype infrastructure:** single-node SQLite, in-memory rate limits, local development servers without TLS.
-- **Ghost Banking** (a decoy ledger for blocked sessions) is designed but **not implemented**, and is disabled pending mentor approval.
-- **Fairness:** no demographic fairness audit, which synthetic personas cannot support.
+The main gain is less friction, not more money saved. SecureSynth catches more takeovers while interrupting about a fifth as many genuine sessions and delaying about a fifth as much genuine money. It prevents slightly less money in total than static rules, stops more attack money outright and also blocks more genuine money outright. The block false-positive rate drifted from the 0.5% validation target to 0.81% on the fresh population.
 
-The full list is in `docs/KNOWN_LIMITATIONS.md`.
+We also withdrew an earlier protocol (v1). It reported 100% recall because its synthetic attacks were too easy to tell apart, and its numbers are marked as superseded.
 
-## 8. Impact, scalability and next steps
-### 8.1 Practical banking applications
-- Step-up only when behaviour is unusual *for this customer*, instead of blanket OTPs.
-- Continuous checks after login for payee adds and transfers, where takeovers actually drain accounts.
-- An analyst console that explains every decision and supports baseline rollback.
+## 8. Limitations
 
-### 8.2 What production would require
-1. Validation on real, consented, labelled bank data, with fairness and drift monitoring, then recalibrated thresholds.
-2. A real trusted-device channel: a push app with secure-enclave keys and device attestation.
+- Everything is synthetic and nothing has been validated on real data. Real attackers behave in more varied ways than the ones we wrote.
+- Familiar-device hijack (family C, 58.6%) needs signals a personal baseline doesn't have, such as payee risk and transaction intent.
+- Location comes from a synthetic IP-to-city table, the trusted device is a web page with its own credential, and device recognition is a cookie: a signal, not an identity.
+- The evidence vault is tamper-evident, not immutable, and nothing here establishes legal admissibility.
+- Infrastructure is prototype grade: single-node SQLite, in-memory rate limits, development servers without TLS, and incident notifications that poll every 4 seconds rather than push.
+- Ghost Banking is implemented and tested but stays off until a mentor approves it.
+- We haven't done a demographic fairness audit, which synthetic personas can't support.
+
+The full list is in `docs/evaluation/KNOWN_LIMITATIONS.md`.
+
+## 9. Where this could go
+
+### 9.1 Uses in a bank
+
+Asking for step-up only when behaviour is unusual for this customer, instead of sending OTPs to everyone. Checking continuously after login, at payee creation and on transfers, which is where takeovers actually drain accounts. Giving analysts a console that explains each decision, keeps the evidence and lets them roll back a baseline.
+
+### 9.2 What production would need
+
+1. Validation on real, consented, labelled bank data, with fairness and drift monitoring and recalibrated thresholds.
+2. A real trusted-device channel: a push app with keys in the secure enclave and device attestation.
 3. Real signals: IP intelligence, device binding, payee and mule-account risk, and transaction intent.
-4. Production infrastructure:
-   - PostgreSQL;
-   - distributed rate limiting;
-   - TLS everywhere;
-   - KMS or HSM for keys;
-   - horizontal scaling of the stateless API and scorer.
-5. Security review, penetration testing and regulatory alignment.
+4. Production infrastructure: PostgreSQL, distributed rate limiting, TLS everywhere, keys in a KMS or HSM, and a stateless API and scorer that scale horizontally.
+5. Evidence-ledger checkpoints anchored outside the system, retention rules and legal holds.
+6. A security review, penetration testing and regulatory alignment.
 
-### 8.3 Takeaway
-A correct password and a correct OTP prove possession of credentials, not presence of the customer. SecureSynth keeps checking after sign-in, explains every decision, and asks the real customer when it is unsure. On our synthetic evaluation, that caught more takeovers than static rules while interrupting far fewer genuine customers.
+### 9.3 Takeaway
 
-## Appendix A — Reproducibility
+A correct password and a correct OTP show that someone has the credentials. They don't show that the customer is there. SecureSynth keeps checking after sign-in, explains each decision, asks the real customer when it isn't sure, and gives analysts what they need once something goes wrong. On our synthetic evaluation that caught more takeovers than static rules while interrupting far fewer genuine customers, and we've tried to be clear about where it falls short.
+
+## Appendix A: reproducing the results
+
 ```bash
 make test
 ```
+
 ```bash
 cd frontend && npx tsc -b && npm run build
 ```
 
-- **Evaluation:** `make eval` reproduces the report, but only with unchanged frozen files.
-- **Charts:** `docs/report/tools/charts.py` regenerates every chart in this report directly from `backend/artifacts/eval_report.json`.
+`make eval` reproduces the evaluation, but only while the frozen files are unchanged. `docs/report/tools/charts.py` redraws every chart in this report from `backend/artifacts/eval_report.json`.
 
-## Appendix B — AI assistance
-The team used Claude Code (Anthropic) to help write code, tests and documentation. This was permitted, as confirmed with the organisers. Design decisions, review and the demonstration are the team's. The product itself calls no AI service.
+## Appendix B: AI assistance
+
+We used Claude Code (Anthropic) to help write code, tests and documentation, which the organisers confirmed was allowed. The design decisions, the review and the demonstration are the team's own. The product doesn't call any AI service unless the optional summary rewrite is explicitly configured.

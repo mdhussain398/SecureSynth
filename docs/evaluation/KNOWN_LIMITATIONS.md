@@ -26,10 +26,10 @@ This is a single honest list of what SecureSynth does not do or has not proven. 
   - SQLite (WAL);
   - in-memory rate limits, reset on restart;
   - local dev servers without TLS.
-- **Restriction is per session.** A blocked attacker can sign in again, but every new login is re-assessed. A restricted genuine customer is recovered by an analyst decision (`docs/INCIDENT_RECOVERY.md`), never automatically. Incident notifications are near-real-time (4 s polling), not push.
+- **Restriction is per session.** A blocked attacker can sign in again, but every new login is re-assessed. A restricted genuine customer is recovered by an analyst decision (`docs/features/INCIDENT_RECOVERY.md`), never automatically. Incident notifications are near-real-time (4 s polling), not push.
 
 ## Not implemented
-- **Ghost Banking** is implemented and tested but **off by default** (`GHOST_BANKING_ENABLED=false`). Enabling it needs mentor approval, because it deceives the session holder (rule book §12). Its limitations are listed in `docs/GHOST_BANKING.md`.
+- **Ghost Banking** is implemented and tested but **off by default** (`GHOST_BANKING_ENABLED=false`). Enabling it needs mentor approval, because it deceives the session holder (rule book §12). Its limitations are listed in `docs/features/GHOST_BANKING.md`.
 - **Lab demo-credentials endpoint:** listed in the old contract, never built.
 - **Production concerns:** KYC, real payment rails, regulatory compliance, HSM or KMS key management, horizontal scaling and monitoring are out of scope.
 
@@ -42,7 +42,7 @@ This is a single honest list of what SecureSynth does not do or has not proven. 
 - **Investigation summaries are deterministic by default.** The optional LLM path needs the official SDK and approval, and is untested against a live API.
 - **Official cybercrime reporting is a manual handoff only.** There is no public portal API, and it is disabled by default.
 - **Lab analyst steps** run through the service layer, so the fresh-TOTP prompt is not exercised there (it is enforced on the API).
-- **See** `docs/SECURESYNTH_3.md` and `SECURESYNTH_3_HANDOFF.md`.
+- **See** `docs/architecture/SECURESYNTH_3.md` and `docs/handoffs/SECURESYNTH_3_HANDOFF.md`.
 
 ## Frontend
 - **The Synth Core logo holds 60 FPS on one machine only:** Apple M1 in Chrome, at three viewport sizes. Projectors, Intel GPUs and Safari were not measured.

@@ -7,7 +7,7 @@ Tick an item only after doing it on the presentation machine. Items marked **TEA
 - [x] `make test`: 89 passed (Mac 2, 2026-11-25).
 - [x] `cd frontend && npx tsc -b && npm run build`: passes.
 - [x] Frozen manifest: 6/6 hashes match, model `iforest-v1-956f432a`. Never run `make train` on a machine whose artifacts came from Mac 1.
-- [x] All six Scenario Lab scenarios give the outcomes in `docs/DEMO.md` (real API, Mac 2).
+- [x] All six Scenario Lab scenarios give the outcomes in `docs/guides/DEMO.md` (real API, Mac 2).
 - [ ] Judge Mode: R runs the scenario, Esc exits; full screen works in the presentation browser.
 - [x] `/brand` shows the Synth Core logo. `?gl=0` shows the SVG fallback.
 - [ ] Offline: turn Wi-Fi off and repeat the demo; no request leaves `localhost`.
@@ -15,9 +15,9 @@ Tick an item only after doing it on the presentation machine. Items marked **TEA
 - [x] Secrets scan clean. No `.env`, databases, `backend/artifacts/`, credentials or official competition files are tracked.
 
 ## Documents
-- [ ] `README.md`, `docs/ARCHITECTURE.md`, `docs/API.md`, `docs/EVALUATION.md`, `docs/THREAT_MODEL.md`, `docs/KNOWN_LIMITATIONS.md`, `docs/DEMO.md` and `docs/RESOURCES.md` are current.
+- [ ] `README.md`, `docs/architecture/ARCHITECTURE.md`, `docs/architecture/API.md`, `docs/evaluation/EVALUATION.md`, `docs/architecture/THREAT_MODEL.md`, `docs/evaluation/KNOWN_LIMITATIONS.md`, `docs/guides/DEMO.md` and `docs/project/RESOURCES.md` are current.
 - [x] Technical report: `docs/report/PROJECT_REPORT.md`, `.docx` and `.pdf`.
-- [ ] **TEAM:** `docs/TEAM.md` has real names, roles and contributions for all four members.
+- [ ] **TEAM:** `docs/project/TEAM.md` has real names, roles and contributions for all four members.
 - [ ] **TEAM:** mentor and institution details filled in wherever the report or slides say TBD.
 
 ## Presentation

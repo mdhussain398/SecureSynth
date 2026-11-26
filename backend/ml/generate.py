@@ -9,7 +9,7 @@ ATO families:
   C  mid-session hijack: login looks normal (recognised browser, home city) then payee + large transfer
   D  low-and-slow mule (HELD OUT: test split only)
   E  remote-access takeover on the victim's own device
-v2 details and rationale: docs/EVALUATION_PROTOCOL.md
+v2 details and rationale: docs/evaluation/EVALUATION_PROTOCOL.md
 """
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -72,7 +72,7 @@ def _amount(rng, median_rupees, scale=1.0):
 
 
 def _customer(rng, u, days):
-    """Legitimate behaviour v2 (see docs/EVALUATION_PROTOCOL.md): overlapping, drifting, sometimes messy."""
+    """Legitimate behaviour v2 (see docs/evaluation/EVALUATION_PROTOCOL.md): overlapping, drifting, sometimes messy."""
     centres, sd, rate, med, p_tx, p_trip = PERSONAS[u["persona"]]
     centres = list(centres)
     uid = u["user_id"]
@@ -146,7 +146,7 @@ def _session(uid, n, ts, events, label, family, split, kind):
 
 
 def _attack(rng, u, uid, n, day, fam, med, devices, bens, split, centres):
-    """Attack families v2 (see docs/EVALUATION_PROTOCOL.md)."""
+    """Attack families v2 (see docs/evaluation/EVALUATION_PROTOCOL.md)."""
     victim_hour = lambda: _hour(rng, centres, PERSONAS[u["persona"]][1])
     new_dev = f"atk-{uid}-{n}"
     mule = f"mule-{uid}-{n}"

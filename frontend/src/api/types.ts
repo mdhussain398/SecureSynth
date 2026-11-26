@@ -1,6 +1,6 @@
 /**
  * SecureSynth shared API contract — FROZEN v1 (2026-11-25).
- * Source of truth together with docs/api-contract.md.
+ * Source of truth together with docs/architecture/API_CONTRACT.md.
  * Backend Pydantic models in backend/app/schemas.py must match these shapes exactly.
  * Changes: announce to both developers first, bump CONTRACT_VERSION, update both sides in one merge.
  * All money is integer paise (INR × 100). All timestamps are ISO-8601 strings (simulated clock).

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12, FastAPI, SQLAlchemy 2, Pydantic 2, PyOTP, argon2-cffi, cryptography (Fernet), scikit-learn, NumPy, Pandas (offline scripts only), pytest · React + TS + Vite, Tailwind v4, TanStack Query, Recharts, Lucide.
 
-**Spec:** `docs/superpowers/specs/2026-11-25-securesynth-architecture-design.md` (amendments A1–A10 binding) · Contract: `docs/api-contract.md`, `frontend/src/api/types.ts`.
+**Spec:** `docs/project/planning/specs/2026-11-25-securesynth-architecture-design.md` (amendments A1–A10 binding) · Contract: `docs/architecture/API_CONTRACT.md`, `frontend/src/api/types.ts`.
 
 ## Global Constraints
 - Money = integer paise; timestamps from `app.services.clock.now()` only — never `datetime.now()` in app code.
@@ -71,7 +71,7 @@
 **Files:** `backend/app/ghost/{models,service,router}.py`, test `test_ghost_isolation.py` — six isolation tests from spec §9 with flag forced on in test.
 
 ### Task 10 (B): Evaluation
-**Files:** `backend/ml/evaluate.py` → `backend/artifacts/eval_report.json` + `docs/EVALUATION.md`; shared `outcome()` per A8; three approaches + ablations on identical test sessions.
+**Files:** `backend/ml/evaluate.py` → `backend/artifacts/eval_report.json` + `docs/evaluation/EVALUATION.md`; shared `outcome()` per A8; three approaches + ablations on identical test sessions.
 - [ ] Test: report has all three approaches and every metric key; tuning code never reads test split.
 
 ### Frontend tasks (A) — see Developer A prompt; order: client+mocks → portal auth flow → bank pages → device → SOC session investigation → lab → evaluation → baseline → polish.

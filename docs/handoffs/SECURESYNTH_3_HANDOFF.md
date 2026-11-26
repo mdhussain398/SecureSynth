@@ -140,7 +140,7 @@ Merges authentication, risk, audit, Ghost Banking, evidence-ledger and report ev
   - `frontend/src/api/investigation.ts`
   - `frontend/src/features/investigation/{ConfirmDialog,SocDashboard,FraudIntel,InvestigationPage,ReportsPage}.tsx`
   - `frontend/src/features/bank/PhotoVerification.tsx`
-- **Docs:** `docs/GHOST_BANKING.md`, `SECURESYNTH_3_HANDOFF.md` (this file)
+- **Docs:** `docs/features/GHOST_BANKING.md`, `docs/handoffs/SECURESYNTH_3_HANDOFF.md` (this file)
 
 ### Modified
 - **Backend app:** `backend/app/{config,state,models,main}.py`
@@ -214,7 +214,7 @@ Run in the desktop app's browser pane, with the analyst at `127.0.0.1:5174` and 
 - **Fresh-TOTP friction:** Lab scenarios drive analyst steps through the service layer, so the fresh-TOTP step isn't exercised there. It is enforced on the API and tested.
 - **Display-only User-Agent parsing:** the client can spoof it, and the UI says so.
 - **Notification delay:** not measurable server-side (polling every 4 s).
-- **Session-mode ghost limitation:** containment mid-session changes the displayed balance (see `docs/GHOST_BANKING.md`).
+- **Session-mode ghost limitation:** containment mid-session changes the displayed balance (see `docs/features/GHOST_BANKING.md`).
 - **Lint:** warnings only.
 
 ## 6. How to continue
@@ -357,7 +357,7 @@ cd .. && SS_GHOST_BANKING_ENABLED=true make dev-backend     # second terminal: m
 - Landing and Intelligence checked visually, desktop and phone.
 - `tsc -b` and `npm run build` pass; the build contains no font files.
 
-**Documentation note:** `docs/RESOURCES.md` still lists Archivo and Geist and should be updated before submission.
+**Documentation note:** `docs/project/RESOURCES.md` still lists Archivo and Geist and should be updated before submission.
 
 ## 10. HIG detail and polish pass (Mac 1, 2026-11-26; uncommitted)
 
@@ -430,6 +430,6 @@ cd .. && SS_GHOST_BANKING_ENABLED=true make dev-backend     # second terminal: m
 - **Kept:** genuine evidence (21 items, including the photo), the genuine report `RPT-E25A21C9` with `DEMO-CCR-2026-000002`, and the Ghost Banking runtime setting (`on`, v3).
 - **Purged:** Lab evidence, Lab reports and Lab demo complaints.
 
-**Docs:** `docs/RESOURCES.md`, `README.md` and `docs/FRONTEND_HANDOFF.md` now name the Apple system font instead of Archivo and Geist.
+**Docs:** `docs/project/RESOURCES.md`, `README.md` and `docs/handoffs/FRONTEND_HANDOFF.md` now name the Apple system font instead of Archivo and Geist.
 
 **Note for restarts:** `make dev-backend` without `SS_GHOST_BANKING_ENABLED=true` turns the gate off again, so blocked sessions are restricted instead of contained.

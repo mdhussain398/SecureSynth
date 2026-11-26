@@ -1,0 +1,187 @@
+{
+  "deck": "SecureSynth",
+  "format": "16:9, 13.33 x 7.5 in",
+  "minutes": 10,
+  "slides": [
+    {
+      "n": 1,
+      "id": "title",
+      "title": "SecureSynth",
+      "message": "Possession isn't presence.",
+      "layout_hint": "dark-hero",
+      "media": {
+        "image": "docs/screenshots/app/public-01-landing.jpg",
+        "diagram": null,
+        "video": null
+      }
+    },
+    {
+      "n": 2,
+      "id": "gap",
+      "title": "A correct OTP proves possession, not presence",
+      "message": "Phishing relay, SIM swap and session hijack all arrive with valid credentials. Password + OTP stopped 0 of 367 takeovers.",
+      "layout_hint": "three-cards-plus-stat",
+      "media": {
+        "image": null,
+        "diagram": "three attack cards with icons",
+        "video": null
+      }
+    },
+    {
+      "n": 3,
+      "id": "rules",
+      "title": "Static rules challenge the wrong people",
+      "message": "Rules caught 76.6% of takeovers but interrupted 98.6% of travellers and 28.6% of all genuine sessions.",
+      "layout_hint": "big-stats",
+      "media": {
+        "image": null,
+        "diagram": null,
+        "video": null
+      }
+    },
+    {
+      "n": 4,
+      "id": "loop",
+      "title": "Keep asking after sign-in",
+      "message": "Login, payee and every transfer are scored; the backend enforces ALLOW, STEP-UP or BLOCK; step-up goes to a separate trusted device.",
+      "layout_hint": "process-diagram",
+      "media": {
+        "image": null,
+        "diagram": "four-step decision loop with three outcomes",
+        "video": null
+      }
+    },
+    {
+      "n": 5,
+      "id": "personal",
+      "title": "Normal is personal",
+      "message": "15 deviations from this customer's own baseline, one shared Isolation Forest, written policy points, four explanation panels.",
+      "layout_hint": "screenshot-right",
+      "media": {
+        "image": "docs/screenshots/app/console-01-intelligence.jpg",
+        "diagram": null,
+        "video": null
+      }
+    },
+    {
+      "n": 6,
+      "id": "learning",
+      "title": "It learns without being poisoned",
+      "message": "New behaviour waits in a candidate profile until the customer verifies it, then two clean sessions and 24 hours. Every change can be rolled back.",
+      "layout_hint": "two-profile-diagram",
+      "media": {
+        "image": null,
+        "diagram": "candidate to trusted promotion",
+        "video": null
+      }
+    },
+    {
+      "n": 7,
+      "id": "result",
+      "title": "More caught, far fewer bothered",
+      "message": "91.3% recall at 5.2% genuine interruption, against 76.6% at 28.6% for static rules.",
+      "layout_hint": "native-chart",
+      "media": {
+        "image": null,
+        "diagram": "native grouped bar chart",
+        "video": null
+      }
+    },
+    {
+      "n": 8,
+      "id": "honest",
+      "title": "Where it doesn't win",
+      "message": "It saves about the same money as static rules, blocks more genuine money outright, and catches 58.6% of familiar-device hijacks.",
+      "layout_hint": "three-honest-cards",
+      "media": {
+        "image": null,
+        "diagram": null,
+        "video": null
+      }
+    },
+    {
+      "n": 9,
+      "id": "after",
+      "title": "A block is where the analyst's work starts",
+      "message": "SecureSynth 3.0 follows the incident: contain, collect evidence, investigate, report, recover.",
+      "layout_hint": "lifecycle-plus-screenshot",
+      "media": {
+        "image": "docs/screenshots/app/console-04-incidents.jpg",
+        "diagram": "five-stage strip",
+        "video": null
+      }
+    },
+    {
+      "n": 10,
+      "id": "evidence",
+      "title": "Evidence you can check",
+      "message": "Encrypted files, a SHA-256 hash chain, tamper alerts that never auto-repair. Tamper-evident, not immutable.",
+      "layout_hint": "screenshot-left",
+      "media": {
+        "image": "docs/screenshots/app/console-07-evidence.jpg",
+        "diagram": "hash chain",
+        "video": null
+      }
+    },
+    {
+      "n": 11,
+      "id": "intel",
+      "title": "Leads, not proof",
+      "message": "Incidents linked by shared IP, device or payee, each link graded and explained. Nothing acts on its own.",
+      "layout_hint": "dark-full-screenshot",
+      "media": {
+        "image": "docs/screenshots/app/console-05-fraud-intel-dark.jpg",
+        "diagram": null,
+        "video": null
+      }
+    },
+    {
+      "n": 12,
+      "id": "demo",
+      "title": "Live: a takeover with the right password and OTP",
+      "message": "Judge mode runs the attack through the real API. Blocked at 99.1; the protected balance doesn't move.",
+      "layout_hint": "demo",
+      "media": {
+        "image": "docs/screenshots/presentation/judge-mode-takeover-blocked.jpg",
+        "diagram": null,
+        "video": "optional: docs/presentation/FALLBACK_STORYBOARD.md recording if the live demo fails"
+      }
+    },
+    {
+      "n": 13,
+      "id": "built",
+      "title": "Built to be checked",
+      "message": "165 tests, 5.61 ms p95 decisions, a frozen SHA-256 manifest, fully offline.",
+      "layout_hint": "stat-tiles",
+      "media": {
+        "image": null,
+        "diagram": null,
+        "video": null
+      }
+    },
+    {
+      "n": 14,
+      "id": "next",
+      "title": "Not production yet, and here's the gap",
+      "message": "Real consented data, a real trusted-device app, payee-risk signals, production infrastructure, external ledger anchoring.",
+      "layout_hint": "two-columns",
+      "media": {
+        "image": null,
+        "diagram": null,
+        "video": null
+      }
+    },
+    {
+      "n": 15,
+      "id": "close",
+      "title": "Possession isn't presence",
+      "message": "SecureSynth keeps checking, explains itself, and asks the real customer when it's unsure.",
+      "layout_hint": "dark-close",
+      "media": {
+        "image": null,
+        "diagram": null,
+        "video": null
+      }
+    }
+  ]
+}

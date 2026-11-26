@@ -83,7 +83,7 @@ make test
 
 ## 4. Invariants — do NOT break during the redesign
 1. **Frontend is presentation only.** All authorization and enforcement stay in the backend. No new backend logic for UI convenience without tests.
-2. **API contract:** `docs/api-contract.md` + `frontend/src/api/types.ts` (**v1.2.0**) are the source of truth. Change them only additively and in step with `backend/app/schemas.py`, then bump `CONTRACT_VERSION`.
+2. **API contract:** `docs/architecture/API_CONTRACT.md` + `frontend/src/api/types.ts` (**v1.2.0**) are the source of truth. Change them only additively and in step with `backend/app/schemas.py`, then bump `CONTRACT_VERSION`.
 3. **Customer screens never show** scores, thresholds, feature names or counterfactuals.
 4. **The risk index is "a rarity percentile, not a probability".** Keep that wording wherever scores appear.
 5. **Decision pills always carry text** (never colour only).
@@ -96,11 +96,11 @@ make test
 ## 5. Frozen ML — do NOT retrain or re-tune
 - **Model** `iforest-v1-956f432a`; W_ml 0.8; step-up ≥ 77.73; block ≥ 89.1.
 - **Frozen files** (SHA-256 in `backend/artifacts/frozen_manifest.json`): `model.joblib`, `app/risk/{features,policy,model}.py`, `ml/{generate,train}.py`. `make eval` refuses to run if any of them changes.
-- **Protocol v2** (`docs/EVALUATION_PROTOCOL.md`): committed before any results.
+- **Protocol v2** (`docs/evaluation/EVALUATION_PROTOCOL.md`): committed before any results.
   - Dev data seed 2026 (train days 0–60, validation 60–75); tuning on validation only.
   - **Final test = fresh seed 9091, scored once.**
   - v1 (100% recall) was withdrawn because its attacks were too easy to separate.
-- **Final numbers** (`docs/EVALUATION.md`; 4,665 sessions, 367 takeovers):
+- **Final numbers** (`docs/evaluation/EVALUATION.md`; 4,665 sessions, 367 takeovers):
 
   | | Static rules | SecureSynth |
   |---|---|---|
@@ -141,7 +141,7 @@ AVISHKAR'26, Problem #24. Team The_Terminators, **AV26-50F33FD4DE**, domain AI i
 
 **Rules that bite:**
 - Build only during the event; commit history is checked.
-- List every external resource with its licence (done: `docs/RESOURCES.md`).
+- List every external resource with its licence (done: `docs/project/RESOURCES.md`).
 - No real data or money.
 - No compliance claims.
 - The AI component must be real and evaluated, with limitations stated.
@@ -149,15 +149,15 @@ AVISHKAR'26, Problem #24. Team The_Terminators, **AV26-50F33FD4DE**, domain AI i
 - Submission at code freeze (template schedule Day 2 11:00 — **confirm with the organisers**).
 
 **Done:**
-- README (with mermaid architecture), `docs/ARCHITECTURE.md`, `THREAT_MODEL.md`, `RESOURCES.md`, `EVALUATION*.md`, `DEMO.md` (script, offline checklist, troubleshooting), `api-contract.md`.
-- Screenshots in `docs/screenshots/` (`real-*` = real backend).
+- README (with mermaid architecture), `docs/architecture/ARCHITECTURE.md`, `THREAT_MODEL.md`, `RESOURCES.md`, `EVALUATION*.md`, `DEMO.md` (script, offline checklist, troubleshooting), `api-contract.md`.
+- Screenshots in `docs/screenshots/archive/2026-11-25/` (`real-*` = real backend).
 
 **Remaining:**
 1. Frontend redesign (next phase), within the invariants in §4.
-2. `docs/TEAM.md`: the team must add real names and roles.
+2. `docs/project/TEAM.md`: the team must add real names and roles.
 3. Slides in the official AVISHKAR'26 template (Team ID, name, domain, problem statement).
 4. 2-minute fallback demo video.
-5. Two timed rehearsals (`docs/DEMO.md`); a backup laptop.
+5. Two timed rehearsals (`docs/guides/DEMO.md`); a backup laptop.
 6. Review + merge PR #1 before the freeze; push all later work.
 7. A mentor decision on Ghost Banking.
 

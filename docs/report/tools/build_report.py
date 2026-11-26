@@ -2,7 +2,7 @@
 
 Needs `markdown` and `python-docx` (documentation tooling only, not product dependencies):
     python docs/report/tools/build_report.py docs/report/PROJECT_REPORT.md
-The PDF is printed from the HTML by headless Chrome (see docs/MAC2_HANDOFF.md).
+The PDF is printed from the HTML by headless Chrome (see docs/handoffs/MAC2_HANDOFF.md).
 """
 import re
 import sys
@@ -22,19 +22,19 @@ ELECTRIC = RGBColor(0x00, 0x47, 0xCC)
 
 CSS = """
 @page { size: A4; margin: 18mm 17mm 20mm; }
-body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #101828; font-size: 10.2pt; line-height: 1.5; }
-h1 { font-size: 22pt; line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 6pt; }
-h2 { font-size: 14pt; margin: 20pt 0 6pt; padding-top: 8pt; border-top: 1px solid #E3E7ED; break-after: avoid; }
+body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #101828; font-size: 10.2pt; line-height: 1.5; }
+h1 { font-family: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif; font-size: 24pt; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 6pt; }
+h2 { font-family: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif; font-size: 15pt; font-weight: 700; letter-spacing: -0.01em; margin: 22pt 0 6pt; break-after: avoid; }
 h3 { font-size: 11.5pt; margin: 14pt 0 4pt; break-after: avoid; }
 p { margin: 0 0 7pt; }
 table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 9pt; break-inside: avoid; }
 th, td { border-bottom: 1px solid #E3E7ED; padding: 4pt 6pt; text-align: left; vertical-align: top; }
 th { color: #4A5466; font-weight: 600; border-bottom: 1.5px solid #C0C7D1; }
-blockquote { margin: 8pt 0; padding: 8pt 12pt; background: #F5F7FA; border-left: 3px solid #005BFF; color: #344054; }
+blockquote { margin: 8pt 0; padding: 9pt 12pt; background: #F5F7FA; border-radius: 10px; color: #344054; }
 blockquote p { margin: 0; }
 code { font-family: Menlo, monospace; font-size: 8.6pt; background: #F2F4F7; padding: 0 3px; border-radius: 3px; }
 pre { background: #F5F7FA; padding: 8pt; border-radius: 6px; font-size: 8.6pt; }
-img { max-width: 100%; display: block; margin: 8pt auto 2pt; break-inside: avoid; }
+img { border-radius: 8px;  max-width: 100%; display: block; margin: 8pt auto 2pt; break-inside: avoid; }
 p:has(> img) + p > em:only-child { color: #4A5466; }
 em { color: #344054; }
 hr { border: 0; border-top: 1px solid #E3E7ED; margin: 12pt 0; }

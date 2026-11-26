@@ -41,7 +41,7 @@ def feature_rows(ds: generate.Dataset) -> Rows:
     for s in ds.sessions:  # chronological
         uid = s["user_id"]
         # min_device_sessions=1 mirrors the product: a device approved via independent verification
-        # is provisionally recognised from then on (docs/EVALUATION_PROTOCOL.md, product-consistency assumption)
+        # is provisionally recognised from then on (docs/evaluation/EVALUATION_PROTOCOL.md, product-consistency assumption)
         base = F.build_baseline(trusted_hist[uid], users[uid]["home_city"], min_device_sessions=1)
         recent = raw_hist[uid][-60:]
         sess_events = []

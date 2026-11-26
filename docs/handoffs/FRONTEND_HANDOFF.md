@@ -5,7 +5,7 @@
 - Push only to this branch.
 - Never merge into `feat/mvp-checkpoint` or `main` without explicit approval.
 
-Read `docs/team-handoff.md` first (MVP invariants, frozen ML). Everything there still applies.
+Read `docs/handoffs/TEAM_HANDOFF.md` first (MVP invariants, frozen ML). Everything there still applies.
 
 ## Resume on another machine
 ```bash
@@ -47,7 +47,7 @@ make dev-frontend
 
   Amber and red are used only for security states.
 - **Type:**
-  - *Superseded 2026-11-26:* Apple's system font (SF Pro through `-apple-system`), in the Large Title style (bold 700, tracking −0.025em, line height 1.07). Archivo and Geist were removed. See `SECURESYNTH_3_HANDOFF.md` §9.
+  - *Superseded 2026-11-26:* Apple's system font (SF Pro through `-apple-system`), in the Large Title style (bold 700, tracking −0.025em, line height 1.07). Archivo and Geist were removed. See `docs/handoffs/SECURESYNTH_3_HANDOFF.md` §9.
 - **Glass:** only on floating navigation and focused overlays (`.rn-glass`), never as a generic card.
 - **Motion:**
   - one orchestrated entrance per page;
@@ -69,7 +69,7 @@ make dev-frontend
 
 - No drei and no GSAP, to avoid overlapping libraries.
 - No runtime network assets: the environment map is `RoomEnvironment` (procedural) and the core glow is a canvas texture.
-- **TODO:** add these to `docs/RESOURCES.md` once approved.
+- **TODO:** add these to `docs/project/RESOURCES.md` once approved.
 
 ## Component architecture (`frontend/src/renaissance/`)
 | File | Role |
@@ -127,7 +127,7 @@ make dev-frontend
 | Console | no JS errors (only HTTP status lines from earlier sessions; a three `Clock` deprecation warning from inside r3f) |
 | Reduced motion | **code-level only**; the browser pane cannot emulate `prefers-reduced-motion`. Paths: `useReducedMotion` disables entrances, the cursor light and number tweening; the orb uses `frameloop="demand"` with no idle rotation, pulse or dash animation; the CSS rule cuts transitions to 1 ms. **Re-check on a real browser with OS reduced motion enabled.** |
 
-Screenshots: `docs/screenshots/renaissance/` (landing desktop and mobile; intelligence BLOCK, ALLOW, mobile and no-WebGL).
+Screenshots: `docs/screenshots/archive/2026-11-25/renaissance/` (landing desktop and mobile; intelligence BLOCK, ALLOW, mobile and no-WebGL).
 
 Known issues:
 - The three `Clock` deprecation warning comes from r3f internals.
@@ -169,7 +169,7 @@ The user approved the direction but asked for a refinement pass first. What chan
   - Inclusions sit at 0.72 of the radius, because points near the glass edge were distorted by refraction.
   - The stage glow is tinted by the decision. Labels were shortened to fit the ring.
 
-Screenshots: `docs/screenshots/renaissance/refine-*.jpg`: landing desktop and mobile; Command Centre BLOCK, ALLOW, mobile and no-WebGL.
+Screenshots: `docs/screenshots/archive/2026-11-25/renaissance/refine-*.jpg`: landing desktop and mobile; Command Centre BLOCK, ALLOW, mobile and no-WebGL.
 
 **Refinement verification (actual, 2026-11-25):**
 
@@ -229,7 +229,7 @@ Screenshots: `docs/screenshots/renaissance/refine-*.jpg`: landing desktop and mo
 
 **Not verified:** reduced motion with the real OS setting on.
 
-Screenshots: `docs/screenshots/renaissance/` (`judge-mode-takeover`, `evaluation-desktop`, `sessions-desktop`, `bank-overview-desktop`, `bank-overview-mobile`, `bank-step-up-focus`, plus the earlier `refine-*`).
+Screenshots: `docs/screenshots/archive/2026-11-25/renaissance/` (`judge-mode-takeover`, `evaluation-desktop`, `sessions-desktop`, `bank-overview-desktop`, `bank-overview-mobile`, `bank-step-up-focus`, plus the earlier `refine-*`).
 
 ## Remaining work
 1. Reset the demo data, then check reduced motion with the real OS setting on.
@@ -253,14 +253,14 @@ All of this sits within the `team-handoff.md` §4 invariants: frontend only, con
 | `make test` | 89 passed |
 | `npm run build` | OK |
 | Frozen manifest | 6/6 hashes match, `iforest-v1-956f432a` |
-| All six Lab scenarios | Outcomes match their expected text (see `docs/DEMO.md`) |
+| All six Lab scenarios | Outcomes match their expected text (see `docs/guides/DEMO.md`) |
 | Judge Mode | Steps reveal one by one; R runs; Esc exits to Intelligence |
 | Full-screen button | Did not engage inside the desktop app's browser pane (Fullscreen API likely blocked there). Check it in Chrome; F11 works as a fallback. |
 | Reset demo | Ran afterwards (seed `518023119e69b9c4`); only the analyst session remains |
 
 ## Later fixes and continuation (2026-11-25)
 - `c5f312d`: the landing headline size is now capped by viewport height (`min(10.5vw,15vh)`), so it no longer overlaps the header in short or narrow Safari windows.
-- Cross-machine continuation and the rest of Master Prompt #05 (Synth Core logo, documentation, presentation, freeze): see `docs/MAC2_HANDOFF.md`.
+- Cross-machine continuation and the rest of Master Prompt #05 (Synth Core logo, documentation, presentation, freeze): see `docs/handoffs/MAC2_HANDOFF.md`.
 
 ## Synth Core logo (Master Prompt #05, Phase 1, 2026-11-25)
 The new brand system lives in `frontend/src/brand/`:
@@ -268,7 +268,7 @@ The new brand system lives in `frontend/src/brand/`:
 - lazy R3F glass hero at `/brand`;
 - static SVG and PNG exports and favicons in `frontend/public/`.
 
-It replaces `BrandMark` and the inline landing and Intelligence marks; the behavioural orb is unchanged. Measured FPS, fixes and details: `docs/MAC2_HANDOFF.md` §12.
+It replaces `BrandMark` and the inline landing and Intelligence marks; the behavioural orb is unchanged. Measured FPS, fixes and details: `docs/handoffs/MAC2_HANDOFF.md` §12.
 
 ## Final freeze (Master Prompt #05, Phase 4, 2026-11-25)
 **Verified:**
@@ -278,4 +278,4 @@ It replaces `BrandMark` and the inline landing and Intelligence marks; the behav
 - Judge Mode: works in Chrome.
 - Logo: 60 FPS.
 
-The headless-only Judge Mode "stall" is a frame-production artifact; the evidence is in `docs/MAC2_HANDOFF.md` §12 › Phase 4.
+The headless-only Judge Mode "stall" is a frame-production artifact; the evidence is in `docs/handoffs/MAC2_HANDOFF.md` §12 › Phase 4.

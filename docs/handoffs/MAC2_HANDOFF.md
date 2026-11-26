@@ -26,7 +26,7 @@ Read this first on a fresh machine or in a fresh Claude session. It is self-cont
 | Demo data | Reset afterwards |
 
 - **Ghost Banking:** disabled and unimplemented (needs mentor approval).
-- **Detailed history:** `docs/FRONTEND_HANDOFF.md` (frontend), `docs/team-handoff.md` (MVP invariants, frozen ML), `docs/progress-log.md`.
+- **Detailed history:** `docs/handoffs/FRONTEND_HANDOFF.md` (frontend), `docs/handoffs/TEAM_HANDOFF.md` (MVP invariants, frozen ML), `docs/project/PROGRESS_LOG.md`.
 
 **Master Prompt #05:** all four phases are done on Mac 2 (logo, documentation, presentation, freeze); see §12. Only the TEAM items in §12 › *Phase 4* remain.
 
@@ -117,7 +117,7 @@ Open http://localhost:5173. The API listens on 127.0.0.1:8000 and Vite proxies `
 | 5 | Customer on a new device | STEP_UP, approved, then ALLOW | Step-up, approved, −₹2,500 |
 | 6 | Unusual but legitimate transfer | Friction grows with the amount | Allowed at the ₹1,50,000 default |
 
-**Judge order:** 1 → 2 → 3 → 4, then the Evaluation page (`docs/DEMO.md`).
+**Judge order:** 1 → 2 → 3 → 4, then the Evaluation page (`docs/guides/DEMO.md`).
 
 ## 9. Remaining execution plan (Master Prompt #05)
 Work in small phases. After each one: update this file, commit, and push to `feat/frontend-renaissance`.
@@ -171,7 +171,7 @@ Work in small phases. After each one: update this file, commit, and push to `fea
 - **Open team items:** real names in `TEAM.md`, the official slides template, the fallback video, rehearsals, PR #1 review, and the mentor decision on Ghost Banking.
 
 ## 11. Continuation prompt for a fresh Claude session on Mac 2
-> You are continuing SecureSynth (AVISHKAR'26, problem 24) on branch `feat/frontend-renaissance` of https://github.com/mdhussain398/SecureSynth. Read `docs/MAC2_HANDOFF.md`, `docs/FRONTEND_HANDOFF.md` and `docs/team-handoff.md` first, then run the verification in §7 and report the results. Then continue Master Prompt #05 from the first unfinished phase in §9: Synth Core logo, then documentation and report, then presentation, then the final freeze. Rules:
+> You are continuing SecureSynth (AVISHKAR'26, problem 24) on branch `feat/frontend-renaissance` of https://github.com/mdhussain398/SecureSynth. Read `docs/handoffs/MAC2_HANDOFF.md`, `docs/handoffs/FRONTEND_HANDOFF.md` and `docs/handoffs/TEAM_HANDOFF.md` first, then run the verification in §7 and report the results. Then continue Master Prompt #05 from the first unfinished phase in §9: Synth Core logo, then documentation and report, then presentation, then the final freeze. Rules:
 > - Push only to `feat/frontend-renaissance`. Do not merge or force-push.
 > - Do not retrain or tune the frozen model, change backend or ML behaviour, or enable Ghost Banking.
 > - Never commit `.env`, databases, `backend/artifacts/`, credentials or official competition files.
@@ -266,9 +266,9 @@ Work in small phases. After each one: update this file, commit, and push to `fea
 
 | Document | Contents |
 |---|---|
-| `docs/API.md` | Generated from the live OpenAPI schema (28 paths) and reconciled with the contract |
-| `docs/KNOWN_LIMITATIONS.md` | Every known limitation in one place |
-| `docs/SUBMISSION_CHECKLIST.md` | Pre-submission and on-the-day checks |
+| `docs/architecture/API.md` | Generated from the live OpenAPI schema (28 paths) and reconciled with the contract |
+| `docs/evaluation/KNOWN_LIMITATIONS.md` | Every known limitation in one place |
+| `docs/project/SUBMISSION_CHECKLIST.md` | Pre-submission and on-the-day checks |
 | `docs/report/PROJECT_REPORT.md`, `.docx` (native Word, 14 tables, 9 images) and `.pdf` (14 A4 pages) | Full technical report |
 
 **Report figures** (`docs/report/figures/`):
@@ -407,7 +407,7 @@ They were captured with headless Chrome after a scripted sign-in of the syntheti
 **Fallback recording:** **pending**. There is no `ffmpeg` here and recording needs a person. Script: `docs/presentation/FALLBACK_STORYBOARD.md`.
 
 **Remaining before submission (TEAM; cannot be done without the team):**
-1. **Real names** in `docs/TEAM.md`, on slide 1 (`[Member 2–4]`), and in the speaker notes and script.
+1. **Real names** in `docs/project/TEAM.md`, on slide 1 (`[Member 2–4]`), and in the speaker notes and script.
 2. **Vector deck PDF:**
    1. In PowerPoint, answer the two **Grant File Access** prompts. The app is still open with them; Cancel is also fine.
    2. Open the deck and choose *File → Export → PDF*.

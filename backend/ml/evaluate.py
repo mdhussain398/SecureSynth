@@ -1,6 +1,6 @@
-"""FINAL held-out evaluation (protocol v2, docs/EVALUATION_PROTOCOL.md) — A8: three approaches, identical TEST sessions, one shared outcome function.
+"""FINAL held-out evaluation (protocol v2, docs/evaluation/EVALUATION_PROTOCOL.md) — A8: three approaches, identical TEST sessions, one shared outcome function.
 
-Run: python -m ml.evaluate  → artifacts/eval_report.json and ../docs/EVALUATION.md
+Run: python -m ml.evaluate  → artifacts/eval_report.json and docs/evaluation/EVALUATION.md
 The test split is read here and nowhere else; nothing in this file feeds back into tuning.
 """
 import json
@@ -15,7 +15,7 @@ from app.risk import policy
 from app.risk.features import local_hour
 from ml import generate, train
 
-DOCS = Path(__file__).resolve().parents[2] / "docs"
+DOCS = Path(__file__).resolve().parents[2] / "docs" / "evaluation"
 
 
 def static_rules(f: dict) -> str:
