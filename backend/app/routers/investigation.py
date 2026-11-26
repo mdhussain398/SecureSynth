@@ -9,7 +9,7 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app import models
 from app.errors import ApiError
@@ -167,19 +167,34 @@ def request_photo(incident_id: int, body: PhotoRequestBody, ctx=Depends(ADMIN), 
     s = db.get(models.Session, sid)
     if s is None or s.mode in ("revoked", "pre_otp"):
         raise ApiError(409, "SESSION_NOT_ELIGIBLE", "The session has ended, so there is no screen to ask for a photograph.")
+    return create_photo_request(st, db, inc, sid, admin.username, body.reason)
+
+
+def photo_request_closed(edb, ref, sid):
+    return edb.scalar(select(PhotoRequest.id).where(
+        PhotoRequest.incident_ref == ref, PhotoRequest.session_id == sid,
+        PhotoRequest.status.in_(("submitted", "declined"))).limit(1)) is not None
+
+
+def create_photo_request(st, db, inc, sid, actor, reason, *, self_started=False):
     with st.EvidenceSessionLocal() as edb:
-        existing = edb.scalar(select(PhotoRequest).where(PhotoRequest.session_id == sid, PhotoRequest.status == "pending"))
-        if existing is not None and clock.now() < existing.expires_at:
-            return {"id": existing.id, "status": existing.status, "idempotent": True}
+        edb.execute(text("BEGIN IMMEDIATE"))
         now = clock.now()
+        existing = edb.scalar(select(PhotoRequest).where(
+            PhotoRequest.session_id == sid, PhotoRequest.status == "pending", PhotoRequest.expires_at > now)
+            .order_by(PhotoRequest.created_at.desc()).limit(1))
+        if existing is not None:
+            return {"id": existing.id, "status": existing.status, "expires_at": existing.expires_at, "idempotent": True}
+        if self_started and photo_request_closed(edb, inc.ref, sid):
+            raise ApiError(409, "REQUEST_CLOSED", "Photo verification has already been answered for this sign-in.")
         p = PhotoRequest(id="PR-" + secrets.token_hex(6).upper(), incident_ref=inc.ref, session_id=sid, status="pending",
-                         requested_by=admin.username, reason=" ".join(body.reason.split()), created_at=now,
+                         requested_by=actor, reason=" ".join(reason.split()), created_at=now,
                          expires_at=now + timedelta(minutes=PHOTO_TTL_MIN), is_lab=inc.is_lab)
         edb.add(p)
         edb.commit()
-        vault.append(edb, chain=vault.chain_for(inc.is_lab), event_type="photo_requested", actor=admin.username,
+        vault.append(edb, chain=vault.chain_for(inc.is_lab), event_type="photo_requested", actor=actor,
                      incident_ref=inc.ref, meta={"request_id": p.id, "session_id": sid})
-    audit.log(db, admin.username, "incident.photo_requested", inc.user_id, sid, incident_id=inc.id, reason=body.reason[:120])
+    audit.log(db, actor, "incident.photo_requested", inc.user_id, sid, incident_id=inc.id, reason=reason[:120])
     db.commit()
     return {"id": p.id, "status": "pending", "expires_at": p.expires_at, "idempotent": False}
 

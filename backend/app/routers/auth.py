@@ -189,18 +189,45 @@ def security_check(ctx=Depends(require("normal", "step_up", "ghost"))):
 
 
 # ---------------------------------------------------------------- consented verification photograph (customer side)
+def _blocked_transfer_incident(db, s):
+    from app.services.incidents import open_incident_for
+
+    inc = open_incident_for(db, s.user_id, bool(s.is_lab))
+    if inc is None or s.id not in (inc.session_ids or []):
+        return None
+    blocked = db.scalar(select(models.Transaction.id).where(
+        models.Transaction.session_id == s.id, models.Transaction.status == "restricted").limit(1))
+    return inc if blocked is not None else None
+
+
 @router.get("/photo-request")
 def my_photo_request(ctx=Depends(require("normal", "step_up", "restricted", "ghost")), st: AppState = Depends(get_state)):
-    """A pending analyst request for a verification photograph from THIS session (never another session's)."""
     from app.evidence.models import PhotoRequest
-    s, _, _ = ctx
+    from app.routers.investigation import photo_request_closed
+
+    s, _, db = ctx
     with st.EvidenceSessionLocal() as edb:
-        p = edb.scalar(select(PhotoRequest).where(PhotoRequest.session_id == s.id, PhotoRequest.status == "pending")
+        p = edb.scalar(select(PhotoRequest).where(PhotoRequest.session_id == s.id, PhotoRequest.status == "pending",
+                                                   PhotoRequest.expires_at > clock.now())
                        .order_by(PhotoRequest.created_at.desc()).limit(1))
-        if p is None or clock.now() >= p.expires_at:
-            return {"request": None}
-        return {"request": {"id": p.id, "reason": "Your bank's security team asks for a verification photograph to help "
-                            "confirm this sign-in. It is optional; you can decline.", "expires_at": p.expires_at}}
+        if p is None:
+            inc = _blocked_transfer_incident(db, s)
+            available = inc is not None and not photo_request_closed(edb, inc.ref, s.id)
+            return {"request": None, "can_start": available}
+        return {"request": {"id": p.id, "reason": "You can share an optional photo for the security team's review.",
+                            "expires_at": p.expires_at}, "can_start": False}
+
+
+@router.post("/photo-request")
+def start_my_photo_request(ctx=Depends(require("normal", "step_up", "restricted", "ghost", roles=("customer",))),
+                           st: AppState = Depends(get_state)):
+    from app.routers.investigation import create_photo_request
+
+    s, _, db = ctx
+    inc = _blocked_transfer_incident(db, s)
+    if inc is None:
+        raise ApiError(409, "SESSION_NOT_ELIGIBLE", "Photo verification is unavailable for this sign-in.")
+    return create_photo_request(st, db, inc, s.id, "session_holder", "Offered after a blocked transfer", self_started=True)
 
 
 class PhotoSubmit(schemas.BaseModel):

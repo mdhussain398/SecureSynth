@@ -35,7 +35,7 @@ Startup refuses to run if any two stores share a URL.
 - **Classification:** each item is `observed`, `derived` or `synthetic`. Everything from the Lab is synthetic.
 - **MAC addresses:** browsers do not expose them. SecureSynth never fabricates them, scans for them or fingerprints devices; the registered device cookie is the correlation key.
 - **Photographs:**
-  - only on an analyst's request, and only with explicit consent in the customer's own browser (`getUserMedia` in a secure context);
+  - offered automatically after a blocked transfer or on an analyst's request. Camera access and submission require explicit consent in the customer's own browser (`getUserMedia` in a secure context);
   - preview, retake, confirm or decline, with the camera stream always stopped;
   - validated by type, file signature and size limit, then encrypted;
   - viewable only by analysts, with every access and download recorded;
@@ -120,7 +120,7 @@ Startup refuses to run if any two stores share a URL.
 | Ghost Banking control | `GET/PUT /admin/ghost-config` |
 | Evidence | `GET /admin/incidents/{id}/evidence`<br>`GET /admin/evidence/{eid}/content[?download=true]`<br>`POST /admin/evidence/verify`<br>`GET /admin/incidents/{id}/custody`<br>`GET /admin/integrity/alerts`<br>`POST /admin/evidence/{eid}/delete`<br>`POST /admin/incidents/{id}/notes` |
 | Photographs (analyst) | `POST /admin/incidents/{id}/photo-request`<br>`POST /admin/photo-requests/{pid}/cancel` |
-| Photographs (customer, own session only) | `GET /auth/photo-request`<br>`POST /auth/photo-request/{pid}/submit`<br>`POST /auth/photo-request/{pid}/decline` |
+| Photographs (customer, own session only) | `GET /auth/photo-request`<br>`POST /auth/photo-request` (start after a blocked transfer)<br>`POST /auth/photo-request/{pid}/submit`<br>`POST /auth/photo-request/{pid}/decline` |
 | Timeline, graph, SOC | `GET /admin/incidents/{id}/timeline`<br>`GET /admin/intel/graph`<br>`GET /admin/soc/metrics` |
 | Summaries | `GET/POST /admin/incidents/{id}/summary`<br>`PUT /admin/summaries/{sid}`<br>`POST /admin/summaries/{sid}/approve` |
 | Reports | `POST /admin/incidents/{id}/reports`<br>`GET /admin/reports`<br>`GET/PUT /admin/reports/{rid}`<br>`POST .../review`<br>`POST .../confirm-first`<br>`POST .../confirm-final`<br>`POST .../official-ack`<br>`POST .../cancel`<br>`POST .../demo-status`<br>`GET .../export?format=pdf\|json\|zip` |

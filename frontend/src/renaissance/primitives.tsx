@@ -94,13 +94,14 @@ export function useHideOnScroll({ offset = 72, tolerance = 14 }: { offset?: numb
 }
 
 /** Wraps a header's brand: fades and lifts away on downward scroll, returns on upward scroll. Its box keeps its
- * size, so nothing around it shifts. Reduced motion swaps instantly. */
+ * size, so nothing around it shifts. Opacity and transform stay on the compositor. */
 export function ScrollBrand({ hidden, children }: { hidden: boolean; children: ReactNode }) {
   const reduce = useReducedMotion();
   return (
     <motion.div aria-hidden={hidden || undefined} style={{ pointerEvents: hidden ? 'none' : undefined }}
-      initial={false} animate={hidden ? { opacity: 0, y: -10, filter: 'blur(4px)' } : { opacity: 1, y: 0, filter: 'blur(0px)' }}
-      transition={reduce ? { duration: 0 } : { duration: 0.34, ease: [0.22, 1, 0.36, 1] }}>
+      className="will-change-transform"
+      initial={false} animate={hidden ? { opacity: 0, y: -8 } : { opacity: 1, y: 0 }}
+      transition={reduce ? { duration: 0 } : { duration: 0.2, ease: [0.22, 1, 0.36, 1] }}>
       {children}
     </motion.div>
   );
@@ -116,7 +117,7 @@ export function GlassNav({ items, label, className }: { items: { to: string; lab
           className="relative flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full px-2.5 text-[0.875rem] sm:px-3 2xl:px-4 sm:text-[length:var(--t-sm)] font-medium text-[color:var(--graphite-2)] transition-colors hover:text-[color:var(--graphite)] aria-[current=page]:text-[color:var(--graphite)]">
           {({ isActive: exact }) => { const isActive = exact || (!!it.match && pathname.startsWith(it.match)); return (
             <>
-              {isActive && <motion.span layoutId={`${label}-pill`} transition={spring} className="rn-lens absolute inset-0 rounded-full" />}
+              {isActive && <motion.span layoutId={`${label}-pill`} transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }} className="rn-lens console-nav-pill absolute inset-0 rounded-full" />}
               <span className={`relative ${isActive ? 'font-semibold' : ''}`}>{it.label}</span>
             </>
           ); }}

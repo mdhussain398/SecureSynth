@@ -1,33 +1,41 @@
-/* Consent-based verification photograph. Shown only when the bank's analyst asked THIS session for one.
+/* Consent-based verification photograph for the current sign-in.
  * Explicit consent first; the camera starts only after the user asks for it and the browser grants permission; nothing is
  * captured in the background; the stream is stopped on capture, cancel, close and unmount. No facial recognition. */
 import { useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Camera, RotateCcw, ShieldCheck, X } from 'lucide-react';
 import { api, request } from '../../api/client';
 import { Banner, Button } from '../../design/components';
 
 type Req = { id: string; reason: string; expires_at: string };
+const photoQueryKey = ['me', 'photo-request'] as const;
 
 export function PhotoRequestBanner() {
-  const q = useQuery({ queryKey: ['me', 'photo-request'], queryFn: () => api.get<{ request: Req | null }>('/auth/photo-request'), refetchInterval: 5000, retry: false });
-  const [open, setOpen] = useState(false);
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: photoQueryKey, queryFn: () => api.get<{ request: Req | null; can_start: boolean }>('/auth/photo-request'), refetchInterval: 5000, retry: false });
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const begin = useMutation({
+    mutationFn: () => api.post<{ id: string }>('/auth/photo-request'),
+    onSuccess: ({ data }) => { setRequestId(data.id); },
+    onSettled: () => qc.invalidateQueries({ queryKey: photoQueryKey }),
+  });
   const r = q.data?.request;
-  if (!r) return null;
+  const available = r || q.data?.can_start;
   return (
     <>
-      <div className="mb-4 rn-glass rounded-[var(--radius-l)] p-5 flex flex-wrap items-center justify-between gap-4" role="status">
+      {available && <div className="mb-4 rn-glass rounded-[var(--radius-l)] p-5 flex flex-wrap items-center justify-between gap-4" role="status">
         <div className="flex items-start gap-3"><Camera size={20} className="mt-0.5 text-[var(--stepup)]" aria-hidden />
-          <div><p className="font-semibold">Verification photograph requested</p><p className="text-[0.9375rem] text-[var(--ink-2)]">{r.reason}</p></div></div>
-        <Button onClick={() => setOpen(true)}>Review request</Button>
-      </div>
-      <AnimatePresence>{open && <PhotoDialog req={r} onClose={() => setOpen(false)} />}</AnimatePresence>
+          <div><p className="font-semibold">Optional photo verification</p><p className="text-[0.9375rem] text-[var(--ink-2)]">{r?.reason ?? 'Share a photo with the security team for review of this blocked transfer.'}</p></div></div>
+        <Button loading={begin.isPending} onClick={() => r ? setRequestId(r.id) : begin.mutate()}>Verify with a photo</Button>
+      </div>}
+      {begin.error && <Banner tone="block" title="Photo verification unavailable">{begin.error.message}</Banner>}
+      <AnimatePresence>{requestId && <PhotoDialog requestId={requestId} onClose={() => setRequestId(null)} />}</AnimatePresence>
     </>
   );
 }
 
-function PhotoDialog({ req, onClose }: { req: Req; onClose: () => void }) {
+function PhotoDialog({ requestId, onClose }: { requestId: string; onClose: () => void }) {
   const [stage, setStage] = useState<'consent' | 'camera' | 'review' | 'done' | 'declined'>('consent');
   const [agree, setAgree] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -35,25 +43,31 @@ function PhotoDialog({ req, onClose }: { req: Req; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
+  const cameraRequest = useRef(0);
+  const [opening, setOpening] = useState(false);
   const qc = useQueryClient();
   const reduce = useReducedMotion();
-  const stop = () => { stream.current?.getTracks().forEach((t) => t.stop()); stream.current = null; };
+  const stop = () => { cameraRequest.current++; stream.current?.getTracks().forEach((t) => t.stop()); stream.current = null; };
   useEffect(() => () => stop(), []);
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busy) { stop(); onClose(); } }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [busy, onClose]);
 
   const start = async () => {
     setErr(null);
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) { setErr('The camera is unavailable here: it needs a secure (https or localhost) page and a browser with camera support.'); return; }
+    const attempt = ++cameraRequest.current;
+    setOpening(true);
     try {
       const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+      if (cameraRequest.current !== attempt) { s.getTracks().forEach((track) => track.stop()); return; }
       stream.current = s;
       setStage('camera');
       requestAnimationFrame(() => { if (video.current) { video.current.srcObject = s; void video.current.play(); } });
     } catch (e) {
+      if (cameraRequest.current !== attempt) return;
       const name = (e as DOMException).name;
       setErr(name === 'NotAllowedError' ? 'Camera permission was denied. You can allow it in your browser settings, or decline the request.' :
         name === 'NotFoundError' || name === 'OverconstrainedError' ? 'No camera was found on this device.' : 'The camera could not be started.');
-    }
+    } finally { if (cameraRequest.current === attempt) setOpening(false); }
   };
   const capture = () => {
     const v = video.current;
@@ -70,13 +84,13 @@ function PhotoDialog({ req, onClose }: { req: Req; onClose: () => void }) {
     if (!shot) return;
     setBusy(true); setErr(null);
     try {
-      await request('POST', `/auth/photo-request/${req.id}/submit`, { body: { consent: true, image_base64: shot.split(',')[1], mime: 'image/jpeg', captured_at: new Date().toISOString() } });
-      setShot(null); setStage('done'); qc.invalidateQueries({ queryKey: ['me', 'photo-request'] });
+      await request('POST', `/auth/photo-request/${requestId}/submit`, { body: { consent: true, image_base64: shot.split(',')[1], mime: 'image/jpeg', captured_at: new Date().toISOString() } });
+      setShot(null); setStage('done'); qc.invalidateQueries({ queryKey: photoQueryKey });
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   };
   const decline = async () => {
-    setBusy(true); stop();
-    try { await request('POST', `/auth/photo-request/${req.id}/decline`); setStage('declined'); qc.invalidateQueries({ queryKey: ['me', 'photo-request'] }); }
+    setBusy(true); stop(); setOpening(false);
+    try { await request('POST', `/auth/photo-request/${requestId}/decline`); setStage('declined'); qc.invalidateQueries({ queryKey: photoQueryKey }); }
     catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   };
   const close = () => { stop(); setShot(null); onClose(); };
@@ -92,7 +106,7 @@ function PhotoDialog({ req, onClose }: { req: Req; onClose: () => void }) {
         </div>
         {stage === 'consent' && (
           <div className="mt-3 space-y-4 text-[0.9375rem]">
-            <p className="text-[var(--ink-2)]">Your bank's security team asks for one photograph to help confirm that you are the person using this sign-in. It is <b>optional</b>.</p>
+            <p className="text-[var(--ink-2)]">You can send one photograph to the security team for review of this sign-in. It is <b>optional</b> and does not release the transfer.</p>
             <ul className="list-disc pl-5 text-[var(--ink-2)] space-y-1">
               <li>Your camera starts only after you press “Open camera” and your browser asks for permission.</li>
               <li>You see the photo before sending it, can retake it, and nothing is sent until you press “Confirm and submit”.</li>
@@ -100,7 +114,7 @@ function PhotoDialog({ req, onClose }: { req: Req; onClose: () => void }) {
             </ul>
             <label className="flex items-start gap-2.5 cursor-pointer"><input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />I consent to taking and sending one verification photograph for this security check.</label>
             {err && <Banner tone="block" title="Camera">{err}</Banner>}
-            <div className="flex flex-wrap justify-end gap-2"><Button variant="ghost" onClick={decline} loading={busy}>Decline</Button><Button disabled={!agree} onClick={start}><Camera size={16} aria-hidden />Open camera</Button></div>
+            <div className="flex flex-wrap justify-end gap-2"><Button variant="ghost" onClick={decline} loading={busy}>Decline</Button><Button disabled={!agree || busy} loading={opening} onClick={start}><Camera size={16} aria-hidden />Open camera</Button></div>
           </div>
         )}
         {stage === 'camera' && (

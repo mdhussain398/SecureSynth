@@ -6,7 +6,6 @@ import { ApiError, USE_MOCKS } from '../api/client';
 import { Button, ErrorState, Skeleton, SyntheticMarker } from '../design/components';
 import { RestrictedNotice } from '../features/bank/RestrictedNotice';
 import { PhotoRequestBanner } from '../features/bank/PhotoVerification';
-import { motion, useReducedMotion } from 'motion/react';
 import { Contours, GlassNav, ScrollBrand, useHideOnScroll } from '../renaissance/primitives';
 import { NotificationBell } from '../features/soc/NotificationBell';
 import { SynthMark } from '../brand/SynthMark';
@@ -159,7 +158,6 @@ export function ConsoleLayout() {
   const signOut = useSignOut();
   const [theme, toggle] = useConsoleTheme();
   const loc = useLocation();
-  const reduce = useReducedMotion();
   const brandHidden = useHideOnScroll();
   const headerRef = useRef<HTMLElement>(null);
   const [headerH, setHeaderH] = useState(72);
@@ -182,13 +180,7 @@ export function ConsoleLayout() {
     body = <ErrorState error={null} title="Analyst access required" />;
   }
   const isAdmin = me.data?.role === 'admin';
-  const content = (
-    <motion.div key={fullBleed ? 'intel' : loc.pathname.split('/').slice(0, 3).join('/')}
-      initial={reduce ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}>
-      {body}
-    </motion.div>
-  );
+  const content = <div className="console-route">{body}</div>;
   return (
     <div className="console flex flex-col" style={{ ['--console-header-h' as string]: `${headerH}px` }}>
       <header ref={headerRef} className="sticky top-0 z-30 py-3.5">

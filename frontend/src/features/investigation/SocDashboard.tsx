@@ -86,7 +86,7 @@ export function SocDashboard() {
   return (
     <>
       <PageTitle title="Security operations" sub="Live metrics computed from SecureSynth records. Refreshes every 8 seconds."
-        actions={<span className="inline-flex items-center gap-2 text-[0.8125rem] text-[var(--ink-3)]"><span className={`h-2 w-2 rounded-full ${q.isError ? 'bg-[var(--block)]' : 'bg-[var(--allow)]'}`} aria-hidden />{q.isError ? 'Disconnected — retrying' : q.isFetching ? 'Updating…' : 'Live'}</span>} />
+        actions={<span className="inline-flex items-center gap-2 text-[0.8125rem] text-[var(--ink-3)]"><span className={`h-2 w-2 rounded-full ${q.isError ? 'bg-[var(--block)]' : 'bg-[var(--allow)]'}`} aria-hidden />{q.isError ? 'Disconnected — retrying' : 'Live'}</span>} />
       <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Filters">
         {RANGES.map(([k, l]) => (
           <button key={k} type="button" aria-pressed={range === k} onClick={() => setRange(k)}
@@ -120,9 +120,9 @@ export function SocDashboard() {
                         <YAxis allowDecimals={false} tick={axisTick} tickLine={false} axisLine={false} />
                         <Tooltip cursor={{ fill: 'var(--surface-2)' }} contentStyle={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 8, fontSize: 12 }} />
                         <Legend iconType="square" wrapperStyle={{ fontSize: 12 }} />
-                        <Bar dataKey="ALLOW" name="Allow" stackId="d" fill="var(--allow)" stroke="var(--chart-surface)" strokeWidth={2} />
-                        <Bar dataKey="STEP_UP" name="Step-up" stackId="d" fill="var(--stepup)" stroke="var(--chart-surface)" strokeWidth={2} />
-                        <Bar dataKey="BLOCK" name="Block" stackId="d" fill="var(--block)" stroke="var(--chart-surface)" strokeWidth={2} radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="ALLOW" name="Allow" stackId="d" fill="var(--allow)" stroke="var(--chart-surface)" strokeWidth={2} isAnimationActive={false} />
+                        <Bar dataKey="STEP_UP" name="Step-up" stackId="d" fill="var(--stepup)" stroke="var(--chart-surface)" strokeWidth={2} isAnimationActive={false} />
+                        <Bar dataKey="BLOCK" name="Block" stackId="d" fill="var(--block)" stroke="var(--chart-surface)" strokeWidth={2} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -138,8 +138,8 @@ export function SocDashboard() {
                         <YAxis allowDecimals={false} tick={axisTick} tickLine={false} axisLine={false} />
                         <Tooltip cursor={{ fill: 'var(--surface-2)' }} contentStyle={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 8, fontSize: 12 }} />
                         <Legend iconType="square" wrapperStyle={{ fontSize: 12 }} />
-                        <Bar dataKey="ghost" name="Ghost Banking" stackId="c" fill="var(--series-1)" stroke="var(--chart-surface)" strokeWidth={2} />
-                        <Bar dataKey="restricted" name="Restricted" stackId="c" fill="var(--series-aqua)" stroke="var(--chart-surface)" strokeWidth={2} radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="ghost" name="Ghost Banking" stackId="c" fill="var(--series-1)" stroke="var(--chart-surface)" strokeWidth={2} isAnimationActive={false} />
+                        <Bar dataKey="restricted" name="Restricted" stackId="c" fill="var(--series-aqua)" stroke="var(--chart-surface)" strokeWidth={2} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -152,7 +152,7 @@ export function SocDashboard() {
                         <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={{ stroke: 'var(--chart-axis)' }} minTickGap={24} />
                         <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
                         <Tooltip formatter={(v) => [`₹${Number(v).toLocaleString('en-IN')}`, 'Prevented']} cursor={{ fill: 'var(--surface-2)' }} contentStyle={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 8, fontSize: 12 }} />
-                        <Bar dataKey="prevented" name="Prevented exposure" fill="var(--series-1)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="prevented" name="Prevented exposure" fill="var(--series-1)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -166,8 +166,8 @@ export function SocDashboard() {
                         <YAxis allowDecimals={false} tick={axisTick} tickLine={false} axisLine={false} />
                         <Tooltip cursor={{ fill: 'var(--surface-2)' }} contentStyle={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 8, fontSize: 12 }} />
                         <Legend iconType="square" wrapperStyle={{ fontSize: 12 }} />
-                        <Bar dataKey="resolved" name="Resolved incidents" fill="var(--series-aqua)" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="ghost_events" name="Ghost events (synthetic)" fill="var(--series-1)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="resolved" name="Resolved incidents" fill="var(--series-aqua)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                        <Bar dataKey="ghost_events" name="Ghost events (synthetic)" fill="var(--series-1)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

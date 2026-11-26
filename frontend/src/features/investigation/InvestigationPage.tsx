@@ -1,7 +1,7 @@
 /* Investigation workspace for one incident (Ghost Banking or restricted). Every control calls a real endpoint. */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { Camera, CheckCircle2, ClipboardCopy, Download, FileText, Ghost, ShieldCheck } from 'lucide-react';
 import { useIncident } from '../../api/queries';
 import { download, protectedObjectUrl, useAct, useCustody, useEvidence, useReport, useReports, useSummary, useTimeline, type EvidenceItem, type Report, type Summary, type VerifyResult } from '../../api/investigation';
@@ -54,19 +54,17 @@ export function InvestigationPage() {
         {TABS.map((t) => (
           <button key={t} role="tab" type="button" aria-selected={tab === t} onClick={() => setSp({ tab: t }, { replace: true })}
             className={`relative px-3.5 py-2 text-[0.9375rem] capitalize cursor-pointer ${tab === t ? 'font-semibold text-[var(--ink)]' : 'text-[var(--ink-2)] hover:text-[var(--ink)]'}`}>
-            {t}{tab === t && <motion.span layoutId="inv-tab" className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--electric)]" transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 36 }} />}
+            {t}{tab === t && <motion.span layoutId="inv-tab" className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--electric)]" transition={reduce ? { duration: 0 } : { duration: 0.16, ease: [0.22, 1, 0.36, 1] }} />}
           </button>
         ))}
       </nav>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div key={tab} initial={reduce ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={reduce ? undefined : { opacity: 0 }} transition={{ duration: 0.2 }}>
-          {tab === 'overview' && <Overview iid={iid} />}
-          {tab === 'evidence' && <EvidenceTab iid={iid} sessionAlive={d.sessions.some((s) => s.mode !== 'revoked')} />}
-          {tab === 'timeline' && <TimelineTab iid={iid} />}
-          {tab === 'summary' && <SummaryTab iid={iid} />}
-          {tab === 'report' && <ReportTab iid={iid} lab={i.is_lab} refId={i.ref ?? ''} />}
-        </motion.div>
-      </AnimatePresence>
+      <div className="investigation-panel">
+        {tab === 'overview' && <Overview iid={iid} />}
+        {tab === 'evidence' && <EvidenceTab iid={iid} sessionAlive={d.sessions.some((s) => s.mode !== 'revoked')} />}
+        {tab === 'timeline' && <TimelineTab iid={iid} />}
+        {tab === 'summary' && <SummaryTab iid={iid} />}
+        {tab === 'report' && <ReportTab iid={iid} lab={i.is_lab} refId={i.ref ?? ''} />}
+      </div>
     </>
   );
 }

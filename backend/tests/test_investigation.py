@@ -193,6 +193,36 @@ def test_lab_simulated_addresses_are_classified_synthetic(analyst, app_ctx, user
 PNG = base64.b64encode(b"\x89PNG\r\n\x1a\n" + b"\x00" * 200).decode()
 
 
+def test_blocked_transfer_offers_optional_photo_in_the_same_session(analyst, app_ctx, users, client):
+    block_transfer(client, users, app_ctx)
+    url = "/api/auth/photo-request"
+    assert client.get(url).json() == {"request": None, "can_start": True}
+    assert client.post(url).status_code == 403
+
+    started = client.post(url, headers=csrf(client))
+    assert started.status_code == 200
+    request_id = started.json()["id"]
+    assert client.post(url, headers=csrf(client)).json()["id"] == request_id
+    assert client.get(url).json()["request"]["id"] == request_id
+    assert client.post(f"{url}/{request_id}/submit", headers=csrf(client),
+                       json={"consent": False, "image_base64": PNG, "mime": "image/png"}).status_code == 422
+    assert client.post(f"{url}/{request_id}/submit", headers=csrf(client),
+                       json={"consent": True, "image_base64": PNG, "mime": "image/png"}).status_code == 200
+    assert client.get("/api/auth/me").json()["mode"] == "restricted"
+    assert client.get(url).json() == {"request": None, "can_start": False}
+    assert client.post(url, headers=csrf(client)).status_code == 409
+    evidence = analyst.get(f"/api/admin/incidents/{incident(analyst)['id']}/evidence").json()
+    assert evidence["photo_requests"][0]["id"] == request_id
+    assert any(item["kind"] == "verification_photo" for item in evidence["items"])
+
+
+def test_photo_offer_requires_a_blocked_transfer_in_the_current_session(analyst, app_ctx, users, client, clock):
+    attack(client, users, app_ctx, clock)
+    url = "/api/auth/photo-request"
+    assert client.get(url).json() == {"request": None, "can_start": False}
+    assert client.post(url, headers=csrf(client)).status_code == 409
+
+
 def test_photo_request_consent_validation_isolation_and_protected_storage(analyst, app_ctx, users, client):
     block_transfer(client, users, app_ctx)
     inc = incident(analyst)
