@@ -25,7 +25,9 @@ export function ReportsPage() {
     { key: 'a', header: 'Acknowledgement', cell: (r) => r.ack_number ? <span className="font-mono text-[0.8125rem]">{r.ack_number}</span> : '—' },
     { key: 'r', header: 'Responsible', cell: (r) => r.responsible },
     { key: 'att', header: 'Evidence', align: 'right', cell: (r) => `${r.attachments}${r.manifest_matches ? '' : ' ⚠'}` },
-    { key: 't', header: 'Created / approved / submitted', align: 'right', className: 'whitespace-nowrap', cell: (r) => <span className="text-[0.8125rem] text-[var(--ink-2)]">{fmtTime(r.created_at, true)}{r.approved_at && ` · ${fmtTime(r.approved_at)}`}{r.submitted_at && ` · ${fmtTime(r.submitted_at)}`}</span> },
+    { key: 't', header: 'Last update', align: 'right', className: 'whitespace-nowrap', cell: (r) => (
+      <span className="text-[0.8125rem] text-[var(--ink-2)]"><span className="block tnum">{fmtTime(r.submitted_at ?? r.approved_at ?? r.created_at, true)}</span>
+        <span className="block text-[0.75rem] text-[var(--ink-3)]">{r.submitted_at ? 'Submitted' : r.approved_at ? 'Approved' : 'Created'}</span></span>) },
   ];
   return (
     <>

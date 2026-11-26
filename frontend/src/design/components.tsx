@@ -1,4 +1,5 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { useId, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { Link, type LinkProps } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, Info, OctagonX, ShieldAlert, ShieldCheck, ShieldQuestion, Inbox, RotateCw } from 'lucide-react';
 import type { Decision } from '../api/types';
@@ -282,4 +283,25 @@ export function fmtTime(isoStr: string, withDate = false): string {
 
 export function SyntheticMarker({ className }: { className?: string }) {
   return <span className={cx('inline-flex items-center gap-1.5 text-[0.75rem] text-[var(--ink-3)]', className)}><span className="h-1.5 w-1.5 rounded-full bg-[var(--stepup)]" aria-hidden />Synthetic demo data</span>;
+}
+
+/** HIG segmented control: one choice from a small set; the selection thumb slides between segments.
+ *  Visual height 36 px; each segment's hit area extends to 44 px. */
+export function Segmented<T extends string>({ value, options, onChange, label, className }: { value: T; options: readonly (readonly [T, string])[]; onChange: (v: T) => void; label: string; className?: string }) {
+  const id = useId();
+  const reduce = useReducedMotion();
+  return (
+    <div role="group" aria-label={label} className={cx('inline-flex max-w-full overflow-x-auto rounded-[10px] bg-[var(--surface-2)] p-0.5 ring-1 ring-inset ring-[var(--hairline)]', className)}>
+      {options.map(([k, l]) => {
+        const on = k === value;
+        return (
+          <button key={k} type="button" aria-pressed={on} onClick={() => onChange(k)}
+            className={cx("relative min-h-9 shrink-0 whitespace-nowrap rounded-[8px] px-3 text-[0.8125rem] font-medium cursor-pointer transition-colors duration-150 before:absolute before:-inset-y-1 before:inset-x-0 before:content-['']", on ? 'text-[var(--ink)]' : 'text-[var(--ink-2)] hover:text-[var(--ink)]')}>
+            {on && <motion.span layoutId={`seg-${id}`} aria-hidden className="absolute inset-0 rounded-[8px] bg-[var(--surface)] shadow-[0_1px_3px_rgba(16,24,40,0.14),0_0_0_0.5px_rgba(16,24,40,0.06)]" transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 520, damping: 40 }} />}
+            <span className="relative">{l}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 }

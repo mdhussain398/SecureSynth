@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Activity, Ghost, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useAct, useGhostConfig, useSoc, type GhostConfig } from '../../api/investigation';
-import { Badge, Banner, Card, ErrorState, Skeleton, fmtTime, formatPaise } from '../../design/components';
+import { Badge, Banner, Card, ErrorState, Segmented, Skeleton, fmtTime, formatPaise } from '../../design/components';
 import { PageTitle } from '../../layout/layouts';
 import { ConfirmDialog } from './ConfirmDialog';
 
@@ -88,13 +88,10 @@ export function SocDashboard() {
       <PageTitle title="Security operations" sub="Live metrics computed from SecureSynth records. Refreshes every 8 seconds."
         actions={<span className="inline-flex items-center gap-2 text-[0.8125rem] text-[var(--ink-3)]"><span className={`h-2 w-2 rounded-full ${q.isError ? 'bg-[var(--block)]' : 'bg-[var(--allow)]'}`} aria-hidden />{q.isError ? 'Disconnected — retrying' : 'Live'}</span>} />
       <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Filters">
-        {RANGES.map(([k, l]) => (
-          <button key={k} type="button" aria-pressed={range === k} onClick={() => setRange(k)}
-            className={`px-2.5 py-1.5 rounded-[var(--radius-s)] text-[0.8125rem] cursor-pointer border ${range === k ? 'bg-[var(--accent-tint)] border-[var(--accent)]' : 'border-[var(--hairline)] text-[var(--ink-2)] hover:bg-[var(--surface-2)]'}`}>{l}</button>
-        ))}
+        <Segmented label="Time range" value={range} options={RANGES} onChange={setRange} />
         {range === 'custom' && <><input type="datetime-local" className="input !w-auto !min-h-11 !py-1" aria-label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
           <input type="datetime-local" className="input !w-auto !min-h-11 !py-1" aria-label="To" value={to} onChange={(e) => setTo(e.target.value)} /></>}
-        <label className="ml-auto inline-flex items-center gap-2 text-[0.8125rem] cursor-pointer"><input type="checkbox" checked={lab} onChange={(e) => setLab(e.target.checked)} />Include Scenario Lab data</label>
+        <label className="ml-auto inline-flex min-h-11 items-center gap-2 text-[0.8125rem] cursor-pointer select-none"><input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={lab} onChange={(e) => setLab(e.target.checked)} />Include Scenario Lab data</label>
         <Badge tone={lab ? 'stepup' : 'allow'}>{lab ? 'Demo data included' : 'Genuine activity only'}</Badge>
       </div>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -199,7 +196,7 @@ export function SocDashboard() {
                   const Icon = f.kind === 'integrity' ? ShieldAlert : f.kind === 'report' ? ShieldCheck : f.detail.startsWith('Ghost') ? Ghost : ShieldAlert;
                   const inner = (
                     <span className="flex gap-3 px-4 py-3">
-                      <Icon size={15} className={`mt-0.5 shrink-0 ${f.severity === 'critical' ? 'text-[var(--block)]' : 'text-[var(--ink-3)]'}`} aria-hidden />
+                      <Icon size={16} strokeWidth={1.75} className={`mt-0.5 shrink-0 ${f.severity === 'critical' ? 'text-[var(--block)]' : 'text-[var(--ink-3)]'}`} aria-hidden />
                       <span className="min-w-0"><span className="block text-[0.875rem] font-medium">{f.title}</span>
                         <span className="block text-[0.75rem] text-[var(--ink-3)]">{f.detail}{f.lab ? ' · lab' : ''} · {fmtTime(f.ts, true)}</span></span>
                     </span>);
@@ -214,6 +211,8 @@ export function SocDashboard() {
   );
 }
 
+const DIST_LABEL: Record<string, string> = { ALLOW: 'Allow', STEP_UP: 'Step-up', BLOCK: 'Block', submitted_demo: 'Submitted (demo)', submitted: 'Submitted', handed_off: 'Handed off' };
+
 function Dist({ title, data, tones }: { title: string; data: Record<string, number>; tones?: Record<string, 'allow' | 'stepup' | 'block'> }) {
   const total = Object.values(data).reduce((a, b) => a + b, 0);
   return (
@@ -223,7 +222,7 @@ function Dist({ title, data, tones }: { title: string; data: Record<string, numb
         <ul className="mt-1.5 space-y-1">
           {Object.entries(data).map(([k, v]) => (
             <li key={k} className="grid grid-cols-[120px_1fr_36px] items-center gap-2 text-[0.8125rem]">
-              <span className="truncate">{k.replace(/_/g, ' ')}</span>
+              <span className="truncate">{DIST_LABEL[k] ?? (k.charAt(0).toUpperCase() + k.slice(1)).replace(/_/g, ' ')}</span>
               <span className="h-2 rounded-full bg-[var(--surface-2)] overflow-hidden"><span className="block h-full rounded-full" style={{ width: `${(v / total) * 100}%`, background: tones?.[k] ? `var(--${tones[k]})` : 'var(--series-1)' }} /></span>
               <span className="tnum text-right">{v}</span>
             </li>

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { AdminSessionRow, Decision } from '../../api/types';
 import { useSessions } from '../../api/queries';
-import { Badge, Card, DataTable, DecisionPill, EmptyState, ErrorState, RiskGauge, Skeleton, fmtTime, type Column } from '../../design/components';
+import { Badge, Card, DataTable, DecisionPill, EmptyState, ErrorState, RiskGauge, Skeleton, fmtTime, type Column, Segmented } from '../../design/components';
 import { PageTitle } from '../../layout/layouts';
 
 const DECISIONS: Decision[] = ['ALLOW', 'STEP_UP', 'BLOCK'];
@@ -54,14 +54,7 @@ export function SocOverview() {
           {q.isPending ? <Skeleton lines={3} /> : q.data ? <DecisionMix rows={q.data} /> : <ErrorState error={q.error} />}
         </Card>
         <Card padded={false} title="Sessions" actions={
-          <div role="group" aria-label="Filter by decision" className="flex gap-1">
-            {(['', ...DECISIONS] as const).map((d) => (
-              <button key={d || 'all'} type="button" aria-pressed={filter === d} onClick={() => setFilter(d)}
-                className={`px-2 py-1 rounded-[var(--radius-s)] text-[0.8125rem] cursor-pointer border ${filter === d ? 'bg-[var(--accent-tint)] border-[var(--accent)] text-[var(--ink)]' : 'border-[var(--hairline)] text-[var(--ink-2)] hover:bg-[var(--surface-2)]'}`}>
-                {d === '' ? 'All' : d === 'STEP_UP' ? 'Step-up' : d[0] + d.slice(1).toLowerCase()}
-              </button>
-            ))}
-          </div>
+          <Segmented<Decision | ''> label="Filter by decision" value={filter} onChange={setFilter} options={[['', 'All'], ['ALLOW', 'Allow'], ['STEP_UP', 'Step-up'], ['BLOCK', 'Block']]} />
         }>
           {q.isPending ? <div className="p-4"><Skeleton lines={6} /></div> : q.error && !q.data ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> :
             rows.length === 0 ? <EmptyState title={filter ? 'No sessions with this decision' : 'No active sessions'}>{filter ? 'Clear the filter to see all sessions.' : 'Sign in as a customer or run a Lab scenario to create one.'}</EmptyState> :

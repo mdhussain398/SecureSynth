@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { FlaskConical, Scale, ShieldOff, TriangleAlert, TrendingDown } from 'lucide-react';
 import type { ApproachResult, DetectionMetrics, EvaluationReport } from '../../api/types';
 import { useEvaluation } from '../../api/queries';
-import { Badge, Card, ErrorState, Skeleton, fmtTime } from '../../design/components';
+import { Badge, Card, ErrorState, Skeleton, fmtTime, Segmented } from '../../design/components';
 import { PageTitle } from '../../layout/layouts';
 
 /* ------------------------------------------------------------------ helpers */
@@ -65,18 +65,6 @@ function Legend({ approaches }: { approaches: ApproachResult[] }) {
   );
 }
 
-function Segmented<T extends string>({ value, onChange, options, label }: { value: T; onChange: (v: T) => void; options: Array<[T, string]>; label: string }) {
-  return (
-    <div role="group" aria-label={label} className="inline-flex p-0.5 rounded-[var(--radius-s)] bg-[var(--surface-2)] border border-[var(--hairline)]">
-      {options.map(([v, l]) => (
-        <button key={v} type="button" aria-pressed={value === v} onClick={() => onChange(v)}
-          className={`px-2.5 py-1 rounded-[3px] text-[0.8125rem] cursor-pointer ${value === v ? 'bg-[var(--surface)] text-[var(--ink)] font-medium shadow-[0_0_0_1px_var(--hairline-strong)]' : 'text-[var(--ink-2)] hover:text-[var(--ink)]'}`}>
-          {l}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------- 1. provenance */
 

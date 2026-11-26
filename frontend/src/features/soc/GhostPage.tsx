@@ -2,14 +2,14 @@
  * incident evidence and the analyst's decisions. Synthetic data is always labelled; the protected comparison is an
  * explicit, audited request. Every number comes from GET /admin/ghost/{session_id}. */
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { Ban, Eye, EyeOff, Ghost, Lock, LockKeyhole, ShieldCheck, Smartphone, UserCheck } from 'lucide-react';
+import { ArrowUpRight, Ban, ChevronLeft, Eye, EyeOff, Ghost, Lock, LockKeyhole, ShieldCheck, Smartphone, UserCheck } from 'lucide-react';
 import type { GhostTxn, IncidentAction, Transaction } from '../../api/types';
 import { useGhost } from '../../api/queries';
-import { Badge, Banner, Button, Card, DataTable, DecisionPill, EmptyState, ErrorState, Money, RiskGauge, Skeleton, Timeline, fmtTime, formatPaise } from '../../design/components';
+import { Badge, Banner, Button, ButtonLink, Card, DataTable, DecisionPill, EmptyState, ErrorState, Money, RiskGauge, Skeleton, Timeline, fmtTime, formatPaise } from '../../design/components';
 import { PageTitle } from '../../layout/layouts';
-import { ConfirmAction, STATUS, SeverityBadge } from './IncidentsPage';
+import { ActionButton, ConfirmAction, STATUS, SeverityBadge } from './IncidentsPage';
 
 const EVENT: Record<string, string> = {
   entered: 'Session contained in Ghost Banking', viewed_overview: 'Viewed account overview', viewed_transactions: 'Viewed transactions',
@@ -45,7 +45,7 @@ export function GhostPage() {
   const cmp = useGhost(compare ? sessionId : '', true);
   const [action, setAction] = useState<IncidentAction | null>(null);
   const reduce = useReducedMotion();
-  const back = <Link to={q.data?.incident ? `/soc/incidents/${q.data.incident.id}` : `/soc/sessions/${encodeURIComponent(sessionId)}`} className="text-[var(--accent)]">{q.data?.incident ? 'Back to incident' : 'Back to session'}</Link>;
+  const back = <ButtonLink variant="secondary" to={q.data?.incident ? `/soc/incidents/${q.data.incident.id}` : `/soc/sessions/${encodeURIComponent(sessionId)}`}><ChevronLeft size={18} strokeWidth={1.75} aria-hidden />{q.data?.incident ? 'Incident' : 'Session'}</ButtonLink>;
 
   if (q.isPending) return <><PageTitle title="Ghost Banking" sub={`Contained session ${sessionId}`} actions={back} /><Skeleton lines={8} /></>;
   if (q.error) {
@@ -73,7 +73,7 @@ export function GhostPage() {
       <PageTitle
         title={<span className="flex flex-wrap items-center gap-3">Ghost Banking <Synthetic /></span>}
         sub={<>{d.session.display_name} ({d.session.username}) · session <span className="font-mono text-[0.875rem]">{d.session.id}</span> · {live ? 'contained now, refreshes every 3 s' : `session ${d.session.mode}`}</>}
-        actions={<>{inc && <Link to={`/soc/investigations/${inc.id}`} className="text-[var(--accent)]">Investigation workspace</Link>}{back}</>} />
+        actions={<div className="flex flex-wrap gap-2">{back}{inc && <ButtonLink variant="secondary" to={`/soc/investigations/${inc.id}`}>Investigation<ArrowUpRight size={18} strokeWidth={1.75} aria-hidden /></ButtonLink>}</div>} />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         <div className="space-y-4 min-w-0">
@@ -104,9 +104,9 @@ export function GhostPage() {
             </ul>
           </Card>
 
-          <Card title={<span className="flex items-center gap-2">Simulated activity <Synthetic /></span>} description="Everything the contained session did, in order.">
+          <Card title={<span className="flex items-center gap-2">Simulated activity <Synthetic /></span>} description="Everything the contained session did, newest first.">
             {g.events.length === 0 ? <p className="text-[var(--ink-3)]">No activity yet.</p> : (
-              <Timeline items={[...g.events].reverse().map((e) => ({
+              <Timeline items={[...g.events].sort((x, y) => (x.ts === y.ts ? y.id - x.id : x.ts < y.ts ? 1 : -1)).map((e) => ({
                 id: e.id, time: fmtTime(e.ts, true), title: EVENT[e.kind] ?? e.kind,
                 marker: e.kind === 'transfer_simulated' || e.kind === 'beneficiary_added' ? <Badge tone="info">simulated</Badge> : e.kind === 'transfer_rejected' ? <Badge tone="stepup">refused</Badge> : undefined,
                 body: [e.details.payee ?? e.details.name, e.details.amount_paise != null ? formatPaise(Number(e.details.amount_paise)) : null, e.details.reason ? String(e.details.reason).replace('_', ' ') : null].filter(Boolean).join(' · ') || undefined,
@@ -119,10 +119,10 @@ export function GhostPage() {
           {inc && inc.open && live && (
             <Card title="Decision" description="Every action needs a reason and is audited. A ghost session is never restored in place.">
               <div className="grid gap-2">
-                <ActionRow icon={<UserCheck size={16} />} label="Resolve and authorise recovery" sub="Ends the ghost session; customer signs in afresh to protected banking" onClick={() => setAction('clear_user')} />
-                <ActionRow icon={<Smartphone size={16} />} label={inc.status === 'verification_requested' ? 'Verification pending…' : 'Request identity verification'} sub="Number match on the registered trusted device" disabled={inc.status === 'verification_requested'} onClick={() => setAction('request_verification')} />
-                <ActionRow icon={<LockKeyhole size={16} />} label="Retain containment" sub="Keep monitoring the session in Ghost Banking" onClick={() => setAction('keep_restricted')} />
-                <ActionRow icon={<Ban size={16} />} label="Revoke session" sub="Terminate the contained session now" danger onClick={() => setAction('revoke_session')} />
+                <ActionButton icon={<UserCheck />} label="Resolve and authorise recovery" sub="Ends the ghost session; customer signs in afresh to protected banking" onClick={() => setAction('clear_user')} />
+                <ActionButton icon={<Smartphone />} label={inc.status === 'verification_requested' ? 'Verification pending' : 'Request identity verification'} sub="Number match on the registered trusted device" disabled={inc.status === 'verification_requested'} onClick={() => setAction('request_verification')} />
+                <ActionButton icon={<LockKeyhole />} label="Retain containment" sub="Keep monitoring the session in Ghost Banking" onClick={() => setAction('keep_restricted')} />
+                <ActionButton icon={<Ban />} label="Revoke session" sub="Terminate the contained session now" danger onClick={() => setAction('revoke_session')} />
               </div>
               {inc.verification && <p className="mt-3 text-[0.8125rem] text-[var(--ink-3)]">Trusted-device check: <b className="text-[var(--ink)]">{inc.verification}</b></p>}
             </Card>
@@ -183,12 +183,3 @@ function PolicyLine({ label, points }: { label: string; points: number }) {
   return <><dt className="text-[var(--ink-2)]">{label}</dt><dd className="tnum text-right">{points > 0 ? '+' : ''}{points}</dd></>;
 }
 
-function ActionRow({ icon, label, sub, onClick, disabled, danger }: { icon: React.ReactNode; label: string; sub: string; onClick: () => void; disabled?: boolean; danger?: boolean }) {
-  return (
-    <button type="button" onClick={onClick} disabled={disabled}
-      className={`group flex items-start gap-3 rounded-[var(--radius-m)] border p-3.5 text-left transition-[border-color,background-color,box-shadow] duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 ${danger ? 'border-[color:var(--block-line)] hover:bg-[var(--block-tint)]' : 'border-[color:var(--hairline)] hover:border-[color:var(--hairline-strong)] hover:shadow-[0_6px_20px_-12px_rgba(16,24,40,0.35)]'}`}>
-      <span className={`mt-0.5 ${danger ? 'text-[var(--block)]' : 'text-[var(--ink-2)] group-hover:text-[var(--ink)]'}`} aria-hidden>{icon}</span>
-      <span className="min-w-0"><span className={`block font-medium ${danger ? 'text-[var(--block)]' : ''}`}>{label}</span><span className="block text-[0.8125rem] text-[var(--ink-3)] mt-0.5">{sub}</span></span>
-    </button>
-  );
-}

@@ -2,10 +2,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
-import { Camera, CheckCircle2, ClipboardCopy, Download, FileText, Ghost, ShieldCheck } from 'lucide-react';
+import { Camera, CheckCircle2, ClipboardCopy, Download, FileText, Ghost, ListChecks, ShieldCheck } from 'lucide-react';
 import { useIncident } from '../../api/queries';
 import { download, protectedObjectUrl, useAct, useCustody, useEvidence, useReport, useReports, useSummary, useTimeline, type EvidenceItem, type Report, type Summary, type VerifyResult } from '../../api/investigation';
-import { Badge, Banner, Button, Card, DataTable, ErrorState, RiskGauge, Skeleton, Timeline, fmtTime, formatPaise } from '../../design/components';
+import { Badge, Banner, Button, ButtonLink, Card, DataTable, ErrorState, RiskGauge, Skeleton, Timeline, fmtTime, formatPaise } from '../../design/components';
 import { PageTitle } from '../../layout/layouts';
 import { STATUS, SeverityBadge } from '../soc/IncidentsPage';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -45,15 +45,15 @@ export function InvestigationPage() {
     <>
       <PageTitle title={<span className="flex flex-wrap items-center gap-3">Investigation <span className="font-mono text-[0.6em] text-[var(--ink-3)]">{i.ref}</span></span>}
         sub={<>{i.display_name} · customer reference C{String(i.user_id).padStart(4, '0')} · opened {fmtTime(i.created_at, true)} · {elapsed(i.created_at)} ago{i.is_lab && ' · Scenario Lab'}</>}
-        actions={<><Link to={`/soc/incidents/${i.id}`} className="text-[var(--accent)]">Decisions</Link>{i.ghost && <Link to={`/soc/ghost/${encodeURIComponent(i.session_id)}`} className="text-[var(--accent)] inline-flex items-center gap-1"><Ghost size={14} aria-hidden />Ghost monitor</Link>}</>} />
+        actions={<div className="flex flex-wrap gap-2"><ButtonLink variant="secondary" to={`/soc/incidents/${i.id}`}><ListChecks size={18} strokeWidth={1.75} aria-hidden />Decisions</ButtonLink>{i.ghost && <ButtonLink variant="secondary" to={`/soc/ghost/${encodeURIComponent(i.session_id)}`}><Ghost size={18} strokeWidth={1.75} aria-hidden />Ghost monitor</ButtonLink>}</div>} />
       <div className="mb-4 flex flex-wrap items-center gap-1.5">
-        {i.ghost && <Badge tone="info">Ghost Banking</Badge>}<SeverityBadge s={i.severity} /><Badge tone={STATUS[i.status].tone}>{STATUS[i.status].label}</Badge>
+        {i.ghost && <Badge tone="info"><Ghost size={12} aria-hidden />Ghost Banking</Badge>}<SeverityBadge s={i.severity} /><Badge tone={STATUS[i.status].tone}>{STATUS[i.status].label}</Badge>
         <span className="text-[0.8125rem] text-[var(--ink-3)] ml-2">Assigned analyst: {i.resolved_by ?? 'unassigned (shared queue)'}</span>
       </div>
       <nav role="tablist" aria-label="Investigation sections" className="mb-4 flex gap-1 overflow-x-auto border-b border-[var(--hairline)]">
         {TABS.map((t) => (
           <button key={t} role="tab" type="button" aria-selected={tab === t} onClick={() => setSp({ tab: t }, { replace: true })}
-            className={`relative px-3.5 py-2 text-[0.9375rem] capitalize cursor-pointer ${tab === t ? 'font-semibold text-[var(--ink)]' : 'text-[var(--ink-2)] hover:text-[var(--ink)]'}`}>
+            className={`relative min-h-11 px-3.5 text-[0.9375rem] capitalize cursor-pointer transition-colors ${tab === t ? 'font-semibold text-[var(--ink)]' : 'text-[var(--ink-2)] hover:text-[var(--ink)]'}`}>
             {t}{tab === t && <motion.span layoutId="inv-tab" className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--electric)]" transition={reduce ? { duration: 0 } : { duration: 0.16, ease: [0.22, 1, 0.36, 1] }} />}
           </button>
         ))}
@@ -90,7 +90,9 @@ function Overview({ iid }: { iid: number }) {
           <F l="Risk index (not a probability)"><span className="inline-flex items-center gap-2"><span className="tnum">{i.risk_score?.toFixed(1)}</span><RiskGauge size="sm" value={i.risk_score} thresholds={a?.thresholds} /></span></F>
           <F l="ML anomaly index">{a ? a.ml.index.toFixed(1) : '—'}</F>
           <F l="Containment reason">{i.reason}</F>
-          <F l="Session status">{q.data.sessions.map((s) => `${s.id.slice(0, 8)}… ${s.mode}`).join(', ')}</F>
+          <F l={q.data.sessions.length > 1 ? 'Sessions' : 'Session'}>{q.data.sessions.map((s) => (
+            <span key={s.id} className="flex items-center gap-2"><Link className="font-mono text-[0.875rem] underline underline-offset-2" to={`/soc/sessions/${encodeURIComponent(s.id)}`}>{s.id.slice(0, 8)}…</Link>
+              <Badge tone={s.mode === 'restricted' || s.mode === 'revoked' ? 'block' : s.mode === 'normal' ? 'allow' : 'stepup'}>{s.mode.replace('_', '-')}</Badge></span>))}</F>
           <F l="Investigation status">{STATUS[i.status].label}{i.verification ? ` · device check ${i.verification}` : ''}</F>
           <F l="Created">{fmtTime(i.created_at, true)}</F>
         </dl>
@@ -103,8 +105,8 @@ function Overview({ iid }: { iid: number }) {
           <F l="Prevented exposure">{formatPaise(blocked.reduce((s, t) => s + t.amount_paise, 0))}</F>
           <F l="Confirmed financial loss">{formatPaise(0)} <span className="text-[0.75rem] text-[var(--ink-3)] block">no protected funds left by this session</span></F>
           <F l="Protected balance now">{balance_paise != null ? formatPaise(balance_paise) : '—'}</F>
-          <F l="Synthetic transfers (Ghost)">{g?.totals ? `${g.totals.simulated_transfers} · ${formatPaise(g.totals.simulated_value_paise)}` : i.ghost ? 'See Ghost monitor' : 'n/a'}</F>
-          <F l="Payees added (synthetic)">{g?.totals ? g.totals.payees_added : '—'}</F>
+          <F l="Synthetic transfers (Ghost)">{g?.totals ? `${g.totals.simulated_transfers} · ${formatPaise(g.totals.simulated_value_paise)}` : i.ghost ? <Link className="text-[var(--accent)] font-medium" to={`/soc/ghost/${encodeURIComponent(i.session_id)}`}>Open Ghost monitor</Link> : 'Not applicable'}</F>
+          <F l="Payees added (synthetic)">{g?.totals ? g.totals.payees_added : i.ghost ? '—' : 'Not applicable'}</F>
         </dl>
       </Card>
     </div>

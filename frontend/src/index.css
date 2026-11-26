@@ -95,3 +95,9 @@ input, textarea { caret-color: var(--electric); }
 }
 /* While a modal sheet or alert is open, the page behind it does not scroll. */
 html:has([aria-modal="true"]) { overflow: hidden; }
+
+/* Fraud-intel graph: grab cursor, keyboard focus ring on nodes (focus-visible only). */
+.ss-graph { cursor: grab; }
+.ss-graph.is-dragging { cursor: grabbing; }
+.ss-graph .ss-node-focus { opacity: 0; }
+.ss-graph .ss-node:focus-visible .ss-node-focus { opacity: 1; }

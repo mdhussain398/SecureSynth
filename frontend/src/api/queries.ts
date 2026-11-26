@@ -158,7 +158,8 @@ export const useIncidentSummary = (enabled = true) =>
 export const useIncidents = (status: 'open' | 'resolved' | 'all') =>
   useQuery({ queryKey: qk.incidents(status), queryFn: () => api.get<IncidentRow[]>(`/admin/incidents?status=${status}`), refetchInterval: 4000 });
 export const useIncident = (id: number | null) =>
-  useQuery({ queryKey: qk.incident(id ?? 0), queryFn: () => api.get<IncidentDetail>(`/admin/incidents/${id}`), enabled: id != null, refetchInterval: 4000 });
+  useQuery({ queryKey: qk.incident(id ?? 0), queryFn: () => api.get<IncidentDetail>(`/admin/incidents/${id}`), enabled: id != null, refetchInterval: 4000,
+    placeholderData: (prev) => prev });  // keep the previous incident on screen while the next loads: no skeleton flash
 export const useIncidentRead = () => {
   const qc = useQueryClient();
   return useMutation<unknown, ApiError, number>({

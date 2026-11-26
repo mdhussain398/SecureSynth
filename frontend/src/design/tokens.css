@@ -60,6 +60,8 @@
   --seq-light: #A9C4FF;
   --series-line: #101828;
   --series-aqua: #1baf7a; /* second categorical hue (validated with electric, light + dark) */
+  /* Fraud-intel node identities (validate_palette.js: light vs #FFFFFF and dark vs #161B23 both pass); always paired with a glyph */
+  --g-customer: #005BFF; --g-ip: #138A60; --g-device: #B54708; --g-payee: #7A5AF8; --g-incident: #C01048; --g-neutral: #667085;
 }
 
 /* Console surfaces share the light system; denser type only. */
@@ -78,6 +80,7 @@
     --info: #BAC2CE; --info-tint: #1C222C; --info-line: #3A4350;
     --chart-surface: #161B23; --chart-grid: #262D38; --chart-axis: #3A4350; --chart-muted: #7C8696;
     --series-1: #4D8BFF; --series-2: #BAC2CE; --series-3: #8FB2FF; --seq-light: #2E4470; --series-line: #E8ECF2; --series-aqua: #199e70;
+    --g-customer: #4D8BFF; --g-ip: #199e70; --g-device: #C27C22; --g-payee: #9277F5; --g-incident: #D9537C; --g-neutral: #8B95A5;
   }
 }
 :root[data-theme="dark"] .console {
@@ -92,6 +95,7 @@
   --info: #BAC2CE; --info-tint: #1C222C; --info-line: #3A4350;
   --chart-surface: #161B23; --chart-grid: #262D38; --chart-axis: #3A4350; --chart-muted: #7C8696;
   --series-1: #4D8BFF; --series-2: #BAC2CE; --series-3: #8FB2FF; --seq-light: #2E4470; --series-line: #E8ECF2; --series-aqua: #199e70;
+    --g-customer: #4D8BFF; --g-ip: #199e70; --g-device: #C27C22; --g-payee: #9277F5; --g-incident: #D9537C; --g-neutral: #8B95A5;
 }
 
 /* Dark console: smoked glass instead of frosted white. */

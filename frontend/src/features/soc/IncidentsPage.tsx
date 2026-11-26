@@ -4,11 +4,12 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { Ban, LockKeyhole, ShieldAlert, ShieldCheck, Smartphone, UserCheck, X } from 'lucide-react';
+import { ArrowUpRight, Ban, ChevronDown, Ghost, LockKeyhole, ShieldAlert, ShieldCheck, Smartphone, UserCheck, X } from 'lucide-react';
 import type { IncidentAction, IncidentDetail, IncidentRow, IncidentStatus } from '../../api/types';
 import { useIncident, useIncidentAction, useIncidentRead, useIncidents } from '../../api/queries';
-import { Badge, Banner, Button, Card, DataTable, DecisionPill, EmptyState, ErrorState, RiskGauge, Skeleton, Timeline, fmtTime, formatPaise, type Column } from '../../design/components';
+import { Badge, Banner, Button, Card, DataTable, Segmented, DecisionPill, EmptyState, ErrorState, RiskGauge, Skeleton, Timeline, fmtTime, formatPaise } from '../../design/components';
 import { PageTitle } from '../../layout/layouts';
+import { AUDIT_LABEL, auditDetail, sentence } from './audit';
 
 type Filter = 'open' | 'resolved' | 'all';
 export const STATUS: Record<IncidentStatus, { label: string; tone: 'block' | 'stepup' | 'allow' | 'neutral' | 'info' }> = {
@@ -121,23 +122,24 @@ function IncidentPanel({ d }: { d: IncidentDetail }) {
   return (
     <div className="space-y-4">
       <Card>
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <div className="min-w-0">
-            <p className="text-[0.8125rem] text-[var(--ink-3)]">Incident #{inc.id} · opened {fmtTime(inc.created_at, true)}{inc.is_lab && ' · Scenario Lab'}</p>
+            <p className="text-[0.8125rem] text-[var(--ink-3)]">{inc.ref ?? `Incident #${inc.id}`} · opened {fmtTime(inc.created_at, true)}{inc.is_lab && ' · Scenario Lab'}</p>
             <h2 className="rn-display text-[clamp(1.75rem,3vw,2.375rem)] mt-1">{inc.display_name}</h2>
             <p className="text-[var(--ink-2)] mt-1">{inc.username} · session <Link className="font-mono text-[0.8125rem] underline underline-offset-2" to={`/soc/sessions/${encodeURIComponent(inc.session_id)}`}>{inc.session_id}</Link></p>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5"><Badge tone={st.tone}>{st.label}</Badge><SeverityBadge s={inc.severity} />{inc.ghost && <Badge tone="info"><Ghost size={12} aria-hidden />Ghost Banking</Badge>}</div>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5"><Link to={`/soc/investigations/${inc.id}`} className="rn-btn rn-btn-primary !min-h-11 !px-3.5 text-[0.875rem]">Open investigation workspace</Link>{inc.ghost && <Badge tone="info">Ghost Banking</Badge>}<SeverityBadge s={inc.severity} /><Badge tone={st.tone}>{st.label}</Badge></div>
+          <Link to={`/soc/investigations/${inc.id}`} className="rn-btn rn-btn-primary !min-h-11 !px-4 text-[0.9375rem] shrink-0">Open investigation<ArrowUpRight size={18} strokeWidth={1.75} aria-hidden /></Link>
         </div>
-        <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5 pt-4 border-t border-[var(--hairline)]">
-          <Fact label="Risk index (not a probability)"><span className="inline-flex items-center gap-2"><span className="tnum">{inc.risk_score?.toFixed(1) ?? '—'}</span><RiskGauge size="sm" value={inc.risk_score} thresholds={a?.thresholds} /></span></Fact>
-          <Fact label="Triggering amount">{inc.amount_paise != null ? formatPaise(inc.amount_paise) : 'None (sign-in or payee)'}</Fact>
+        <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4 mt-5 pt-4 border-t border-[var(--hairline)]">
+          <Fact label="Risk index"><span className="inline-flex items-center gap-2"><span className="tnum">{inc.risk_score?.toFixed(1) ?? '—'}</span><RiskGauge size="sm" value={inc.risk_score} thresholds={a?.thresholds} /></span><span className="block text-[0.75rem] font-normal text-[var(--ink-3)]">0–100, not a probability</span></Fact>
+          <Fact label="Triggering amount">{inc.amount_paise != null ? formatPaise(inc.amount_paise) : <span className="text-[var(--ink-2)] font-normal">None (sign-in)</span>}</Fact>
           <Fact label="Location (simulated)">{inc.city || '—'}</Fact>
-          <Fact label="Device">{inc.device_recognised ? 'Recognised browser' : 'Unrecognised browser'}{inc.device_ref && <span className="block text-[0.75rem] font-normal text-[var(--ink-3)] font-mono">{inc.device_ref}</span>}</Fact>
-          <Fact label="Checkpoint">{inc.checkpoint.replace('_', ' ')}</Fact>
-          <Fact label="Restrictions in incident">{inc.block_count}</Fact>
+          <Fact label="Device">{inc.device_recognised ? 'Recognised' : 'Unrecognised'}{inc.device_ref && <span className="block text-[0.75rem] font-normal text-[var(--ink-3)] font-mono">{inc.device_ref}</span>}</Fact>
+          <Fact label="Checkpoint">{sentence(inc.checkpoint)}</Fact>
+          <Fact label="Restrictions">{inc.block_count}</Fact>
           <Fact label="Protected balance">{d.balance_paise != null ? formatPaise(d.balance_paise) : '—'}</Fact>
-          <Fact label="Trusted-device check">{inc.verification ? inc.verification.replace('_', ' ') : 'Not requested'}</Fact>
+          <Fact label="Trusted-device check">{inc.verification ? sentence(inc.verification) : 'Not requested'}</Fact>
         </dl>
         <p className="mt-4 text-[0.9375rem] text-[var(--ink-2)]"><span className="font-medium text-[var(--ink)]">Reason for restriction: </span>{inc.reason}</p>
         {inc.ghost && (
@@ -153,12 +155,13 @@ function IncidentPanel({ d }: { d: IncidentDetail }) {
       {inc.open && (
         <Card title="Decision" description="Session-level actions affect one session; customer-level actions resolve the whole incident. Every action needs a reason and is audited.">
           <div className="grid gap-2 sm:grid-cols-2">
-            <ActionButton icon={<ShieldCheck size={16} />} label="Unblock session" sub={primary?.unblock_eligible ? 'Session level · restores this session' : primary?.eligibility ?? 'Not eligible'} disabled={!primary?.unblock_eligible} onClick={() => setAction('unblock_session')} />
-            <ActionButton icon={<UserCheck size={16} />} label="Clear user restriction" sub="Customer level · fresh secure sign-in" onClick={() => setAction('clear_user')} />
-            <ActionButton icon={<LockKeyhole size={16} />} label="Keep restricted" sub="Retain: activity remains suspicious" onClick={() => setAction('keep_restricted')} />
-            <ActionButton icon={<Ban size={16} />} label="Revoke session" sub="Terminate every session in the incident" danger onClick={() => setAction('revoke_session')} />
-            <ActionButton icon={<Smartphone size={16} />} label={inc.status === 'verification_requested' ? 'Verification pending…' : 'Request verification'} sub="Number match on the trusted device" disabled={inc.status === 'verification_requested'} onClick={() => setAction('request_verification')} />
+            <ActionButton icon={<ShieldCheck />} label="Unblock session" sub={primary?.unblock_eligible ? 'Session level · restores this session' : 'Not available for this session'} disabled={!primary?.unblock_eligible} title={primary?.eligibility} onClick={() => setAction('unblock_session')} />
+            <ActionButton icon={<UserCheck />} label="Clear user restriction" sub="Customer level · fresh secure sign-in" onClick={() => setAction('clear_user')} />
+            <ActionButton icon={<Smartphone />} label={inc.status === 'verification_requested' ? 'Verification pending' : 'Request verification'} sub="Number match on the trusted device" disabled={inc.status === 'verification_requested'} onClick={() => setAction('request_verification')} />
+            <ActionButton icon={<LockKeyhole />} label="Keep restricted" sub="Activity remains suspicious" onClick={() => setAction('keep_restricted')} />
+            <ActionButton icon={<Ban />} label="Revoke session" sub="End every session in this incident" danger onClick={() => setAction('revoke_session')} />
           </div>
+          {primary && !primary.unblock_eligible && <p className="mt-3 text-[0.8125rem] text-[var(--ink-3)]">Unblock unavailable: {primary.eligibility}</p>}
         </Card>
       )}
 
@@ -191,36 +194,25 @@ function IncidentPanel({ d }: { d: IncidentDetail }) {
         </Card>
       )}
 
-      <Card title="Transaction attempts and history" padded={false} description="Blocked attempts are kept as evidence. They are never executed, including after clearance.">
-        <DataTable caption="Transactions" minWidth={560} rowKey={(t) => t.id} rows={d.transactions}
-          columns={[
-            { key: 'ts', header: 'Time', cell: (t) => <span className="whitespace-nowrap text-[var(--ink-2)]">{fmtTime(t.created_at, true)}</span> },
-            { key: 'cp', header: 'Payee', cell: (t) => t.counterparty },
-            { key: 'amt', header: 'Amount', align: 'right', cell: (t) => <span className="tnum">{formatPaise(t.amount_paise)}</span> },
-            { key: 'st', header: 'Status', cell: (t) => <span className="inline-flex items-center gap-1.5"><Badge tone={t.status === 'completed' ? 'allow' : t.status === 'restricted' ? 'block' : 'stepup'}>{t.status.replace('_', ' ')}</Badge>{t.in_incident && <span className="text-[0.75rem] text-[var(--ink-3)]">this incident</span>}</span> },
-          ]} />
-        {d.attempts.length > 0 && (
-          <p className="px-5 py-3 text-[0.8125rem] text-[var(--ink-3)] border-t border-[var(--hairline)]">
-            Velocity status of this incident’s transfer attempts: {d.attempts.map((x) => `${x.amount_paise != null ? formatPaise(x.amount_paise, true) : '?'} ${x.outcome ?? 'recorded'}`).join(' · ')}.
-            {' '}“reviewed” attempts are excluded from future transfer-velocity features.
-          </p>
-        )}
-      </Card>
+      <TransactionsCard d={d} />
 
       <Card title="Sessions in this incident" padded={false}>
-        <DataTable caption="Sessions in this incident" minWidth={600} rowKey={(s) => s.id} rows={d.sessions}
-          columns={[
-            { key: 'id', header: 'Session', cell: (s) => <Link className="font-mono text-[0.8125rem] underline underline-offset-2" to={`/soc/sessions/${encodeURIComponent(s.id)}`}>{s.id}</Link> },
-            { key: 'mode', header: 'Mode', cell: (s) => <Badge tone={s.mode === 'restricted' || s.mode === 'revoked' ? 'block' : s.mode === 'normal' ? 'allow' : 'stepup'}>{s.mode.replace('_', '-')}</Badge> },
-            { key: 'login', header: 'Sign-in verified', cell: (s) => s.login_verified ? 'Yes' : 'No' },
-            { key: 'el', header: 'Session unblock', cell: (s) => <span className={s.unblock_eligible ? 'text-[var(--allow)]' : 'text-[var(--ink-3)]'}>{s.eligibility}</span> },
-          ]} />
+        <ul className="divide-y divide-[var(--hairline)]">
+          {d.sessions.map((s) => (
+            <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3 text-[0.875rem]">
+              <Link className="font-mono text-[0.8125rem] underline underline-offset-2" to={`/soc/sessions/${encodeURIComponent(s.id)}`}>{s.id}</Link>
+              <Badge tone={s.mode === 'restricted' || s.mode === 'revoked' ? 'block' : s.mode === 'normal' ? 'allow' : 'stepup'}>{s.mode.replace('_', '-')}</Badge>
+              <span className="text-[var(--ink-2)]">Sign-in {s.login_verified ? 'verified' : 'not verified'}</span>
+              <span className="ml-auto" title={s.eligibility}><Badge tone={s.unblock_eligible ? 'allow' : 'neutral'}>{s.unblock_eligible ? 'Can be unblocked' : 'Cannot be unblocked'}</Badge></span>
+            </li>
+          ))}
+        </ul>
       </Card>
 
-      <Card title="Incident audit trail">
+      <Card title="Incident audit trail" description="Newest first.">
         {d.timeline.length === 0 ? <p className="text-[var(--ink-3)]">No events.</p> :
-          <Timeline items={d.timeline.map((e) => ({ id: e.id, time: fmtTime(e.ts, true), title: <span className="font-mono text-[0.8125rem]">{e.event_type}</span>, marker: <span className="text-[0.75rem] text-[var(--ink-3)]">by {e.actor}</span>,
-            body: Object.entries(e.details).filter(([k]) => k !== 'session_ids').map(([k, v]) => `${k}: ${String(v)}`).join(' · ') }))} />}
+          <Timeline items={[...d.timeline].sort((x, y) => (x.ts < y.ts ? 1 : -1)).map((e) => ({ id: e.id, time: fmtTime(e.ts, true), title: AUDIT_LABEL[e.event_type] ?? e.event_type.replace(/[._]/g, ' '),
+            marker: <span className="text-[0.75rem] text-[var(--ink-3)]">{e.actor}</span>, body: auditDetail(e.details) || undefined }))} />}
       </Card>
 
       <AnimatePresence>{action && <ConfirmAction key={action} incident={inc} action={action} sessionId={action === 'unblock_session' ? primary?.id : undefined} onClose={() => setAction(null)} />}</AnimatePresence>
@@ -228,21 +220,82 @@ function IncidentPanel({ d }: { d: IncidentDetail }) {
   );
 }
 
+function TransactionsCard({ d }: { d: IncidentDetail }) {
+  const [all, setAll] = useState(false);
+  const rows = [...d.transactions].sort((x, y) => Number(y.in_incident) - Number(x.in_incident));
+  const shown = all ? rows : rows.slice(0, 6);
+  return (
+    <Card title="Transaction attempts and history" padded={false} description="Blocked attempts are kept as evidence and are never executed, even after clearance.">
+      <DataTable caption="Transactions" minWidth={520} rowKey={(t) => t.id} rows={shown}
+        columns={[
+          { key: 'ts', header: 'Time', cell: (t) => <span className="whitespace-nowrap text-[var(--ink-2)]">{fmtTime(t.created_at, true)}</span> },
+          { key: 'cp', header: 'Payee', cell: (t) => <span>{t.counterparty}{t.in_incident && <span className="ml-2 text-[0.75rem] text-[var(--ink-3)]">this incident</span>}</span> },
+          { key: 'amt', header: 'Amount', align: 'right', cell: (t) => <span className="tnum">{formatPaise(t.amount_paise)}</span> },
+          { key: 'st', header: 'Status', cell: (t) => <Badge tone={t.status === 'completed' ? 'allow' : t.status === 'restricted' ? 'block' : 'stepup'}>{t.status.replace('_', ' ')}</Badge> },
+        ]} />
+      {rows.length > 6 && (
+        <button type="button" onClick={() => setAll((x) => !x)} className="flex w-full min-h-11 items-center justify-center gap-1.5 border-t border-[var(--hairline)] text-[0.875rem] font-medium text-[var(--accent)] cursor-pointer hover:bg-[var(--surface-2)]">
+          {all ? 'Show fewer' : `Show all ${rows.length}`}<ChevronDown size={16} strokeWidth={1.75} aria-hidden className={`transition-transform duration-200 ${all ? 'rotate-180' : ''}`} />
+        </button>
+      )}
+      {d.attempts.length > 0 && (
+        <p className="px-5 py-3 text-[0.8125rem] text-[var(--ink-3)] border-t border-[var(--hairline)]">
+          Velocity status of this incident’s attempts: {d.attempts.map((x) => `${x.amount_paise != null ? formatPaise(x.amount_paise, true) : '?'} ${x.outcome ?? 'recorded'}`).join(' · ')}. Reviewed attempts no longer count towards transfer velocity.
+        </p>
+      )}
+    </Card>
+  );
+}
+
 function PolicyRow({ label, points }: { label: string; points: number }) {
   return <><dt className="text-[var(--ink-2)]">{label}</dt><dd className="tnum text-right">{points > 0 ? '+' : ''}{points}</dd></>;
 }
 
-function ActionButton({ icon, label, sub, onClick, disabled, danger }: { icon: React.ReactNode; label: string; sub: string; onClick: () => void; disabled?: boolean; danger?: boolean }) {
+export function ActionButton({ icon, label, sub, onClick, disabled, danger, title }: { icon: React.ReactElement<{ size?: number; strokeWidth?: number }>; label: string; sub: string; onClick: () => void; disabled?: boolean; danger?: boolean; title?: string }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled}
-      className={`group flex items-start gap-3 rounded-[var(--radius-m)] border p-3.5 text-left transition-[border-color,background-color,box-shadow] duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 ${danger ? 'border-[color:var(--block-line)] hover:bg-[var(--block-tint)]' : 'border-[color:var(--hairline)] hover:border-[color:var(--hairline-strong)] hover:shadow-[0_6px_20px_-12px_rgba(16,24,40,0.35)]'}`}>
-      <span className={`mt-0.5 ${danger ? 'text-[var(--block)]' : 'text-[var(--ink-2)] group-hover:text-[var(--ink)]'}`} aria-hidden>{icon}</span>
-      <span className="min-w-0"><span className={`block font-medium ${danger ? 'text-[var(--block)]' : ''}`}>{label}</span><span className="block text-[0.8125rem] text-[var(--ink-3)] mt-0.5">{sub}</span></span>
+    <button type="button" onClick={onClick} disabled={disabled} title={title}
+      className={`group flex min-h-[64px] items-center gap-3 rounded-[var(--radius-m)] border p-3 text-left transition-[border-color,background-color,box-shadow,transform] duration-200 cursor-pointer active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 ${danger ? 'border-[color:var(--block-line)] hover:bg-[var(--block-tint)]' : 'border-[color:var(--hairline)] hover:border-[color:var(--hairline-strong)] hover:shadow-[0_6px_20px_-12px_rgba(16,24,40,0.35)]'}`}>
+      <span aria-hidden className={`grid h-9 w-9 shrink-0 place-items-center rounded-[10px] ${danger ? 'bg-[var(--block-tint)] text-[var(--block)]' : 'bg-[var(--accent-tint)] text-[var(--accent)]'}`}>
+        {{ ...icon, props: { ...icon.props, size: 20, strokeWidth: 1.75 } }}
+      </span>
+      <span className="min-w-0"><span className={`block font-medium leading-snug ${danger ? 'text-[var(--block)]' : ''}`}>{label}</span><span className="block text-[0.8125rem] text-[var(--ink-3)] leading-snug mt-0.5">{sub}</span></span>
     </button>
   );
 }
 
+function IncidentList({ rows, selected, onOpen }: { rows: IncidentRow[]; selected: number | null; onOpen: (id: number) => void }) {
+  const reduce = useReducedMotion();
+  return (
+    <ul aria-label="Security incidents" className="p-1.5">
+      {rows.map((r) => {
+        const on = r.id === selected;
+        return (
+          <li key={r.id}>
+            <button type="button" onClick={() => onOpen(r.id)} aria-current={on || undefined}
+              className={`relative grid w-full grid-cols-[8px_minmax(0,1fr)_auto] items-center gap-x-3 rounded-[12px] px-3 py-2.5 text-left cursor-pointer transition-colors duration-150 ${on ? '' : 'hover:bg-[var(--surface-2)]'}`}>
+              {on && <motion.span layoutId="incident-selection" aria-hidden className="absolute inset-0 rounded-[12px] bg-[var(--accent-tint)] ring-1 ring-[var(--allow-line)]" transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 520, damping: 42 }} />}
+              <span aria-label={r.unread ? 'Unread' : undefined} className={`relative h-2 w-2 rounded-full ${r.unread ? 'bg-[var(--electric)]' : ''}`} />
+              <span className="relative min-w-0">
+                <span className="flex items-center gap-2"><span className={`truncate ${r.unread ? 'font-semibold' : 'font-medium'}`}>{r.display_name}</span>{r.ghost && <Ghost size={14} strokeWidth={1.75} className="shrink-0 text-[var(--ink-3)]" aria-label="Ghost Banking" />}</span>
+                <span className="block truncate text-[0.8125rem] text-[var(--ink-3)]">{STATUS[r.status].label} · {r.severity === 'critical' ? 'Critical' : 'High'}{r.is_lab ? ' · Lab' : ''}</span>
+              </span>
+              <span className="relative text-right">
+                <span className="block tnum font-semibold">{r.risk_score?.toFixed(1) ?? '—'}</span>
+                <span className="block tnum text-[0.75rem] text-[var(--ink-3)] whitespace-nowrap">{fmtTime(r.last_activity_at)}</span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+const FILTERS = [['open', 'Pending'], ['resolved', 'Resolved'], ['all', 'All']] as const;
+
 export function IncidentsPage() {
+  const reduce = useReducedMotion();
+  const detailRef = useRef<HTMLDivElement>(null);
   const { id } = useParams();
   const selected = id ? Number(id) : null;
   const [filter, setFilter] = useState<Filter>('open');
@@ -259,38 +312,28 @@ export function IncidentsPage() {
   }, [detail.data, read]);
   const rows = useMemo(() => list.data ?? [], [list.data]);
 
-  const cols: Column<IncidentRow>[] = [
-    { key: 'who', header: 'Customer', cell: (r) => <div className="flex items-start gap-2">{r.unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--electric)]" aria-label="Unread" />}<div className="min-w-0"><div className="font-medium whitespace-nowrap">{r.display_name}</div><div className="text-[0.75rem] text-[var(--ink-3)]">{r.username} · #{r.id}{r.is_lab && ' · lab'}{r.ghost && ' · ghost'}</div></div></div> },
-    { key: 'sev', header: 'Severity', cell: (r) => <SeverityBadge s={r.severity} /> },
-    { key: 'score', header: 'Risk', align: 'right', cell: (r) => <span className="tnum font-medium">{r.risk_score?.toFixed(1) ?? '—'}</span> },
-    { key: 'amt', header: 'Amount', align: 'right', cell: (r) => <span className="tnum">{r.amount_paise != null ? formatPaise(r.amount_paise, true) : '—'}</span> },
-    { key: 'st', header: 'Status', cell: (r) => <Badge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</Badge> },
-    { key: 'ts', header: 'Last activity', align: 'right', className: 'whitespace-nowrap', cell: (r) => <span className="text-[var(--ink-2)]">{fmtTime(r.last_activity_at)}</span> },
-  ];
-
   return (
     <>
       <PageTitle title="Security incidents" sub="Customers restricted by the risk engine, with the evidence and the decisions that resolve them. Updates every 4 seconds."
         actions={<span className="inline-flex items-center gap-2 text-[0.8125rem] text-[var(--ink-3)]"><span className={`h-2 w-2 rounded-full ${list.isError ? 'bg-[var(--block)]' : 'bg-[var(--allow)]'}`} aria-hidden />{list.isError ? 'Feed interrupted' : 'Live'}</span>} />
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <Card padded={false} title="Incidents" className="self-start xl:sticky xl:top-[76px]" actions={
-          <div role="group" aria-label="Filter incidents" className="flex gap-1">
-            {(['open', 'resolved', 'all'] as const).map((f) => (
-              <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}
-                className={`px-2 py-1 rounded-[var(--radius-s)] text-[0.8125rem] cursor-pointer border ${filter === f ? 'bg-[var(--accent-tint)] border-[var(--accent)] text-[var(--ink)]' : 'border-[var(--hairline)] text-[var(--ink-2)] hover:bg-[var(--surface-2)]'}`}>
-                {f === 'open' ? 'Pending' : f === 'resolved' ? 'Resolved' : 'All'}
-              </button>
-            ))}
-          </div>}>
+      <div className="grid gap-4 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
+        <Card padded={false} title="Incidents" className="self-start lg:sticky lg:top-[88px] lg:max-h-[calc(100dvh-112px)] lg:overflow-y-auto" actions={
+          <Segmented<Filter> label="Filter incidents" value={filter} options={FILTERS} onChange={setFilter} />}>
           {list.isPending ? <div className="p-4"><Skeleton lines={5} /></div> : list.error ? <ErrorState error={list.error} onRetry={() => list.refetch()} /> :
             rows.length === 0 ? <EmptyState title={filter === 'open' ? 'No incidents waiting for review' : 'No incidents'}>{filter === 'open' ? 'When the engine restricts a customer, the incident appears here and in the bell.' : 'Change the filter to see others.'}</EmptyState> :
-              <DataTable caption="Security incidents" minWidth={560} columns={cols} rows={rows} rowKey={(r) => r.id} onRowClick={(r) => nav(`/soc/incidents/${r.id}`)} />}
+              <IncidentList rows={rows} selected={selected} onOpen={(i) => {
+                nav(`/soc/incidents/${i}`);
+                // Stacked layout (below lg): bring the detail into view, as a split view would on iPhone.
+                if (!window.matchMedia('(min-width: 1024px)').matches) requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }));
+              }} />}
         </Card>
-        <div className="min-w-0">
+        <div ref={detailRef} className="min-w-0 scroll-mt-[88px]">
           {selected == null ? (
             <Card><EmptyState title="Select an incident">Open an incident to review the evidence and decide.</EmptyState></Card>
-          ) : detail.isPending ? <Card><Skeleton lines={8} /></Card> : detail.error ? <ErrorState error={detail.error} title={detail.error.status === 404 ? 'Incident not found' : undefined} onRetry={() => detail.refetch()} /> : (
-            <IncidentPanel d={detail.data} />
+          ) : detail.isPending ? <Card><Skeleton lines={8} /></Card> : detail.error && !detail.data ? <ErrorState error={detail.error} title={detail.error.status === 404 ? 'Incident not found' : undefined} onRetry={() => detail.refetch()} /> : (
+            <div aria-busy={detail.isPlaceholderData || undefined} className={`transition-opacity duration-200 ${detail.isPlaceholderData ? 'opacity-60' : 'opacity-100'}`}>
+              <IncidentPanel key={detail.data.incident.id} d={detail.data} />
+            </div>
           )}
         </div>
       </div>

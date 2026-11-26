@@ -6,6 +6,7 @@ import type { RiskAssessment } from '../../api/types';
 import { useConfig, useCounterfactual, useRevoke, useSessionDetail } from '../../api/queries';
 import { Badge, Banner, Button, ButtonLink, Card, DataTable, DecisionPill, ErrorState, RiskGauge, Skeleton, Stat, Timeline, fmtTime } from '../../design/components';
 import { PageTitle } from '../../layout/layouts';
+import { AUDIT_LABEL, auditDetail, sentence } from './audit';
 
 const CHECKPOINT: Record<RiskAssessment['checkpoint'], string> = { login: 'Login', beneficiary_add: 'Payee add', transfer: 'Transfer', profile_change: 'Profile change' };
 const axisTick = { fill: 'var(--chart-muted)', fontSize: 12 };
@@ -83,7 +84,7 @@ function AssessmentPanels({ a }: { a: RiskAssessment }) {
         <dl className="grid grid-cols-3 gap-3 mt-5 pt-3 border-t border-[var(--hairline)]">
           <Stat label="Model" value={<span className="text-[0.8125rem] font-mono font-normal">{a.model_version}</span>} />
           <Stat label="Latency" value={`${a.latency_ms.toFixed(1)} ms`} />
-          <Stat label="Customer saw" value={<span className="text-[0.8125rem] font-normal">{a.customer_message || '—'}</span>} />
+          <Stat label="Customer saw" value={<span className="block font-sans text-[0.8125rem] font-normal leading-snug">{a.customer_message || '—'}</span>} />
         </dl>
       </Card>
     </div>
@@ -216,7 +217,7 @@ export function SessionPage() {
           <AssessmentPanels a={current} />
           <Card title="Audit trail">
             {audit.length === 0 ? <p className="text-[var(--ink-3)]">No audit events.</p> :
-              <Timeline items={audit.map((e) => ({ id: e.id, time: fmtTime(e.ts), title: <span className="font-mono text-[0.8125rem]">{e.event_type}</span>, marker: <span className="text-[0.75rem] text-[var(--ink-3)]">by {e.actor}</span>, body: Object.entries(e.details).map(([k, v]) => `${k}: ${String(v)}`).join(' · ') }))} />}
+              <Timeline items={audit.map((e) => ({ id: e.id, time: fmtTime(e.ts), title: <span title={e.event_type}>{AUDIT_LABEL[e.event_type] ?? sentence(e.event_type.replace(/\./g, ' '))}</span>, marker: <span className="text-[0.75rem] text-[var(--ink-3)]">{e.actor.replace(/_/g, ' ')}</span>, body: auditDetail(e.details) || undefined }))} />}
           </Card>
         </div>
       )}
