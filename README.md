@@ -4,7 +4,7 @@
 
 SecureSynth watches a banking session after the login succeeds. A correct password and a valid one-time code tell you someone has the credentials. They don't tell you the customer is the one at the keyboard, so SecureSynth keeps checking at login, when a payee is added and on every transfer, and asks for proof on a separate trusted device when the behaviour stops looking like that customer.
 
-Built for AVISHKAR'26 (24-hour hackathon), problem #24: *Risk-Based Authentication and Account Takeover Detection*. Team The_Terminators, team ID AV26-50F33FD4DE.
+Built for AVISHKAR'26 (24-hour hackathon), problem #24: *Risk-Based Authentication and Account Takeover Detection*. Team The_Terminators (team ID AV26-50F33FD4DE): Mohammed Hussain, Ayman Ahmed, Samruddh HS and Syed Nihal Mudassir.
 
 > **Synthetic data only.** Every customer, balance, device, location and attack in this repository is made up (account references start with `SYN-`). No real money, personal data or bank systems are involved, and this is a prototype, not a production system.
 

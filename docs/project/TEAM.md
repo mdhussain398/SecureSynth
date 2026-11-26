@@ -1,13 +1,13 @@
 # Team The_Terminators — AV26-50F33FD4DE
 
-> **Action required before submission:** the team must complete this table with each member's real name and role. It was deliberately left unfilled, because contributor details must not be invented.
+Members confirmed by the team on 26 November 2026. Roles are still to be filled in by the team.
 
 | Member | GitHub | Role in the hackathon | Main contributions |
 |---|---|---|---|
 | Mohammed Hussain | [@mdhussain398](https://github.com/mdhussain398) | _to confirm_ | _to confirm_ |
-| _member 2_ | | | |
-| _member 3_ | | | |
-| _member 4_ | | | |
+| Ayman Ahmed | | _to confirm_ | _to confirm_ |
+| Samruddh HS | | _to confirm_ | _to confirm_ |
+| Syed Nihal Mudassir | | _to confirm_ | _to confirm_ |
 
 ## What the repository history shows
 - As of 2026-11-25 every commit is authored by **Mohammed Hussain** (GitHub noreply address). They were made on this laptop with AI assistance (Claude Code), as disclosed in [RESOURCES.md](RESOURCES.md).

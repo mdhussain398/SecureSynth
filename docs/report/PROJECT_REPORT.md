@@ -5,7 +5,7 @@ Technical report for AVISHKAR'26, problem statement 24 (AI in Cyber Security and
 | | |
 |---|---|
 | Team | The_Terminators, team ID AV26-50F33FD4DE |
-| Members | Mohammed Hussain; the other members' names and roles are still to be added in `docs/project/TEAM.md` |
+| Members | Mohammed Hussain, Ayman Ahmed, Samruddh HS, Syed Nihal Mudassir |
 | Repository | https://github.com/mdhussain398/SecureSynth (branch `feat/frontend-renaissance`) |
 | Model | Isolation Forest `iforest-v1-956f432a`, frozen; evaluation protocol v2 |
 | Version | SecureSynth 3.0 |

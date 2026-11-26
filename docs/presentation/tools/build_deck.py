@@ -163,7 +163,7 @@ def build(template, out):
         ("TEAM NAME", "The_Terminators", 15),
         ("DOMAIN", "AI in Cyber Security and FinTech", 13),
         ("PROBLEM STATEMENT NO.", "24 · Risk-Based Authentication and Account Takeover Detection", 11),
-        ("TEAM MEMBERS", "Mohammed Hussain · [Member 2]\n[Member 3] · [Member 4]", 11),
+        ("TEAM MEMBERS", "Mohammed Hussain · Ayman Ahmed\nSamruddh HS · Syed Nihal Mudassir", 11),
     ]:
         t = by_text(s1, lbl)
         y = t.top / 914400 + 0.36
@@ -172,13 +172,13 @@ def build(template, out):
     text(s1, 1.42, 6.14, 6.4, 0.36, [[("SecureSynth", {"bold": True, "size": 22})]], name="Project name")
     text(s1, 1.42, 6.5, 6.6, 0.3, [[("Continuous, explainable defence against account takeover", {"size": 12, "color": SOFT})]], name="Project tagline")
     notes(s1, f"""
-SPEAKER A — Mohammed Hussain (edit as agreed) · about 0:40
+SPEAKER A: Mohammed Hussain · about 0:40
 • Good morning. We are The_Terminators, team AV26-50F33FD4DE, from Adichunchanagiri Institute of Technology.
 • Our problem is Statement 24: risk-based authentication and account takeover detection, in the domain AI in Cyber Security and FinTech.
 • Our project is SecureSynth. The logo is two glass ribbons around a shield: who the customer says they are, and how they behave.
 • One sentence to remember: a correct password and a correct OTP are not proof that the customer is present.
 • Hand-off: "Let me show you why that matters."
-[TEAM: replace [Member 2–4] on this slide with real names before submission. Do not present placeholder names.]
+Team: Mohammed Hussain, Ayman Ahmed, Samruddh HS, Syed Nihal Mudassir.
 """)
 
     # ---------- 2 · Problem understanding ----------
@@ -213,7 +213,7 @@ SPEAKER A — Mohammed Hussain (edit as agreed) · about 0:40
         {"bullet": True, "runs": "Every decision enforced server-side"},
     ], size=12, space=3)
     notes(s2, f"""
-SPEAKER A — Mohammed Hussain (edit as agreed) · about 1:00
+SPEAKER A: Mohammed Hussain · about 1:00
 • Problem: attackers no longer need to break the password. Phishing kits relay the OTP in real time, SIM swaps redirect it, and session hijackers act after a genuine sign-in.
 • Evidence from our synthetic evaluation: password + TOTP alone intervened in 0 of {A['password_totp']['intervention']['fn']} takeovers.
 • Root cause: authentication is treated as a single gate. The usual fix, static global rules, judges everyone by the same yardstick: {pct(st_i['fpr'])} of genuine sessions and {pct(ST['traveller_restriction_rate'])} of genuine travellers were interrupted.
@@ -244,16 +244,16 @@ SPEAKER A — Mohammed Hussain (edit as agreed) · about 1:00
         {"bullet": True, "runs": "Fully offline: no paid APIs, no AI calls at runtime"},
         {"bullet": True, "runs": "Model frozen (SHA-256) before one-time test scoring"},
         {"bullet": True, "runs": "Risk index is a rarity percentile, never a probability"},
-        {"bullet": True, "runs": "Customers never see scores; Ghost Banking stays off"},
+        {"bullet": True, "runs": "Customers never see scores; Ghost Banking off until mentor approval"},
     ], size=12.5, space=4)
     notes(s3, """
-SPEAKER B — [Member 2] (edit) · about 1:00
+SPEAKER B: Ayman Ahmed · about 1:00
 • Four stages. (1) Authenticate: Argon2id password and a genuine TOTP with replay protection; the session token rotates after TOTP.
 • (2) Assess: at sign-in, payee add and every transfer we compute 15 deviations from THIS customer's trusted baseline — device, hour, city, distance, travel speed, amount, frequency, payee age, speed to act and more — score them with an Isolation Forest, and add transparent policy points.
 • (3) Decide: score = 0.8 × ML index + policy points. Step-up at 77.73, block at 89.1 — thresholds chosen on validation data only. The backend enforces the decision; the browser only displays it.
 • (4) Verify and adapt: step-up goes to a separately enrolled trusted device with number matching. The challenge is single-use, expires in 120 s and is bound to the session, the operation and a hash of the payload.
 • Innovation: personalisation (02:00 is normal for a night-shift worker, rare for a 9-to-5 customer), continuous assessment, bound approvals, and a baseline that an attacker cannot train — new behaviour sits in a candidate profile and is promoted only after verification, two clean sessions and 24 hours; blocked sessions void their contributions; every change can be rolled back.
-• Constraints: synthetic data only; offline; frozen model; the risk index is NOT a fraud probability; Ghost Banking is designed but not implemented and is off pending mentor approval.
+• Constraints: synthetic data only; offline; frozen model; the risk index is NOT a fraud probability; Ghost Banking is built and tested but stays off until a mentor approves it, because it deceives the session holder.
 """)
 
     # ---------- 4 · Architecture & tech stack (editable diagram) ----------
@@ -275,7 +275,7 @@ SPEAKER B — [Member 2] (edit) · about 1:00
         if i < 3:
             arrow(s4, 2.45 + i * 1.6, 5.21, 2.65 + i * 1.6, 5.21)
     arrow(s4, 4.2, 5.72, 4.2, 5.92)
-    for i, (h, d) in enumerate([("SQLite (WAL)", "users · sessions · ledger · assessments · audit"), ("Frozen model", "iforest-v1-956f432a · SHA-256 manifest")]):
+    for i, (h, d) in enumerate([("4 SQLite stores (WAL)", "bank · ghost · evidence vault · demo reports"), ("Frozen model", "iforest-v1-956f432a · SHA-256 manifest")]):
         c = box(s4, 0.9 + i * 3.35, 5.94, 3.25, 0.7, line=BLUE if i else LINE, name=h)
         label_in(c, [[(h, {"bold": True, "size": 11})], [(d, {"size": 9.5, "color": SOFT})]])
     text(s4, 8.4, 2.8, 4.1, 1.75, [
@@ -285,19 +285,19 @@ SPEAKER B — [Member 2] (edit) · about 1:00
         [("SQLite (WAL)  ", {"bold": True}), ("offline, atomic, zero setup", {"color": SOFT})],
         [("Argon2id · PyOTP · Fernet  ", {"bold": True}), ("proven primitives", {"color": SOFT})],
     ], size=12, space=6)
-    for i, (big, small) in enumerate([("89", "backend tests passing"), ("6/6", "frozen hashes match"), (f"{SS['latency_ms']['p95']:.2f} ms", "p95 decision (in-process)"), ("0", "external services at run time")]):
+    for i, (big, small) in enumerate([("165", "backend tests passing"), ("6/6", "frozen hashes match"), (f"{SS['latency_ms']['p95']:.2f} ms", "p95 decision (in-process)"), ("0", "external services at run time")]):
         x, y = 8.4 + (i % 2) * 2.1, 5.4 + (i // 2) * 0.66
         text(s4, x, y, 2.0, 0.34, [[(big, {"bold": True, "size": 18, "color": RED if i == 0 else WHITE})]])
         text(s4, x, y + 0.33, 2.0, 0.28, [[(small, {"size": 10, "color": SOFT})]])
     notes(s4, f"""
-SPEAKER B — [Member 2] (edit) · about 1:00
+SPEAKER B: Ayman Ahmed · about 1:00
 • One React app talks to one FastAPI service; every decision is computed and enforced on the server. (Point top to bottom.)
 • Browser: customer portal, trusted-device simulator, the analyst Command Centre and Judge Mode — React 19 + TypeScript, sharing a typed API contract (v1.2.0) with the backend.
 • FastAPI: authentication (Argon2id, TOTP with replay protection, rotating sessions, CSRF and Origin checks), an idempotent ledger where a transfer is one atomic conditional debit, and enforcement of session modes and bound challenges.
 • Risk engine: features → Isolation Forest (scikit-learn, 300 trees; unsupervised, so it needs no fraud labels) → transparent policy points → decision.
-• Storage: SQLite in WAL mode; the model is frozen and every scoring file is pinned by SHA-256.
+• Storage: four separate SQLite stores (protected bank, Ghost Banking, encrypted evidence vault, demo complaints); startup refuses to run if two share a file. The model is frozen and every scoring file is pinned by SHA-256.
 • Why these choices: offline, reproducible, zero external services, well-known security primitives.
-• Evidence: 89 backend tests pass; 6/6 frozen hashes match; p95 decision latency {SS['latency_ms']['p95']:.2f} ms in-process on one laptop (excludes network and database).
+• Evidence: 165 backend tests pass; 6/6 frozen hashes match; p95 decision latency {SS['latency_ms']['p95']:.2f} ms in-process on one laptop (excludes network and database).
 • Hand-off to Speaker C: "Let's see it working."
 """)
 
@@ -310,12 +310,12 @@ SPEAKER B — [Member 2] (edit) · about 1:00
         c = box(s5, 0.85 + i * 2.39, 2.74, 2.25, 0.56, shape=MSO_SHAPE.CHEVRON if i else MSO_SHAPE.PENTAGON, line=RED if i == 4 else LINE, name=f"Flow · {h}")
         label_in(c, [[(h, {"bold": True, "size": 13})]], pad=0.22)
         text(s5, 0.85 + i * 2.39, 3.4, 2.1, 0.5, [[(d, {"size": 11.5, "color": SOFT})]], align=PP_ALIGN.CENTER)
-    shots = [("command-centre-block.jpg", 2.16, "Command Centre · BLOCK 99.5"),
-             ("judge-mode-takeover-blocked.jpg", 2.16, "Judge Mode · balance unchanged"),
-             ("trusted-device-approval.jpg", 0.74, "Trusted device")]
+    shots = [("app/console-04-incidents.jpg", 2.16, "Incidents · analyst decisions"),
+             ("presentation/judge-mode-takeover-blocked.jpg", 2.16, "Judge Mode · balance unchanged"),
+             ("presentation/trusted-device-approval.jpg", 0.74, "Trusted device")]
     x = 0.85
     for f, w, cap in shots:
-        pic = s5.shapes.add_picture(str(ROOT / "docs/screenshots/presentation" / f), Inches(x), Inches(4.84), Inches(w))
+        pic = s5.shapes.add_picture(str(ROOT / "docs/screenshots" / f), Inches(x), Inches(4.84), Inches(w))
         pic.line.color.rgb = LINE; pic.line.width = Pt(0.75)
         h = pic.height / 914400
         text(s5, x, 4.84 + h + 0.05, w if w > 1 else w + 0.3, 0.26, [[(cap, {"size": 10, "color": SOFT})]])
@@ -323,14 +323,15 @@ SPEAKER B — [Member 2] (edit) · about 1:00
     text(s5, 7.12, 4.85, 5.4, 1.85, [
         {"bullet": True, "runs": [("Backend enforcement: ", {"bold": True}), ("a restricted session gets 403 on payee add and transfer", {})]},
         {"bullet": True, "runs": [("Explainable: ", {"bold": True}), ("ML index, deviations, policy points and decision shown separately", {})]},
-        {"bullet": True, "runs": [("What-if: ", {"bold": True}), ("re-runs the real scorer, labelled hypothetical", {})]},
-        {"bullet": True, "runs": [("Judge Mode: ", {"bold": True}), ("six scenarios run live through the real API", {})]},
+        {"bullet": True, "runs": [("After a block: ", {"bold": True}), ("evidence vault, incident workspace, correlation graph, cybercrime report", {})]},
+        {"bullet": True, "runs": [("Judge Mode: ", {"bold": True}), ("11 Lab scenarios run live through the real API", {})]},
         {"bullet": True, "runs": [("Customers ", {"bold": True}), ("see calm messages, never scores", {})]},
     ], size=12, space=4)
     notes(s5, """
-SPEAKER C — [Member 3] (edit) · about 0:45 on the slide, then LIVE DEMO about 3:15
+SPEAKER C: Samruddh HS · about 0:45 on the slide, then LIVE DEMO about 3:15
 • Data flow for one transfer: the browser sends the session cookie, a CSRF header and an idempotency key; the backend checks the session mode, Origin and payee ownership; the engine builds features only from history BEFORE the event, scores it, stores the full assessment, and enforces — debit, a bound challenge, or 403 — and every step goes to the audit log.
-• Screenshots are real, captured from the running product: the Command Centre on a blocked takeover (risk index 99.5 — a rarity percentile, not a probability), Judge Mode with the protected balance unchanged, and the trusted-device approval with number matching.
+• Screenshots are real, captured from the running product: the incident queue where analysts decide what happens after a block, Judge Mode with the protected balance unchanged, and the trusted-device approval with number matching.
+• After a block (SecureSynth 3.0): the session is restricted (or contained in Ghost Banking if approved), evidence is collected into an encrypted, hash-chained vault, and analysts work the case in an investigation workspace and a correlation graph, prepare a cybercrime complaint (demo destination by default), and restore a genuine customer through a fresh verified sign-in.
 
 LIVE DEMO (switch to the browser; Judge Mode at /judge, analyst already signed in; demo reset beforehand)
 1. Normal customer → Run live (R): ALLOW; asha pays ₹2,500 with no friction. (~0:40)
@@ -378,7 +379,7 @@ Fallbacks: if a run stalls, press "Show all steps"; if the network/laptop fails,
         ser.format.fill.solid(); ser.format.fill.fore_color.rgb = col
         ser.data_labels.show_value = True; ser.data_labels.number_format = '0.0"%"'; ser.data_labels.number_format_is_linked = False
         ser.data_labels.position = XL_LABEL_POSITION.OUTSIDE_END; ser.data_labels.font.size = Pt(10); ser.data_labels.font.color.rgb = WHITE
-    for i, (big, small) in enumerate([("89 / 89", "backend tests"), ("6 / 6", "live scenarios verified"), (f"{SS['latency_ms']['p95']:.2f} ms", "p95 decision latency")]):
+    for i, (big, small) in enumerate([("165 / 165", "backend tests"), ("6 / 6", "live scenarios verified"), (f"{SS['latency_ms']['p95']:.2f} ms", "p95 decision latency")]):
         text(s6, 0.9 + i * 1.85, 5.68, 1.8, 0.34, [[(big, {"bold": True, "size": 17, "color": WHITE})]])
         text(s6, 0.9 + i * 1.85, 6.0, 1.8, 0.26, [[(small, {"size": 10, "color": SOFT})]])
     d = REPORT["dataset"]
@@ -395,14 +396,14 @@ Fallbacks: if a run stalls, press "Show all steps"; if the network/laptop fails,
         {"bullet": True, "runs": f"Familiar-device hijack recall {pct(SS['per_family_recall']['C'])}; block FPR {SS['block_only']['fpr']:.2%} vs 0.5% target"},
     ], size=12, space=4)
     notes(s6, f"""
-SPEAKER D — [Member 4] (edit) · about 1:30
+SPEAKER D: Syed Nihal Mudassir · about 1:30
 • Method: protocol pre-registered; model frozen; a fresh synthetic population ({d['customers']} customers, {d['sessions_test']:,} sessions, {d['attacks_test']} takeovers) scored once. All three approaches ran on identical sessions.
 • Headline: SecureSynth intervened in {pct(ss_i['recall'])} of takeovers vs {pct(st_i['recall'])} for static rules, while interrupting {pct(ss_i['fpr'])} of genuine sessions vs {pct(st_i['fpr'])}. Precision {pct(ss_i['precision'])} vs {pct(st_i['precision'])}; F1 {pct(ss_i['f1'])} vs {pct(st_i['f1'])}.
 • Travellers: {pct(SS['traveller_restriction_rate'])} interrupted vs {pct(ST['traveller_restriction_rate'])}. New-device sessions: {pct(SS['new_device_restriction_rate'])} vs {pct(ST['new_device_restriction_rate'])}.
 • Be explicit about what we do NOT claim: static rules prevent slightly MORE attack money in total ({crore(stp['attack_value_prevented_paise'])} vs our {crore(ssp['attack_value_prevented_paise'])}) by challenging almost everyone. We delay far less genuine money ({crore(ssp['legit_value_delayed_paise'])} vs {crore(stp['legit_value_delayed_paise'])}) but block more genuine money outright ({lakh(ssp['legit_value_blocked_paise'])} vs {lakh(stp['legit_value_blocked_paise'])}).
 • Weakness: a hijack on the customer's own familiar device — recall {pct(SS['per_family_recall']['C'])}. Block FPR drifted to {SS['block_only']['fpr']:.2%} against a 0.5% validation target.
 • The risk index is a rarity percentile plus policy points — never a fraud probability. All of this is synthetic: it shows the method works on our data, not real-world performance.
-• Engineering: 89/89 backend tests, all six live scenarios verified, p95 {SS['latency_ms']['p95']:.2f} ms in-process.
+• Engineering: 165/165 backend tests, all six live scenarios verified, p95 {SS['latency_ms']['p95']:.2f} ms in-process.
 """)
 
     # ---------- 7 · Impact, scalability & next steps ----------
@@ -411,17 +412,19 @@ SPEAKER D — [Member 4] (edit) · about 1:30
         {"bullet": True, "runs": "Step-up only when behaviour is unusual for this customer"},
         {"bullet": True, "runs": "Continuous checks where takeovers drain accounts: payees and transfers"},
         {"bullet": True, "runs": "Analysts can explain, override and roll back every decision"},
+        {"bullet": True, "runs": "Every incident keeps encrypted, tamper-evident evidence"},
     ], size=12.5, space=4)
     text(s7, 7.12, 2.78, 5.4, 1.25, [
         {"bullet": True, "runs": "Stateless API and scorer scale out; PostgreSQL, TLS, KMS keys"},
         {"bullet": True, "runs": "Real trusted-device app with attestation; payee and mule-risk signals"},
+        {"bullet": True, "runs": "Anchor the evidence ledger outside the system"},
         {"bullet": True, "runs": "First: validate on consented, labelled bank data"},
     ], size=12.5, space=4)
     text(s7, 0.9, 4.86, 8.6, 0.7, [[("A correct password and OTP prove possession, not presence. SecureSynth keeps checking, explains every decision, and asks the real customer when it is unsure.", {"size": 14, "bold": True})]], anchor=MSO_ANCHOR.MIDDLE)
     text(s7, 9.75, 4.82, 2.75, 0.4, [[(f"{pct(ss_i['recall'])}  ·  {pct(ss_i['fpr'])}", {"size": 18, "bold": True, "color": RED})]], align=PP_ALIGN.RIGHT)
     text(s7, 9.55, 5.2, 2.95, 0.4, [[("takeovers intervened · genuine interrupted (synthetic)", {"size": 9.5, "color": SOFT})]], align=PP_ALIGN.RIGHT)
     notes(s7, f"""
-SPEAKER D — [Member 4] (edit) · about 1:00, then all four for Q&A
+SPEAKER D: Syed Nihal Mudassir · about 1:00, then all four for Q&A
 • Impact: banks can stop asking every customer for more friction and instead step up only when behaviour is unusual for that customer — and keep checking at the moments that matter: payee adds and transfers.
 • Scalability: the API and the scorer are stateless and scale horizontally. Production needs PostgreSQL, distributed rate limiting, TLS everywhere, KMS/HSM-managed keys, a real trusted-device app with attestation, and payee and mule-account risk signals for the familiar-device case.
 • Honest next step: validate on real, consented, labelled bank data with fairness and drift monitoring before making any real-world claim.
